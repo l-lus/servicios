@@ -241,33 +241,13 @@ class GestionServicios {
         });
 
         searchClear.addEventListener('click', () => {
-            searchInput.value = '';
-            this.terminoBusqueda = '';
-            searchClear.classList.remove('d-flex-imp');
-            if (this._catColapsadasAntesBusqueda !== null) {
-                this._catColapsadas = this._catColapsadasAntesBusqueda;
-                this._catColapsadasAntesBusqueda = null;
-            }
-            this.renderServicios();
-            setTimeout(() => {
-                this.enModoBusqueda = false;
-            }, 100);
+            this._limpiarBusqueda();
         });
 
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                searchInput.value = '';
-                this.terminoBusqueda = '';
-                searchClear.classList.remove('d-flex-imp');
-                if (this._catColapsadasAntesBusqueda !== null) {
-                    this._catColapsadas = this._catColapsadasAntesBusqueda;
-                    this._catColapsadasAntesBusqueda = null;
-                }
-                this.renderServicios();
+                this._limpiarBusqueda();
                 searchInput.blur();
-                setTimeout(() => {
-                    this.enModoBusqueda = false;
-                }, 100);
             }
         });
 
@@ -653,7 +633,7 @@ class GestionServicios {
                 /* if (factura.monto > 0 && !factura.conCredito) { 
                 NO CONTAR FACTURAS CON CREDITO COMENTADO */
                 if (factura.monto > 0) {
-                    const fechaFactura = new Date(factura.fecha + 'T00:00:00');
+                    const fechaFactura = this._parseDate(factura.fecha);
                     const mesFactura = fechaFactura.getMonth();
                     const anioFactura = fechaFactura.getFullYear();
                     const esMesActual = (mesFactura === mesActual && anioFactura === anioActual);
@@ -666,7 +646,7 @@ class GestionServicios {
                         if (!esMesActual && !esMesSiguiente && !esMesPasado) return;
                     } else if (this.modoCalculadoraTipo === 'pagados') {
                         if (!factura.pagada) return;
-                        const fechaPago = factura.fechaPago ? new Date(factura.fechaPago + 'T00:00:00') : null;
+                        const fechaPago = factura.fechaPago ? this._parseDate(factura.fechaPago) : null;
                         const esPagadaEsteMes = fechaPago && fechaPago.getMonth() === mesActual && fechaPago.getFullYear() === anioActual;
                         if (!esMesActual && !esPagadaEsteMes) return;
                     }
@@ -729,8 +709,9 @@ class GestionServicios {
             return false;
         }
 
-        // Convertir la fecha ingresada y la fecha actual a objetos Date
-        const fechaIngresada = new Date(fecha);
+        // FIX: usar 'T00:00:00' para forzar interpretación local (sin el sufijo,
+        // new Date('YYYY-MM-DD') interpreta en UTC y da un día de diferencia en GMT-3)
+        const fechaIngresada = this._parseDate(fecha);
         const fechaActual = new Date();
 
         // Calcular la diferencia en años
@@ -753,7 +734,7 @@ class GestionServicios {
         }
 
         // Convertir a fecha local (agregar 'T00:00:00' fuerza interpretación local)
-        const fechaPagoDate = new Date(fechaPago + 'T00:00:00');
+        const fechaPagoDate = this._parseDate(fechaPago);
         const fechaActual = new Date();
 
         // Resetear horas para comparar solo las fechas
@@ -977,17 +958,7 @@ class GestionServicios {
                 }
                 // Sin modales ni menús: limpiar búsqueda si hay una activa
                 if (this.terminoBusqueda) {
-                    const searchInput = document.getElementById('search-input');
-                    const searchClear = document.getElementById('search-clear');
-                    searchInput.value = '';
-                    this.terminoBusqueda = '';
-                    searchClear.classList.remove('d-flex-imp');
-                    if (this._catColapsadasAntesBusqueda !== null) {
-                        this._catColapsadas = this._catColapsadasAntesBusqueda;
-                        this._catColapsadasAntesBusqueda = null;
-                    }
-                    this.renderServicios();
-                    setTimeout(() => { this.enModoBusqueda = false; }, 100);
+                    this._limpiarBusqueda();
                     return;
                 }
             }
@@ -1317,7 +1288,7 @@ class GestionServicios {
 
         this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
             servicio.facturas.forEach(factura => {
-                const fechaFactura = new Date(factura.fecha + 'T00:00:00');
+                const fechaFactura = this._parseDate(factura.fecha);
                 const mesFactura = fechaFactura.getMonth();
                 const añoFactura = fechaFactura.getFullYear();
                 const esDelMesActual = mesFactura === mesActual && añoFactura === añoActual;
@@ -1329,7 +1300,7 @@ class GestionServicios {
                     if (factura.monto < 0) return;
                     // Pagada fuera del mes actual: no cuenta ni en total ni en pagado (barra consistente)
                     const pagadaEsteMes = factura.pagada && factura.fechaPago &&
-                        (() => { const fp = new Date(factura.fechaPago + 'T00:00:00'); return fp.getMonth() === mesActual && fp.getFullYear() === añoActual; })();
+                        (() => { const fp = this._parseDate(factura.fechaPago); return fp.getMonth() === mesActual && fp.getFullYear() === añoActual; })();
                     const contarEnTotal = !factura.pagada || pagadaEsteMes;
                     if (factura.pagada) cantidadPagadasVencenEsteMes++;
                     if (!factura.pagada) cantidadPendientesEsteMes++;
@@ -1345,7 +1316,7 @@ class GestionServicios {
                 }
 
                 if (factura.pagada && factura.fechaPago && factura.monto > 0 && !excluir) {
-                    const fechaPago = new Date(factura.fechaPago + 'T00:00:00');
+                    const fechaPago = this._parseDate(factura.fechaPago);
                     if (fechaPago.getMonth() === mesActual && fechaPago.getFullYear() === añoActual) {
                         if (moneda === 'usd') { totalPagadoMesUSD += factura.monto; }
                         else { totalPagadoMesARS += factura.monto; }
@@ -1394,7 +1365,7 @@ class GestionServicios {
 
         this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
             servicio.facturas.forEach(factura => {
-                const fechaFactura = new Date(factura.fecha + 'T00:00:00');
+                const fechaFactura = this._parseDate(factura.fecha);
                 const mesFactura = fechaFactura.getMonth();
                 const añoFactura = fechaFactura.getFullYear();
 
@@ -1405,7 +1376,7 @@ class GestionServicios {
 
                 // AHORA AMBAS VISTAS evalúan solo las facturas PENDIENTES para determinar el color
                 if (!factura.pagada) {
-                    const vencimiento = new Date(factura.fecha + 'T00:00:00');
+                    const vencimiento = this._parseDate(factura.fecha);
                     vencimiento.setHours(0, 0, 0, 0);
                     const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
 
@@ -1470,6 +1441,77 @@ class GestionServicios {
         this.guardarEstado();
         this.renderServicios();
         this.actualizarEstadisticas();
+    }
+
+    // Helper 1: parsear fecha en hora local (evita offset UTC en GMT-3)
+    _parseDate(str) {
+        return this._parseDate(str);
+    }
+
+    // Helper 2: limpiar el buscador y restaurar grupos colapsados previos
+    _limpiarBusqueda() {
+        const searchInput = document.getElementById('search-input');
+        const searchClear = document.getElementById('search-clear');
+        if (!searchInput) return;
+        searchInput.value = '';
+        this.terminoBusqueda = '';
+        searchClear.classList.remove('d-flex-imp');
+        if (this._catColapsadasAntesBusqueda !== null) {
+            this._catColapsadas = this._catColapsadasAntesBusqueda;
+            this._catColapsadasAntesBusqueda = null;
+        }
+        this.renderServicios();
+        setTimeout(() => { this.enModoBusqueda = false; }, 100);
+    }
+
+    // Helper 3: descargar contenido como archivo
+    _descargarBlob(contenido, nombreArchivo, tipo = 'text/plain;charset=utf-8') {
+        const blob = new Blob([contenido], { type: tipo });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Helper 4: IDs de campos del formulario de factura según modo editar/agregar
+    _idsFormFactura(esEditar) {
+        const p = esEditar ? 'editar-factura' : 'factura';
+        return {
+            monto:       `${p}-monto`,
+            tipo:        `${p}-tipo`,
+            fecha:       `${p}-fecha`,
+            moneda:      `${p}-moneda`,
+            fechaPago:   `${p}-fecha-pago`,
+            conCredito:  `${p}-con-credito`,
+            servicio:    `${p}-servicio`,
+            btnPagada:   esEditar ? 'btn-editar-toggle-pagada'  : 'btn-toggle-pagada',
+            btnCredito:  esEditar ? 'btn-editar-toggle-credito' : 'btn-toggle-credito',
+            btnMoneda:   esEditar ? 'btn-editar-factura-moneda' : 'btn-factura-moneda',
+            btnNegativo: esEditar ? 'btn-editar-toggle-negativo': 'btn-toggle-negativo',
+        };
+    }
+
+    // Helper 5: abrir/cerrar un submenú del menú ajustes, cerrando los otros
+    _toggleSubMenuAjustes(opcionesId, padreId) {
+        const subMenus = [
+            ['opciones-importacion', 'menu-importar'],
+            ['opciones-borrar',      'menu-limpiar'],
+            ['opciones-dolar',       'menu-dolar'],
+        ];
+        const abriendo = !document.getElementById(opcionesId).classList.contains('open');
+        // Cerrar todos los que no son el activo
+        subMenus.forEach(([oId, pId]) => {
+            if (oId !== opcionesId) {
+                document.getElementById(oId).classList.remove('open');
+                document.getElementById(pId).classList.remove('open');
+            }
+        });
+        document.getElementById(opcionesId).classList.toggle('open', abriendo);
+        document.getElementById(padreId).classList.toggle('open', abriendo);
     }
 
     _aplicarBlurResumen(hayMonto) {
@@ -1610,11 +1652,11 @@ class GestionServicios {
             servicio.facturas.forEach(factura => {
                 if (factura.monto < 0) return;
 
-                const fechaVenc = new Date(factura.fecha + 'T00:00:00');
+                const fechaVenc = this._parseDate(factura.fecha);
                 const venceEsteMes = fechaVenc.getMonth() === mesActual && fechaVenc.getFullYear() === anioActual;
 
                 const pagadaEsteMes = factura.pagada && factura.fechaPago && (() => {
-                    const fp = new Date(factura.fechaPago + 'T00:00:00');
+                    const fp = this._parseDate(factura.fechaPago);
                     return fp.getMonth() === mesActual && fp.getFullYear() === anioActual;
                 })();
 
@@ -1625,7 +1667,7 @@ class GestionServicios {
                     } else if (factura.pagada && pagadaEsteMes) {
                         estado = 'Pagada este mes'; badgeClass = 'badge-pagada-mes';
                     } else if (factura.pagada && !pagadaEsteMes) {
-                        const mesPago = new Date(factura.fechaPago + 'T00:00:00').toLocaleDateString('es-AR', { month: 'long' });
+                        const mesPago = this._parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' });
                         estado = `Pagada en ${mesPago}`; badgeClass = 'badge-pagada-antes';
                     } else if (!factura.pagada && fechaVenc < hoy) {
                         estado = 'Vencida'; badgeClass = 'badge-vencida';
@@ -1761,7 +1803,7 @@ class GestionServicios {
             }
 
             servicio.facturas.forEach(factura => {
-                const fechaFactura = new Date(factura.fecha + 'T00:00:00');
+                const fechaFactura = this._parseDate(factura.fecha);
                 const mesFactura = fechaFactura.getMonth();
                 const añoFactura = fechaFactura.getFullYear();
 
@@ -1791,7 +1833,7 @@ class GestionServicios {
                     }
 
                     if (!factura.pagada) {
-                        const vencimiento = new Date(factura.fecha + 'T00:00:00');
+                        const vencimiento = this._parseDate(factura.fecha);
                         vencimiento.setHours(0, 0, 0, 0);
                         if (vencimiento < hoy) {
                             cantidadVencidas++;
@@ -1804,7 +1846,7 @@ class GestionServicios {
                 // Pagado en este mes por fecha de pago (sin importar el vencimiento)
                 if (factura.pagada && factura.fechaPago && factura.monto > 0
                     && servicio.id !== this.SERVICIO_INGRESOS_ID) {
-                    const fechaPago = new Date(factura.fechaPago + 'T00:00:00');
+                    const fechaPago = this._parseDate(factura.fechaPago);
                     if (fechaPago.getMonth() === mesSeleccionado && fechaPago.getFullYear() === añoSeleccionado) {
                         cantidadPagadas++;
                         if (!factura.conCredito || categoriaActiva) {
@@ -2204,16 +2246,16 @@ class GestionServicios {
                 let facturasFiltradas = servicio.facturas;
 
                 if (desde) {
-                    const fechaDesde = new Date(desde + 'T00:00:00');
+                    const fechaDesde = this._parseDate(desde);
                     facturasFiltradas = facturasFiltradas.filter(f =>
-                        new Date(f.fecha + 'T00:00:00') >= fechaDesde
+                        this._parseDate(f.fecha) >= fechaDesde
                     );
                 }
 
                 if (hasta) {
-                    const fechaHasta = new Date(hasta + 'T00:00:00');
+                    const fechaHasta = this._parseDate(hasta);
                     facturasFiltradas = facturasFiltradas.filter(f =>
-                        new Date(f.fecha + 'T00:00:00') <= fechaHasta
+                        this._parseDate(f.fecha) <= fechaHasta
                     );
                 }
 
@@ -2391,19 +2433,7 @@ class GestionServicios {
             localStorage.setItem('servicios-collapse-state', 'collapsed');
 
             // Limpiar búsqueda al colapsar
-            const searchInput = document.getElementById('search-input');
-            const searchClear = document.getElementById('search-clear');
-            if (searchInput && searchInput.value !== '') {
-                searchInput.value = '';
-                this.terminoBusqueda = '';
-                searchClear.classList.remove('d-flex-imp');
-                this.enModoBusqueda = false;
-                if (this._catColapsadasAntesBusqueda !== null) {
-                    this._catColapsadas = this._catColapsadasAntesBusqueda;
-                    this._catColapsadasAntesBusqueda = null;
-                }
-                this.renderServicios();
-            }
+            if (this.terminoBusqueda) this._limpiarBusqueda();
             return;
         }
 
@@ -2438,19 +2468,7 @@ class GestionServicios {
             localStorage.setItem('servicios-collapse-state', 'semi-collapsed');
 
             // Limpiar búsqueda al contraer
-            const searchInput = document.getElementById('search-input');
-            const searchClear = document.getElementById('search-clear');
-            if (searchInput && searchInput.value !== '') {
-                searchInput.value = '';
-                this.terminoBusqueda = '';
-                searchClear.classList.remove('d-flex-imp');
-                this.enModoBusqueda = false;
-                if (this._catColapsadasAntesBusqueda !== null) {
-                    this._catColapsadas = this._catColapsadasAntesBusqueda;
-                    this._catColapsadasAntesBusqueda = null;
-                }
-                this.renderServicios();
-            }
+            if (this.terminoBusqueda) this._limpiarBusqueda();
         }
     }
 
@@ -2466,7 +2484,7 @@ class GestionServicios {
         } else {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-            const vencimiento = new Date(factura.fecha + 'T00:00:00');
+            const vencimiento = this._parseDate(factura.fecha);
             vencimiento.setHours(0, 0, 0, 0);
 
             if (vencimiento < hoy) {
@@ -2508,7 +2526,7 @@ class GestionServicios {
 
         this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
             servicio.facturas.forEach(factura => {
-                const fechaFactura = new Date(factura.fecha + 'T00:00:00');
+                const fechaFactura = this._parseDate(factura.fecha);
                 const año = fechaFactura.getFullYear();
                 const mes = fechaFactura.getMonth();
                 const claveMes = `${año}-${String(mes + 1).padStart(2, '0')}`;
@@ -2549,7 +2567,7 @@ class GestionServicios {
             fechaTexto = this.formatearFecha(ultimaFactura.fecha);
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-            const fechaCobro = new Date(ultimaFactura.fecha + 'T00:00:00');
+            const fechaCobro = this._parseDate(ultimaFactura.fecha);
             fechaCobro.setHours(0, 0, 0, 0);
             if (fechaCobro <= hoy) {
                 estado = 'Cobrado';
@@ -2575,7 +2593,7 @@ class GestionServicios {
             } else {
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
-                const vencimiento = new Date(ultimaFactura.fecha + 'T00:00:00');
+                const vencimiento = this._parseDate(ultimaFactura.fecha);
                 vencimiento.setHours(0, 0, 0, 0);
                 const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
 
@@ -2606,7 +2624,7 @@ class GestionServicios {
                 const hoy = new Date();
                 const facturaAnualVigente = servicio.facturas.find(f => {
                     if (f.tipo !== 'anual' || !f.pagada) return false;
-                    const fechaVenc = new Date(f.fecha + 'T00:00:00');
+                    const fechaVenc = this._parseDate(f.fecha);
                     return fechaVenc.getFullYear() === hoy.getFullYear();
                 });
 
@@ -2907,8 +2925,8 @@ class GestionServicios {
                     if (!tieneFacturasB) return -1;
 
                     // Calcular estados para los que sí tienen facturas
-                    const fechaA = facturaA ? new Date(facturaA.fecha + 'T00:00:00') : null;
-                    const fechaB = facturaB ? new Date(facturaB.fecha + 'T00:00:00') : null;
+                    const fechaA = facturaA ? this._parseDate(facturaA.fecha) : null;
+                    const fechaB = facturaB ? this._parseDate(facturaB.fecha) : null;
                     if (fechaA) fechaA.setHours(0, 0, 0, 0);
                     if (fechaB) fechaB.setHours(0, 0, 0, 0);
 
@@ -2920,8 +2938,8 @@ class GestionServicios {
                     const pagadaB = facturaB && facturaB.pagada;
                     const sinMesA = !facturaA;
                     const sinMesB = !facturaB;
-                    const anualVigenteA = sinMesA && a.facturas.some(f => f.tipo === 'anual' && f.pagada && new Date(f.fecha + 'T00:00:00').getFullYear() === hoy.getFullYear());
-                    const anualVigenteB = sinMesB && b.facturas.some(f => f.tipo === 'anual' && f.pagada && new Date(f.fecha + 'T00:00:00').getFullYear() === hoy.getFullYear());
+                    const anualVigenteA = sinMesA && a.facturas.some(f => f.tipo === 'anual' && f.pagada && this._parseDate(f.fecha).getFullYear() === hoy.getFullYear());
+                    const anualVigenteB = sinMesB && b.facturas.some(f => f.tipo === 'anual' && f.pagada && this._parseDate(f.fecha).getFullYear() === hoy.getFullYear());
 
                     // PRIORIDAD 2: VENCIDAS primero
                     if (vencidaA && !vencidaB) return -1;
@@ -3176,7 +3194,7 @@ class GestionServicios {
     agruparPorAno(items) {
         const itemsPorAno = {};
         items.forEach(item => {
-            const ano = new Date(item.fecha + 'T00:00:00').getFullYear();
+            const ano = this._parseDate(item.fecha).getFullYear();
             if (!itemsPorAno[ano]) {
                 itemsPorAno[ano] = [];
             }
@@ -3520,8 +3538,9 @@ class GestionServicios {
 
     toggleConCredito(modo = '') {
         const esEditar = modo === 'editar';
-        const btn = document.getElementById(esEditar ? 'btn-editar-toggle-credito' : 'btn-toggle-credito');
-        const input = document.getElementById(esEditar ? 'editar-factura-con-credito' : 'factura-con-credito');
+        const ids = this._idsFormFactura(esEditar);
+        const btn = document.getElementById(ids.btnCredito);
+        const input = document.getElementById(ids.conCredito);
         const iconUse = btn.querySelector('use');
         const esCredito = input.value === 'true';
 
@@ -3623,16 +3642,17 @@ class GestionServicios {
 
         // Detectar si estamos en modo agregar o editar
         const esEditar = document.getElementById('modal-editar-factura').classList.contains('active');
+        const ids = this._idsFormFactura(esEditar);
 
-        const monto = parseFloat(document.getElementById(esEditar ? 'editar-factura-monto' : 'factura-monto').value);
-        const tipo = document.getElementById(esEditar ? 'editar-factura-tipo' : 'factura-tipo').value;
-        const fecha = document.getElementById(esEditar ? 'editar-factura-fecha' : 'factura-fecha').value;
-        const moneda = document.getElementById(esEditar ? 'editar-factura-moneda' : 'factura-moneda').value;
-        const btnTogglePagada = document.getElementById(esEditar ? 'btn-editar-toggle-pagada' : 'btn-toggle-pagada');
+        const monto = parseFloat(document.getElementById(ids.monto).value);
+        const tipo = document.getElementById(ids.tipo).value;
+        const fecha = document.getElementById(ids.fecha).value;
+        const moneda = document.getElementById(ids.moneda).value;
+        const btnTogglePagada = document.getElementById(ids.btnPagada);
         const estaPagada = btnTogglePagada.classList.contains('pagada');
-        const fechaPago = estaPagada ? document.getElementById(esEditar ? 'editar-factura-fecha-pago' : 'factura-fecha-pago').value : null;
-        const conCredito = estaPagada ? (document.getElementById(esEditar ? 'editar-factura-con-credito' : 'factura-con-credito')?.value === 'true') : false;
-        const servicioSeleccionadoId = document.getElementById(esEditar ? 'editar-factura-servicio' : 'factura-servicio').value;
+        const fechaPago = estaPagada ? document.getElementById(ids.fechaPago).value : null;
+        const conCredito = estaPagada ? (document.getElementById(ids.conCredito)?.value === 'true') : false;
+        const servicioSeleccionadoId = document.getElementById(ids.servicio).value;
 
         // Validar monto (permitir negativos para saldos a favor)
         if (!this.validarMonto(monto, true)) {
@@ -3819,7 +3839,7 @@ class GestionServicios {
 
         // Filtrar facturas que estén entre el primer día y el último día del mes actual
         const facturasEnRango = servicio.facturas.filter(f => {
-            const fechaVencimiento = new Date(f.fecha + 'T00:00:00');
+            const fechaVencimiento = this._parseDate(f.fecha);
             return fechaVencimiento >= primerDiaMesActual && fechaVencimiento <= ultimoDiaMesActual;
         });
 
@@ -3859,9 +3879,12 @@ class GestionServicios {
         // Agregar el nuevo estado
         this.historial.push(nuevoEstado);
 
-        // Limitar el tamaño del historial
+        // Limitar el tamaño del historial.
+        // FIX: cuando se hace shift() el array pierde su primer elemento,
+        // por lo que el índice no debe incrementarse (ya apunta al último).
         if (this.historial.length > this.maxHistorial) {
             this.historial.shift();
+            // historialIndex queda en maxHistorial - 1, que es correcto
         } else {
             this.historialIndex++;
         }
@@ -3924,6 +3947,10 @@ class GestionServicios {
     // PERSISTENCIA DE DATOS
     // ========================================
 
+    // NOTA: este método quedó obsoleto cuando se implementó el sistema de perfiles.
+    // El flujo real de carga es: constructor → cargarDatosPerfilActivo() → inicializarHistorial()
+    // Se conserva por compatibilidad pero NO debe llamarse directamente.
+    // TODO: eliminar en la próxima limpieza de código.
     cargarDatos() {
         try {
             const datos = localStorage.getItem(this.STORAGE_KEY);
@@ -4097,16 +4124,7 @@ class GestionServicios {
             };
 
             const json = JSON.stringify(datos, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `servicios_${this.obtenerFechaLocal()}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            this._descargarBlob(json, `servicios_${this.obtenerFechaLocal()}.json`, 'application/json');
 
             this.mostrarToast('Datos exportados correctamente', 'success');
             this.cerrarMenuAjustes();
@@ -4264,17 +4282,7 @@ class GestionServicios {
     }
 
     mostrarOpcionesImportacion() {
-        const opciones = document.getElementById('opciones-importacion');
-        const padre = document.getElementById('menu-importar');
-        const abriendo = !opciones.classList.contains('open');
-
-        document.getElementById('opciones-borrar').classList.remove('open');
-        document.getElementById('menu-limpiar').classList.remove('open');
-        document.getElementById('opciones-dolar').classList.remove('open');
-        document.getElementById('menu-dolar').classList.remove('open');
-
-        opciones.classList.toggle('open', abriendo);
-        padre.classList.toggle('open', abriendo);
+        this._toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
     }
 
     importarDatos(modo = 'reemplazar') {
@@ -4365,32 +4373,11 @@ class GestionServicios {
     }
 
     mostrarOpcionesBorrar() {
-        const opciones = document.getElementById('opciones-borrar');
-        const padre = document.getElementById('menu-limpiar');
-        const abriendo = !opciones.classList.contains('open');
-
-        document.getElementById('opciones-importacion').classList.remove('open');
-        document.getElementById('menu-importar').classList.remove('open');
-        document.getElementById('opciones-dolar').classList.remove('open');
-        document.getElementById('menu-dolar').classList.remove('open');
-
-        opciones.classList.toggle('open', abriendo);
-        padre.classList.toggle('open', abriendo);
+        this._toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
     }
 
     toggleMenuDolar() {
-        const opciones = document.getElementById('opciones-dolar');
-        const padre = document.getElementById('menu-dolar');
-        const abriendo = !opciones.classList.contains('open');
-
-        // Cerrar otros submenús
-        document.getElementById('opciones-borrar').classList.remove('open');
-        document.getElementById('menu-limpiar').classList.remove('open');
-        document.getElementById('opciones-importacion').classList.remove('open');
-        document.getElementById('menu-importar').classList.remove('open');
-
-        opciones.classList.toggle('open', abriendo);
-        padre.classList.toggle('open', abriendo);
+        this._toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
     }
 
     limpiarDatos(tipo = 'todo') {
@@ -4740,7 +4727,7 @@ class GestionServicios {
     }
 
     formatearFecha(fecha) {
-        const date = new Date(fecha + 'T00:00:00');
+        const date = this._parseDate(fecha);
         return date.toLocaleDateString('es-AR', {
             day: '2-digit',
             month: '2-digit',
@@ -4963,7 +4950,7 @@ class GestionServicios {
             }
 
             servicio.facturas.forEach(factura => {
-                const fechaVenc = new Date(factura.fecha + 'T00:00:00');
+                const fechaVenc = this._parseDate(factura.fecha);
                 fechaVenc.setHours(0, 0, 0, 0);
                 const esDelMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
                 const esServicioIngresos = servicio.id === this.SERVICIO_INGRESOS_ID;
@@ -4992,7 +4979,7 @@ class GestionServicios {
                     case 'pagadas':
                         // Igual que cantidadPagadas: pagada, fechaPago en el mes seleccionado
                         if (factura.pagada && factura.monto >= 0 && factura.fechaPago && !esServicioIngresos) {
-                            const fp = new Date(factura.fechaPago + 'T00:00:00');
+                            const fp = this._parseDate(factura.fechaPago);
                             incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
                         }
                         break;
@@ -5001,7 +4988,7 @@ class GestionServicios {
                         // Igual que totalPagadoMesARS/USD: pagada, fechaPago en el mes, no crédito (salvo cat activa)
                         if (factura.pagada && factura.monto > 0 && factura.fechaPago && !esServicioIngresos
                             && (!factura.conCredito || categoriaActiva)) {
-                            const fp = new Date(factura.fechaPago + 'T00:00:00');
+                            const fp = this._parseDate(factura.fechaPago);
                             incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
                         }
                         break;
@@ -5460,11 +5447,11 @@ class GestionServicios {
             }
 
             servicio.facturas.forEach(factura => {
-                const fechaVenc = new Date(factura.fecha + 'T00:00:00');
+                const fechaVenc = this._parseDate(factura.fecha);
                 const venceEsteMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
 
                 if (servicio.id === this.SERVICIO_INGRESOS_ID) {
-                    const fechaIngreso = new Date(factura.fecha + 'T00:00:00');
+                    const fechaIngreso = this._parseDate(factura.fecha);
                     if (fechaIngreso.getMonth() === mesSeleccionado && fechaIngreso.getFullYear() === añoSeleccionado) {
                         ingresos.push({ servicio, factura });
                     }
@@ -5474,7 +5461,7 @@ class GestionServicios {
                 if (venceEsteMes) {
                     facturasMes.push({ servicio, factura, venceEsteMes: true });
                 } else if (factura.pagada && factura.fechaPago) {
-                    const fechaPago = new Date(factura.fechaPago + 'T00:00:00');
+                    const fechaPago = this._parseDate(factura.fechaPago);
                     if (fechaPago.getMonth() === mesSeleccionado && fechaPago.getFullYear() === añoSeleccionado) {
                         facturasPagadasMes.push({ servicio, factura, venceEsteMes: false });
                     }
@@ -5485,17 +5472,17 @@ class GestionServicios {
         // Helper para formatear fecha legible
         const fmtFecha = (str) => {
             if (!str) return '—';
-            return new Date(str + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return this._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         };
 
         // Helper estado factura
         const estadoFactura = (factura) => {
             if (factura.conCredito) return 'Con crédito';
             if (factura.pagada) {
-                const mp = factura.fechaPago ? new Date(factura.fechaPago + 'T00:00:00').toLocaleDateString('es-AR', { month: 'long' }) : '';
+                const mp = factura.fechaPago ? this._parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' }) : '';
                 return `Pagada${mp ? ` en ${mp}` : ''}`;
             }
-            const venc = new Date(factura.fecha + 'T00:00:00');
+            const venc = this._parseDate(factura.fecha);
             venc.setHours(0, 0, 0, 0);
             return venc < hoy ? 'Vencida (pendiente)' : 'Pendiente';
         };
@@ -5564,7 +5551,7 @@ class GestionServicios {
             txt += `  (ninguna)\n`;
         } else {
             facturasPagadasMes.forEach(({ servicio, factura }) => {
-                const mesVenc = new Date(factura.fecha + 'T00:00:00').toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+                const mesVenc = this._parseDate(factura.fecha).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
                 txt += `\n  ${servicio.nombre}\n`;
                 txt += linea('  Vencimiento original:', `${fmtFecha(factura.fecha)} (${mesVenc})`) + '\n';
                 txt += linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars')) + '\n';
@@ -5593,14 +5580,7 @@ class GestionServicios {
         txt += `  Fin del reporte\n`;
         txt += `${'═'.repeat(48)}\n`;
 
-        // Descargar como .txt
-        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte_${nombreMes.replace(' ', '_')}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+        this._descargarBlob(txt, `reporte_${nombreMes.replace(' ', '_')}.txt`);
         this.mostrarToast('Reporte generado', 'success');
     }
 
@@ -5623,7 +5603,7 @@ class GestionServicios {
 
         const fmtFecha = (str) => {
             if (!str) return '—';
-            return new Date(str + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return this._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         };
 
         const hoy = new Date();
@@ -5631,8 +5611,8 @@ class GestionServicios {
 
         // Filtrar facturas por rango
         let facturas = [...servicio.facturas];
-        if (desde) facturas = facturas.filter(f => new Date(f.fecha + 'T00:00:00') >= new Date(desde + 'T00:00:00'));
-        if (hasta) facturas = facturas.filter(f => new Date(f.fecha + 'T00:00:00') <= new Date(hasta + 'T00:00:00'));
+        if (desde) facturas = facturas.filter(f => this._parseDate(f.fecha) >= this._parseDate(desde));
+        if (hasta) facturas = facturas.filter(f => this._parseDate(f.fecha) <= this._parseDate(hasta));
         facturas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
         // Totales
@@ -5680,10 +5660,10 @@ class GestionServicios {
                 let estadoTxt;
                 if (f.conCredito) estadoTxt = 'Con crédito';
                 else if (f.pagada) {
-                    const mp = f.fechaPago ? new Date(f.fechaPago + 'T00:00:00').toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : '';
+                    const mp = f.fechaPago ? this._parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : '';
                     estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`;
                 } else {
-                    const venc = new Date(f.fecha + 'T00:00:00');
+                    const venc = this._parseDate(f.fecha);
                     venc.setHours(0, 0, 0, 0);
                     estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente';
                 }
@@ -5710,13 +5690,7 @@ class GestionServicios {
 
         txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
 
-        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+        this._descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
         this.mostrarToast('Reporte generado', 'success');
     }
 
