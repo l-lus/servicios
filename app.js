@@ -1445,7 +1445,7 @@ class GestionServicios {
 
     // Helper 1: parsear fecha en hora local (evita offset UTC en GMT-3)
     _parseDate(str) {
-        return this._parseDate(str);
+        return new Date(str + 'T00:00:00');
     }
 
     // Helper 2: limpiar el buscador y restaurar grupos colapsados previos
