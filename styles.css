@@ -453,30 +453,60 @@
 
 
         .custom-scroll,
-        .modal-content {
+        .modal-content,
+        .servicios-lista,
+        .facturas-lista,
+        .custom-select-dropdown,
+        .menu-content,
+        .info-content,
+        .max-h-60vh {
             overflow-y: auto;
             overflow-x: hidden;
         }
 
         .custom-scroll::-webkit-scrollbar,
-        .modal-content::-webkit-scrollbar {
+        .modal-content::-webkit-scrollbar,
+        .servicios-lista::-webkit-scrollbar,
+        .facturas-lista::-webkit-scrollbar,
+        .custom-select-dropdown::-webkit-scrollbar,
+        .menu-content::-webkit-scrollbar,
+        .info-content::-webkit-scrollbar,
+        .max-h-60vh::-webkit-scrollbar {
             width: 8px;
         }
 
         .custom-scroll::-webkit-scrollbar-track,
-        .modal-content::-webkit-scrollbar-track {
+        .modal-content::-webkit-scrollbar-track,
+        .servicios-lista::-webkit-scrollbar-track,
+        .facturas-lista::-webkit-scrollbar-track,
+        .custom-select-dropdown::-webkit-scrollbar-track,
+        .menu-content::-webkit-scrollbar-track,
+        .info-content::-webkit-scrollbar-track,
+        .max-h-60vh::-webkit-scrollbar-track {
             background: var(--bg-body);
             border-radius: var(--radius);
         }
 
         .custom-scroll::-webkit-scrollbar-thumb,
-        .modal-content::-webkit-scrollbar-thumb {
+        .modal-content::-webkit-scrollbar-thumb,
+        .servicios-lista::-webkit-scrollbar-thumb,
+        .facturas-lista::-webkit-scrollbar-thumb,
+        .custom-select-dropdown::-webkit-scrollbar-thumb,
+        .menu-content::-webkit-scrollbar-thumb,
+        .info-content::-webkit-scrollbar-thumb,
+        .max-h-60vh::-webkit-scrollbar-thumb {
             background: var(--border);
             border-radius: var(--radius);
         }
 
         .custom-scroll::-webkit-scrollbar-thumb:hover,
-        .modal-content::-webkit-scrollbar-thumb:hover {
+        .modal-content::-webkit-scrollbar-thumb:hover,
+        .servicios-lista::-webkit-scrollbar-thumb:hover,
+        .facturas-lista::-webkit-scrollbar-thumb:hover,
+        .custom-select-dropdown::-webkit-scrollbar-thumb:hover,
+        .menu-content::-webkit-scrollbar-thumb:hover,
+        .info-content::-webkit-scrollbar-thumb:hover,
+        .max-h-60vh::-webkit-scrollbar-thumb:hover {
             background: var(--text-muted);
         }
 

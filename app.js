@@ -120,7 +120,11 @@ class GestionServicios {
         this.tipoEstadisticaActual = localStorage.getItem('estadisticas-tipo') || 'mensual';
         this._estadisticaCategoriaActiva = null;
 
-        // Cargar datos del perfil activo - NUEVO
+        // Servicios auxiliares
+        this.historial_mgr = new HistorialManager(this);
+        this.storage = new StorageService(this);
+
+        // Cargar datos del perfil activo - NUEVO (debe ir después de instanciar this.storage)
         this.cargarDatosPerfilActivo();
 
         this.init();
@@ -297,37 +301,9 @@ class GestionServicios {
         this.abrirModalPerfiles();
     }
 
-    cargarDatosPerfilActivo() {
-        try {
-            const key = `gestion_servicios_datos_${this.perfilActivo}`;
-            const datos = localStorage.getItem(key);
-            if (datos) {
-                this.servicios = JSON.parse(datos);
-            } else {
-                this.servicios = [];
-                // Guardar array vacío para que no se confunda con datos viejos
-                localStorage.setItem(key, JSON.stringify([]));
-            }
+    cargarDatosPerfilActivo() { this.storage.cargarDatosPerfilActivo(); }
 
-            // NUEVO: Inicializar historial con el estado cargado
-            this.inicializarHistorial();
-
-        } catch (error) {
-            console.error('Error al cargar datos del perfil:', error);
-            this.servicios = [];
-            this.inicializarHistorial(); // También inicializar en caso de error
-        }
-    }
-
-    guardarDatosPerfilActivo() {
-        try {
-            const key = `gestion_servicios_datos_${this.perfilActivo}`;
-            localStorage.setItem(key, JSON.stringify(this.servicios));
-        } catch (error) {
-            console.error('Error al guardar datos del perfil:', error);
-            this.mostrarToast('Error al guardar datos', 'error');
-        }
-    }
+    guardarDatosPerfilActivo() { this.storage.guardarDatosPerfilActivo(); }
 
     cambiarPerfil(perfilId) {
         if (perfilId === this.perfilActivo) return;
@@ -3825,84 +3801,11 @@ class GestionServicios {
     // SISTEMA UNDO/REDO
     // ========================================
 
-    guardarEstado() {
-        // Crear una copia profunda del estado actual DESPUÉS del cambio
-        const nuevoEstado = {
-            servicios: JSON.parse(JSON.stringify(this.servicios)),
-            categorias: JSON.parse(JSON.stringify(this._getCategorias()))
-        };
-
-        // Si estamos en medio del historial, eliminar estados futuros
-        if (this.historialIndex < this.historial.length - 1) {
-            this.historial.splice(this.historialIndex + 1);
-        }
-
-        // Agregar el nuevo estado
-        this.historial.push(nuevoEstado);
-
-        // Limitar el tamaño del historial.
-        // FIX: cuando se hace shift() el array pierde su primer elemento,
-        // por lo que el índice no debe incrementarse (ya apunta al último).
-        if (this.historial.length > this.maxHistorial) {
-            this.historial.shift();
-            // historialIndex queda en maxHistorial - 1, que es correcto
-        } else {
-            this.historialIndex++;
-        }
-
-        this.actualizarBotonesHistorial();
-    }
-
-    inicializarHistorial() {
-        this.historial = [];
-        this.historialIndex = -1;
-
-        if (this.servicios && this.servicios.length >= 0) {
-            this.historial.push({
-                servicios: JSON.parse(JSON.stringify(this.servicios)),
-                categorias: JSON.parse(JSON.stringify(this._getCategorias()))
-            });
-            this.historialIndex = 0;
-        }
-
-        this.actualizarBotonesHistorial();
-    }
-
-    deshacer() {
-        if (this.historialIndex > 0) {
-            this.historialIndex--;
-            const estado = this.historial[this.historialIndex];
-            this.servicios = JSON.parse(JSON.stringify(estado.servicios));
-            this._saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
-            this.guardarDatos();
-            this.renderServicios();
-            this.cerrarTodosLosModales();
-            this.actualizarBotonesHistorial();
-            this.mostrarToast('Acción deshecha', 'success');
-        }
-    }
-
-    rehacer() {
-        if (this.historialIndex < this.historial.length - 1) {
-            this.historialIndex++;
-            const estado = this.historial[this.historialIndex];
-            this.servicios = JSON.parse(JSON.stringify(estado.servicios));
-            this._saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
-            this.guardarDatos();
-            this.renderServicios();
-            this.cerrarTodosLosModales();
-            this.actualizarBotonesHistorial();
-            this.mostrarToast('Acción rehecha', 'success');
-        }
-    }
-
-    actualizarBotonesHistorial() {
-        const puedeDeshacer = this.historialIndex > 0;
-        const puedeRehacer = this.historialIndex < this.historial.length - 1;
-
-        document.getElementById('btn-undo').disabled = !puedeDeshacer;
-        document.getElementById('btn-redo').disabled = !puedeRehacer;
-    }
+    guardarEstado()            { this.historial_mgr.guardarEstado(); }
+    inicializarHistorial()     { this.historial_mgr.inicializarHistorial(); }
+    deshacer()                 { this.historial_mgr.deshacer(); }
+    rehacer()                  { this.historial_mgr.rehacer(); }
+    actualizarBotonesHistorial() { this.historial_mgr.actualizarBotones(); }
 
     // ========================================
     // PERSISTENCIA DE DATOS
@@ -3912,426 +3815,19 @@ class GestionServicios {
     // El flujo real de carga es: constructor → cargarDatosPerfilActivo() → inicializarHistorial()
     // Se conserva por compatibilidad pero NO debe llamarse directamente.
     // TODO: eliminar en la próxima limpieza de código.
-    cargarDatos() {
-        try {
-            const datos = localStorage.getItem(this.STORAGE_KEY);
-            if (datos) {
-                const parsed = JSON.parse(datos);
+    cargarDatos() { this.storage.cargarDatosPerfilActivo(); }
 
-                // Validación de integridad
-                if (this.validarDatos(parsed)) {
-                    this.servicios = parsed;
-                } else {
-                    console.error('Datos corruptos detectados');
-                    this.servicios = [];
-                }
-            }
+    verificarEspacioDisponible()   { return this.storage.verificarEspacioDisponible(); }
+    guardarDatos()                 { this.storage.guardarDatos(); }
+    validarDatos(datos)            { return this.storage.validarDatos(datos); }
+    exportarDatos()                { this.storage.exportarDatos(); }
+    importarDatos(modo)            { this.storage.importarDatos(modo); }
 
-            // Inicializar historial con estado actual (después de cargar)
-            this.historial = [{
-                servicios: JSON.parse(JSON.stringify(this.servicios)),
-                categorias: JSON.parse(JSON.stringify(this._getCategorias()))
-            }];
-            this.historialIndex = 0;
-        } catch (error) {
-            console.error('Error al cargar datos:', error);
-            this.servicios = [];
-            this.historial = [{ servicios: [], categorias: [] }];
-            this.historialIndex = 0;
-        }
+    _generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto) {
+        return this.storage.generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto);
     }
-
-    verificarEspacioDisponible() {
-        try {
-            const datos = JSON.stringify(this.servicios);
-            const tamaño = new Blob([datos]).size;
-            const tamañoMB = tamaño / (1024 * 1024);
-
-            return {
-                tamaño: tamañoMB,
-                tamañoBytes: tamaño,
-                advertencia: tamañoMB > 3,
-                critico: tamañoMB > 4.5
-            };
-        } catch (error) {
-            return {
-                tamaño: 0,
-                tamañoBytes: 0,
-                advertencia: false,
-                critico: false
-            };
-        }
-    }
-
-    guardarDatos() {
-        try {
-            this.guardarDatosPerfilActivo();
-        } catch (error) {
-            console.error('Error al guardar datos:', error);
-            this.mostrarToast('Error al guardar datos', 'error');
-        }
-    }
-
-    validarDatos(datos) {
-        // Validar que sea un array
-        if (!Array.isArray(datos)) {
-            console.error('Validación: datos no es un array');
-            return false;
-        }
-
-        // Validar cada servicio
-        return datos.every((servicio, idx) => {
-            // Validar ID del servicio
-            if (typeof servicio.id !== 'string' || !servicio.id.trim()) {
-                console.error(`Validación: servicio[${idx}].id inválido`);
-                return false;
-            }
-
-            // Validar nombre del servicio
-            if (typeof servicio.nombre !== 'string' || !servicio.nombre.trim()) {
-                console.error(`Validación: servicio[${idx}].nombre inválido`);
-                return false;
-            }
-
-            if (servicio.nombre.length > 30) {
-                console.error(`Validación: servicio[${idx}].nombre demasiado largo`);
-                return false;
-            }
-
-            // Validar array de facturas
-            if (!Array.isArray(servicio.facturas)) {
-                console.error(`Validación: servicio[${idx}].facturas no es un array`);
-                return false;
-            }
-
-            // Validar cada factura
-            return servicio.facturas.every((factura, fidx) => {
-                // Validar ID
-                if (typeof factura.id !== 'string' || !factura.id.trim()) {
-                    console.error(`Validación: factura[${fidx}].id inválido en servicio[${idx}]`);
-                    return false;
-                }
-
-                // Validar monto
-                if (typeof factura.monto !== 'number') {
-                    console.error(`Validación: factura[${fidx}].monto no es número en servicio[${idx}]`);
-                    return false;
-                }
-
-                if (!isFinite(factura.monto)) {
-                    console.error(`Validación: factura[${fidx}].monto no es finito en servicio[${idx}]`);
-                    return false;
-                }
-
-                if (Math.abs(factura.monto) > 99999999) {
-                    console.error(`Validación: factura[${fidx}].monto fuera de rango en servicio[${idx}]`);
-                    return false;
-                }
-
-                // Validar fecha
-                if (typeof factura.fecha !== 'string') {
-                    console.error(`Validación: factura[${fidx}].fecha no es string en servicio[${idx}]`);
-                    return false;
-                }
-
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(factura.fecha)) {
-                    console.error(`Validación: factura[${fidx}].fecha formato inválido en servicio[${idx}]`);
-                    return false;
-                }
-
-                // Validar estado de pago
-                if (typeof factura.pagada !== 'boolean') {
-                    console.error(`Validación: factura[${fidx}].pagada no es boolean en servicio[${idx}]`);
-                    return false;
-                }
-
-                // Validar fecha de pago (opcional)
-                if (factura.fechaPago !== null && factura.fechaPago !== undefined) {
-                    if (typeof factura.fechaPago !== 'string') {
-                        console.error(`Validación: factura[${fidx}].fechaPago no es string en servicio[${idx}]`);
-                        return false;
-                    }
-                    if (!/^\d{4}-\d{2}-\d{2}$/.test(factura.fechaPago)) {
-                        console.error(`Validación: factura[${fidx}].fechaPago formato inválido en servicio[${idx}]`);
-                        return false;
-                    }
-                }
-
-                // Validar tipo (opcional)
-                if (factura.tipo !== undefined) {
-                    const tiposValidos = ['mensual', 'bimestral', 'semestral', 'anual', 'regular', 'complementario', 'transferencia'];
-                    if (!tiposValidos.includes(factura.tipo)) {
-                        console.error(`Validación: factura[${fidx}].tipo inválido en servicio[${idx}]`);
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-        });
-    }
-
-    // ========================================
-    // IMPORTAR/EXPORTAR
-    // ========================================
-
-    exportarDatos() {
-        try {
-            const datos = {
-                version: '1.0',
-                fecha: new Date().toISOString(),
-                categorias: this._getCategorias(),
-                servicios: this.servicios
-            };
-
-            const json = JSON.stringify(datos, null, 2);
-            this._descargarBlob(json, `servicios_${this.obtenerFechaLocal()}.json`, 'application/json');
-
-            this.mostrarToast('Datos exportados correctamente', 'success');
-            this.cerrarMenuAjustes();
-        } catch (error) {
-            console.error('Error al exportar:', error);
-            this.mostrarToast('Error al exportar datos', 'error');
-        }
-    }
-
-    _generarResumenComparacion(serviciosRemoto, etiqueta = 'archivo', categoriasRemoto = []) {
-        const INGRESOS_ID = this.SERVICIO_INGRESOS_ID;
-        const idsLocales = new Set(this.servicios.map(s => s.id));
-        const idsRemoto = new Set(serviciosRemoto.map(s => s.id));
-
-        const soloEnRemoto = serviciosRemoto.filter(s => !idsLocales.has(s.id) && s.id !== INGRESOS_ID);
-        const enAmbos = serviciosRemoto.filter(s => idsLocales.has(s.id) && s.id !== INGRESOS_ID);
-        const servicioIngresosRemoto = serviciosRemoto.find(s => s.id === INGRESOS_ID);
-        const servicioIngresosLocal = this.servicios.find(s => s.id === INGRESOS_ID);
-
-        let facturasNuevas = 0, facturasConflicto = 0, ingresosNuevos = 0;
-
-        enAmbos.forEach(sRemoto => {
-            const sLocal = this.servicios.find(s => s.id === sRemoto.id);
-            if (!sLocal) return;
-            const idsFacturasLocales = new Set(sLocal.facturas.map(f => f.id));
-            sRemoto.facturas.forEach(f => {
-                if (!idsFacturasLocales.has(f.id)) {
-                    facturasNuevas++;
-                } else {
-                    const fLocal = sLocal.facturas.find(fl => fl.id === f.id);
-                    if (fLocal && (fLocal.monto !== f.monto || fLocal.fecha !== f.fecha ||
-                        fLocal.pagada !== f.pagada || fLocal.fechaPago !== f.fechaPago)) {
-                        facturasConflicto++;
-                    }
-                }
-            });
-        });
-
-        if (servicioIngresosRemoto) {
-            const idsIngLocal = new Set((servicioIngresosLocal?.facturas || []).map(f => f.id));
-            ingresosNuevos = servicioIngresosRemoto.facturas.filter(f => !idsIngLocal.has(f.id)).length;
-        }
-
-        const totalFacturasRemoto = serviciosRemoto
-            .filter(s => s.id !== INGRESOS_ID)
-            .reduce((acc, s) => acc + s.facturas.length, 0);
-        const totalIngresosRemoto = servicioIngresosRemoto?.facturas.length || 0;
-        const totalServiciosRemoto = serviciosRemoto.filter(s => s.id !== INGRESOS_ID).length;
-
-        // Categorías nuevas
-        const catsActuales = this._getCategorias();
-        const catsNuevas = categoriasRemoto.filter(c => !catsActuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
-
-        // Qué haría combinar
-        const facturasEnServiciosNuevos = soloEnRemoto.reduce((acc, s) => acc + s.facturas.length, 0);
-        const partesAgregar = [];
-        if (soloEnRemoto.length > 0) partesAgregar.push(this._plural(soloEnRemoto.length, 'servicio nuevo', 'servicios nuevos'));
-        if (facturasEnServiciosNuevos > 0) partesAgregar.push(this._plural(facturasEnServiciosNuevos, 'factura nueva', 'facturas nuevas'));
-        if (facturasNuevas > 0) partesAgregar.push(this._plural(facturasNuevas, 'factura nueva en servicios existentes', 'facturas nuevas en servicios existentes'));
-        if (ingresosNuevos > 0) partesAgregar.push(this._plural(ingresosNuevos, 'ingreso nuevo', 'ingresos nuevos'));
-        if (catsNuevas.length > 0) partesAgregar.push(this._plural(catsNuevas.length, 'categoría nueva', 'categorías nuevas'));
-        const partes = [];
-        if (partesAgregar.length > 0) partes.push(`Agrega ${partesAgregar.join(', ')}`);
-        if (facturasConflicto > 0) partes.push(facturasConflicto === 1 ? 'Se actualiza 1 factura' : `Se actualizan ${facturasConflicto} facturas`);
-        const textoCombinar = partes.length > 0 ? partes.join('. ') : 'No modifica nada';
-
-        // Qué haría reemplazar
-        const partesReempl = [];
-        if (totalServiciosRemoto > 0) partesReempl.push(this._plural(totalServiciosRemoto, 'servicio', 'servicios'));
-        if (totalFacturasRemoto > 0) partesReempl.push(this._plural(totalFacturasRemoto, 'factura', 'facturas'));
-        if (totalIngresosRemoto > 0) partesReempl.push(this._plural(totalIngresosRemoto, 'ingreso', 'ingresos'));
-        if (categoriasRemoto.length > 0) partesReempl.push(this._plural(categoriasRemoto.length, 'categoría', 'categorías'));
-        const textoReemplazar = partesReempl.length > 0 ? `Carga ${partesReempl.join(', ')}` : 'No modifica nada';
-
-        return `
-        <strong>Combinar:</strong> ${textoCombinar}<br>
-        <strong>Reemplazar:</strong> ${textoReemplazar}
-    `;
-    }
-
-    _mergeServicios(serviciosRemoto) {
-        let serviciosAgregados = 0, facturasAgregadas = 0, facturasActualizadas = 0, ingresosAgregados = 0;
-        serviciosRemoto.forEach(servicioRemoto => {
-            const esIngresos = servicioRemoto.id === this.SERVICIO_INGRESOS_ID;
-            const servicioLocal = this.servicios.find(s => s.id === servicioRemoto.id);
-            if (!servicioLocal) {
-                this.servicios.push(servicioRemoto);
-                if (!esIngresos) {
-                    serviciosAgregados++;
-                    facturasAgregadas += servicioRemoto.facturas.length;
-                } else {
-                    ingresosAgregados += servicioRemoto.facturas.length;
-                }
-            } else {
-                servicioRemoto.facturas.forEach(f => {
-                    const idx = servicioLocal.facturas.findIndex(fl => fl.id === f.id);
-                    if (idx === -1) {
-                        servicioLocal.facturas.push(f);
-                        esIngresos ? ingresosAgregados++ : facturasAgregadas++;
-                    } else {
-                        const fe = servicioLocal.facturas[idx];
-                        if (fe.monto !== f.monto || fe.fecha !== f.fecha ||
-                            fe.pagada !== f.pagada || fe.fechaPago !== f.fechaPago) {
-                            servicioLocal.facturas[idx] = f;
-                            if (!esIngresos) facturasActualizadas++;
-                        }
-                    }
-                });
-            }
-        });
-        return { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados };
-    }
-
-    _aplicarImportacion(modo, datos) {
-        const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
-
-        if (modo === 'combinar') {
-            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
-            const categoriasAgregadas = this._mergeCategorias(datos.categorias);
-
-            if (serviciosAgregados === 0 && facturasAgregadas === 0 && facturasActualizadas === 0 && ingresosAgregados === 0 && categoriasAgregadas === 0) {
-                this.mostrarToast('No hay datos nuevos para agregar', 'info');
-                return;
-            }
-
-            const partes = [];
-            if (serviciosAgregados > 0) partes.push(this._plural(serviciosAgregados, 'servicio', 'servicios'));
-            if (facturasAgregadas > 0) partes.push(this._plural(facturasAgregadas, 'factura nueva', 'facturas nuevas'));
-            if (facturasActualizadas > 0) partes.push(this._plural(facturasActualizadas, 'actualizada', 'actualizadas'));
-            if (ingresosAgregados > 0) partes.push(this._plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
-            if (categoriasAgregadas > 0) partes.push(this._plural(categoriasAgregadas, 'categoría', 'categorías'));
-
-            this._postGuardado();
-            this.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
-        } else {
-            this.servicios = datos.servicios;
-            this._saveCategorias(cats);
-            this._postGuardado();
-
-            const cantidad = datos.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).length;
-            const facturas = datos.servicios
-                .filter(s => s.id !== this.SERVICIO_INGRESOS_ID)
-                .reduce((acc, s) => acc + s.facturas.length, 0);
-            const ingresos = datos.servicios
-                .find(s => s.id === this.SERVICIO_INGRESOS_ID)?.facturas.length || 0;
-
-            const partes = [];
-            partes.push(this._plural(cantidad, 'servicio', 'servicios'));
-            if (facturas > 0) partes.push(this._plural(facturas, 'factura', 'facturas'));
-            if (ingresos > 0) partes.push(this._plural(ingresos, 'ingreso', 'ingresos'));
-            if (cats.length > 0) partes.push(this._plural(cats.length, 'categoría', 'categorías'));
-
-            this.mostrarToast(`Restaurados: ${partes.join(', ')}`, 'success');
-        }
-    }
-
-    mostrarOpcionesImportacion() {
-        this._toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
-    }
-
-    importarDatos(modo = 'reemplazar') {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'application/json';
-
-        input.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const maxSize = 10 * 1024 * 1024;
-            if (file.size > maxSize) {
-                this.mostrarToast('Archivo demasiado grande (máx 10MB)', 'error');
-                return;
-            }
-
-            if (!file.name.endsWith('.json')) {
-                this.mostrarToast('Solo se permiten archivos .json', 'error');
-                return;
-            }
-
-            const reader = new FileReader();
-
-            reader.onload = (event) => {
-                try {
-                    const datos = JSON.parse(event.target.result);
-
-                    // Validar versión
-                    if (datos.version && datos.version !== '1.0') {
-                        const continuar = confirm(
-                            `Versión ${datos.version} detectada (actual: 1.0). Puede haber incompatibilidades. ¿Continuar?`
-                        );
-                        if (!continuar) return;
-                    }
-
-                    // Validar estructura
-                    if (!datos.servicios || !Array.isArray(datos.servicios)) {
-                        throw new Error('Formato de archivo inválido: falta "servicios"');
-                    }
-
-                    // Validar integridad de datos
-                    if (!this.validarDatos(datos.servicios)) {
-                        throw new Error('Datos corruptos o inválidos en el archivo');
-                    }
-
-                    const cantidad = datos.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).length;
-                    const facturas = datos.servicios
-                        .filter(s => s.id !== this.SERVICIO_INGRESOS_ID)
-                        .reduce((acc, s) => acc + s.facturas.length, 0);
-                    const ingresos = datos.servicios
-                        .find(s => s.id === this.SERVICIO_INGRESOS_ID)?.facturas.length || 0;
-
-                    if (modo === 'combinar') {
-                        this._aplicarImportacion('combinar', datos);
-                    } else {
-                        const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
-                        const cantCats = cats.length;
-                        const partes = [];
-                        partes.push(this._plural(cantidad, 'servicio', 'servicios'));
-                        if (facturas > 0) partes.push(this._plural(facturas, 'factura', 'facturas'));
-                        if (ingresos > 0) partes.push(this._plural(ingresos, 'ingreso', 'ingresos'));
-                        if (cantCats > 0) partes.push(this._plural(cantCats, 'categoría', 'categorías'));
-
-                        const mensaje = `Se restaurarán ${partes.join(', ')}. ¿Deseas reemplazar todos los datos actuales?`;
-                        if (confirm(mensaje)) {
-                            this._aplicarImportacion('reemplazar', datos);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error al importar:', error);
-                    this.mostrarToast('❌ Error: ' + error.message, 'error');
-                }
-            };
-
-            reader.onerror = () => {
-                this.mostrarToast('Error al leer el archivo', 'error');
-            };
-
-            reader.readAsText(file);
-        });
-
-        input.click();
-        // Ocultar opciones después de seleccionar
-        document.getElementById('opciones-importacion').classList.remove('open');
-        document.getElementById('menu-importar').classList.remove('open');
-        this.cerrarMenuAjustes();
-    }
+    _mergeServicios(serviciosRemoto)     { return this.storage._mergeServicios(serviciosRemoto); }
+    _aplicarImportacion(modo, datos)     { this.storage._aplicarImportacion(modo, datos); }
 
     mostrarOpcionesBorrar() {
         this._toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
@@ -5853,6 +5349,401 @@ class GestionServicios {
                 this.toastTimeout = null;
             }, 3000);
         }, 150);
+    }
+}
+
+// ============================================================
+// HISTORIAL MANAGER — undo/redo, estado profundo
+// ============================================================
+class HistorialManager {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Getters de conveniencia ───────────────────────────────
+    get historial()       { return this.app.historial; }
+    set historial(v)      { this.app.historial = v; }
+    get historialIndex()  { return this.app.historialIndex; }
+    set historialIndex(v) { this.app.historialIndex = v; }
+    get maxHistorial()    { return this.app.maxHistorial; }
+
+    // ── Inicializar ───────────────────────────────────────────
+    inicializarHistorial() {
+        this.historial = [];
+        this.historialIndex = -1;
+        if (this.app.servicios && this.app.servicios.length >= 0) {
+            this.historial.push({
+                servicios:  JSON.parse(JSON.stringify(this.app.servicios)),
+                categorias: JSON.parse(JSON.stringify(this.app._getCategorias()))
+            });
+            this.historialIndex = 0;
+        }
+        this.actualizarBotones();
+    }
+
+    // ── Guardar estado ────────────────────────────────────────
+    guardarEstado() {
+        const nuevoEstado = {
+            servicios:  JSON.parse(JSON.stringify(this.app.servicios)),
+            categorias: JSON.parse(JSON.stringify(this.app._getCategorias()))
+        };
+
+        // Descartar estados futuros si estamos en medio del historial
+        if (this.historialIndex < this.historial.length - 1) {
+            this.historial.splice(this.historialIndex + 1);
+        }
+
+        this.historial.push(nuevoEstado);
+
+        // FIX: cuando se hace shift() el índice no debe incrementarse
+        if (this.historial.length > this.maxHistorial) {
+            this.historial.shift();
+        } else {
+            this.historialIndex++;
+        }
+
+        this.actualizarBotones();
+    }
+
+    // ── Deshacer / Rehacer ────────────────────────────────────
+    deshacer() {
+        if (this.historialIndex <= 0) return;
+        this.historialIndex--;
+        this._aplicarEstado(this.historial[this.historialIndex]);
+        this.app.mostrarToast('Acción deshecha', 'success');
+    }
+
+    rehacer() {
+        if (this.historialIndex >= this.historial.length - 1) return;
+        this.historialIndex++;
+        this._aplicarEstado(this.historial[this.historialIndex]);
+        this.app.mostrarToast('Acción rehecha', 'success');
+    }
+
+    _aplicarEstado(estado) {
+        this.app.servicios = JSON.parse(JSON.stringify(estado.servicios));
+        this.app._saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
+        this.app.guardarDatos();
+        this.app.renderServicios();
+        this.app.cerrarTodosLosModales();
+        this.actualizarBotones();
+    }
+
+    // ── Botones UI ────────────────────────────────────────────
+    actualizarBotones() {
+        document.getElementById('btn-undo').disabled = this.historialIndex <= 0;
+        document.getElementById('btn-redo').disabled = this.historialIndex >= this.historial.length - 1;
+    }
+}
+
+// ============================================================
+// STORAGE SERVICE — persistencia, validación, import/export
+// ============================================================
+class StorageService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Getters de conveniencia ───────────────────────────────
+    get servicios()       { return this.app.servicios; }
+    set servicios(v)      { this.app.servicios = v; }
+    get perfilActivo()    { return this.app.perfilActivo; }
+    get STORAGE_KEY()     { return this.app.STORAGE_KEY; }
+    get INGRESOS_ID()     { return this.app.SERVICIO_INGRESOS_ID; }
+
+    // ── Carga / guardado por perfil ───────────────────────────
+    cargarDatosPerfilActivo() {
+        try {
+            const key = `gestion_servicios_datos_${this.perfilActivo}`;
+            const datos = localStorage.getItem(key);
+            if (datos) {
+                this.servicios = JSON.parse(datos);
+            } else {
+                this.servicios = [];
+                localStorage.setItem(key, JSON.stringify([]));
+            }
+            this.app.inicializarHistorial();
+        } catch (error) {
+            console.error('Error al cargar datos del perfil:', error);
+            this.servicios = [];
+            this.app.inicializarHistorial();
+        }
+    }
+
+    guardarDatosPerfilActivo() {
+        try {
+            const key = `gestion_servicios_datos_${this.perfilActivo}`;
+            localStorage.setItem(key, JSON.stringify(this.servicios));
+        } catch (error) {
+            console.error('Error al guardar datos del perfil:', error);
+            this.app.mostrarToast('Error al guardar datos', 'error');
+        }
+    }
+
+    guardarDatos() {
+        try {
+            this.guardarDatosPerfilActivo();
+        } catch (error) {
+            console.error('Error al guardar datos:', error);
+            this.app.mostrarToast('Error al guardar datos', 'error');
+        }
+    }
+
+    // ── Espacio disponible ────────────────────────────────────
+    verificarEspacioDisponible() {
+        try {
+            const tamaño = new Blob([JSON.stringify(this.servicios)]).size;
+            const tamañoMB = tamaño / (1024 * 1024);
+            return { tamaño: tamañoMB, tamañoBytes: tamaño, advertencia: tamañoMB > 3, critico: tamañoMB > 4.5 };
+        } catch {
+            return { tamaño: 0, tamañoBytes: 0, advertencia: false, critico: false };
+        }
+    }
+
+    // ── Validación de integridad ──────────────────────────────
+    validarDatos(datos) {
+        if (!Array.isArray(datos)) {
+            console.error('Validación: datos no es un array');
+            return false;
+        }
+        return datos.every((servicio, idx) => {
+            if (typeof servicio.id !== 'string' || !servicio.id.trim()) {
+                console.error(`Validación: servicio[${idx}].id inválido`); return false;
+            }
+            if (typeof servicio.nombre !== 'string' || !servicio.nombre.trim()) {
+                console.error(`Validación: servicio[${idx}].nombre inválido`); return false;
+            }
+            if (servicio.nombre.length > 30) {
+                console.error(`Validación: servicio[${idx}].nombre demasiado largo`); return false;
+            }
+            if (!Array.isArray(servicio.facturas)) {
+                console.error(`Validación: servicio[${idx}].facturas no es un array`); return false;
+            }
+            return servicio.facturas.every((factura, fidx) => {
+                if (typeof factura.id !== 'string' || !factura.id.trim()) {
+                    console.error(`Validación: factura[${fidx}].id inválido en servicio[${idx}]`); return false;
+                }
+                if (typeof factura.monto !== 'number' || !isFinite(factura.monto)) {
+                    console.error(`Validación: factura[${fidx}].monto inválido en servicio[${idx}]`); return false;
+                }
+                if (Math.abs(factura.monto) > 99999999) {
+                    console.error(`Validación: factura[${fidx}].monto fuera de rango en servicio[${idx}]`); return false;
+                }
+                if (typeof factura.fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(factura.fecha)) {
+                    console.error(`Validación: factura[${fidx}].fecha inválida en servicio[${idx}]`); return false;
+                }
+                if (typeof factura.pagada !== 'boolean') {
+                    console.error(`Validación: factura[${fidx}].pagada no es boolean en servicio[${idx}]`); return false;
+                }
+                if (factura.fechaPago != null) {
+                    if (typeof factura.fechaPago !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(factura.fechaPago)) {
+                        console.error(`Validación: factura[${fidx}].fechaPago inválida en servicio[${idx}]`); return false;
+                    }
+                }
+                if (factura.tipo !== undefined) {
+                    const tiposValidos = ['mensual', 'bimestral', 'semestral', 'anual', 'regular', 'complementario', 'transferencia'];
+                    if (!tiposValidos.includes(factura.tipo)) {
+                        console.error(`Validación: factura[${fidx}].tipo inválido en servicio[${idx}]`); return false;
+                    }
+                }
+                return true;
+            });
+        });
+    }
+
+    // ── Exportar ──────────────────────────────────────────────
+    exportarDatos() {
+        try {
+            const datos = {
+                version: '1.0',
+                fecha: new Date().toISOString(),
+                categorias: this.app._getCategorias(),
+                servicios: this.servicios
+            };
+            this.app._descargarBlob(
+                JSON.stringify(datos, null, 2),
+                `servicios_${this.app.obtenerFechaLocal()}.json`,
+                'application/json'
+            );
+            this.app.mostrarToast('Datos exportados correctamente', 'success');
+            this.app.cerrarMenuAjustes();
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            this.app.mostrarToast('Error al exportar datos', 'error');
+        }
+    }
+
+    // ── Importar ──────────────────────────────────────────────
+    importarDatos(modo = 'reemplazar') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                this.app.mostrarToast('Archivo demasiado grande (máx 10MB)', 'error'); return;
+            }
+            if (!file.name.endsWith('.json')) {
+                this.app.mostrarToast('Solo se permiten archivos .json', 'error'); return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const datos = JSON.parse(event.target.result);
+                    if (datos.version && datos.version !== '1.0') {
+                        if (!confirm(`Versión ${datos.version} detectada (actual: 1.0). Puede haber incompatibilidades. ¿Continuar?`)) return;
+                    }
+                    if (!datos.servicios || !Array.isArray(datos.servicios)) {
+                        throw new Error('Formato de archivo inválido: falta "servicios"');
+                    }
+                    if (!this.validarDatos(datos.servicios)) {
+                        throw new Error('Datos corruptos o inválidos en el archivo');
+                    }
+                    const cantidad = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).length;
+                    const facturas = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
+                    const ingresos = datos.servicios.find(s => s.id === this.INGRESOS_ID)?.facturas.length || 0;
+
+                    if (modo === 'combinar') {
+                        this._aplicarImportacion('combinar', datos);
+                    } else {
+                        const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
+                        const partes = [this.app._plural(cantidad, 'servicio', 'servicios')];
+                        if (facturas > 0) partes.push(this.app._plural(facturas, 'factura', 'facturas'));
+                        if (ingresos > 0) partes.push(this.app._plural(ingresos, 'ingreso', 'ingresos'));
+                        if (cats.length > 0) partes.push(this.app._plural(cats.length, 'categoría', 'categorías'));
+                        if (confirm(`Se restaurarán ${partes.join(', ')}. ¿Deseas reemplazar todos los datos actuales?`)) {
+                            this._aplicarImportacion('reemplazar', datos);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error al importar:', error);
+                    this.app.mostrarToast('❌ Error: ' + error.message, 'error');
+                }
+            };
+            reader.onerror = () => this.app.mostrarToast('Error al leer el archivo', 'error');
+            reader.readAsText(file);
+        });
+
+        input.click();
+        document.getElementById('opciones-importacion').classList.remove('open');
+        document.getElementById('menu-importar').classList.remove('open');
+        this.app.cerrarMenuAjustes();
+    }
+
+    // ── Merge helpers ─────────────────────────────────────────
+    _mergeServicios(serviciosRemoto) {
+        let serviciosAgregados = 0, facturasAgregadas = 0, facturasActualizadas = 0, ingresosAgregados = 0;
+        serviciosRemoto.forEach(servicioRemoto => {
+            const esIngresos = servicioRemoto.id === this.INGRESOS_ID;
+            const servicioLocal = this.servicios.find(s => s.id === servicioRemoto.id);
+            if (!servicioLocal) {
+                this.servicios.push(servicioRemoto);
+                esIngresos ? ingresosAgregados += servicioRemoto.facturas.length
+                           : (serviciosAgregados++, facturasAgregadas += servicioRemoto.facturas.length);
+            } else {
+                servicioRemoto.facturas.forEach(f => {
+                    const idx = servicioLocal.facturas.findIndex(fl => fl.id === f.id);
+                    if (idx === -1) {
+                        servicioLocal.facturas.push(f);
+                        esIngresos ? ingresosAgregados++ : facturasAgregadas++;
+                    } else {
+                        const fe = servicioLocal.facturas[idx];
+                        if (fe.monto !== f.monto || fe.fecha !== f.fecha || fe.pagada !== f.pagada || fe.fechaPago !== f.fechaPago) {
+                            servicioLocal.facturas[idx] = f;
+                            if (!esIngresos) facturasActualizadas++;
+                        }
+                    }
+                });
+            }
+        });
+        return { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados };
+    }
+
+    _aplicarImportacion(modo, datos) {
+        const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
+        if (modo === 'combinar') {
+            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
+            const categoriasAgregadas = this.app._mergeCategorias(datos.categorias);
+            if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
+                this.app.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
+            }
+            const partes = [];
+            if (serviciosAgregados > 0) partes.push(this.app._plural(serviciosAgregados, 'servicio', 'servicios'));
+            if (facturasAgregadas > 0) partes.push(this.app._plural(facturasAgregadas, 'factura nueva', 'facturas nuevas'));
+            if (facturasActualizadas > 0) partes.push(this.app._plural(facturasActualizadas, 'actualizada', 'actualizadas'));
+            if (ingresosAgregados > 0) partes.push(this.app._plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
+            if (categoriasAgregadas > 0) partes.push(this.app._plural(categoriasAgregadas, 'categoría', 'categorías'));
+            this.app._postGuardado();
+            this.app.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
+        } else {
+            this.servicios = datos.servicios;
+            this.app._saveCategorias(cats);
+            this.app._postGuardado();
+            const cantidad = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).length;
+            const facturas = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
+            const ingresos = datos.servicios.find(s => s.id === this.INGRESOS_ID)?.facturas.length || 0;
+            const partes = [this.app._plural(cantidad, 'servicio', 'servicios')];
+            if (facturas > 0) partes.push(this.app._plural(facturas, 'factura', 'facturas'));
+            if (ingresos > 0) partes.push(this.app._plural(ingresos, 'ingreso', 'ingresos'));
+            if (cats.length > 0) partes.push(this.app._plural(cats.length, 'categoría', 'categorías'));
+            this.app.mostrarToast(`Restaurados: ${partes.join(', ')}`, 'success');
+        }
+    }
+
+    generarResumenComparacion(serviciosRemoto, etiqueta = 'archivo', categoriasRemoto = []) {
+        const idsLocales = new Set(this.servicios.map(s => s.id));
+        const soloEnRemoto = serviciosRemoto.filter(s => !idsLocales.has(s.id) && s.id !== this.INGRESOS_ID);
+        const enAmbos = serviciosRemoto.filter(s => idsLocales.has(s.id) && s.id !== this.INGRESOS_ID);
+        const sIngRem = serviciosRemoto.find(s => s.id === this.INGRESOS_ID);
+        const sIngLoc = this.servicios.find(s => s.id === this.INGRESOS_ID);
+
+        let facturasNuevas = 0, facturasConflicto = 0, ingresosNuevos = 0;
+        enAmbos.forEach(sRem => {
+            const sLoc = this.servicios.find(s => s.id === sRem.id);
+            if (!sLoc) return;
+            const idsLoc = new Set(sLoc.facturas.map(f => f.id));
+            sRem.facturas.forEach(f => {
+                if (!idsLoc.has(f.id)) { facturasNuevas++; }
+                else {
+                    const fLoc = sLoc.facturas.find(fl => fl.id === f.id);
+                    if (fLoc && (fLoc.monto !== f.monto || fLoc.fecha !== f.fecha || fLoc.pagada !== f.pagada || fLoc.fechaPago !== f.fechaPago)) facturasConflicto++;
+                }
+            });
+        });
+        if (sIngRem) {
+            const idsIngLoc = new Set((sIngLoc?.facturas || []).map(f => f.id));
+            ingresosNuevos = sIngRem.facturas.filter(f => !idsIngLoc.has(f.id)).length;
+        }
+
+        const totalServRem = serviciosRemoto.filter(s => s.id !== this.INGRESOS_ID).length;
+        const totalFactRem = serviciosRemoto.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
+        const totalIngRem = sIngRem?.facturas.length || 0;
+        const catsActuales = this.app._getCategorias();
+        const catsNuevas = categoriasRemoto.filter(c => !catsActuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
+
+        const facturasEnNuevos = soloEnRemoto.reduce((a, s) => a + s.facturas.length, 0);
+        const partesAgregar = [];
+        if (soloEnRemoto.length > 0) partesAgregar.push(this.app._plural(soloEnRemoto.length, 'servicio nuevo', 'servicios nuevos'));
+        if (facturasEnNuevos > 0) partesAgregar.push(this.app._plural(facturasEnNuevos, 'factura nueva', 'facturas nuevas'));
+        if (facturasNuevas > 0) partesAgregar.push(this.app._plural(facturasNuevas, 'factura nueva en servicios existentes', 'facturas nuevas en servicios existentes'));
+        if (ingresosNuevos > 0) partesAgregar.push(this.app._plural(ingresosNuevos, 'ingreso nuevo', 'ingresos nuevos'));
+        if (catsNuevas.length > 0) partesAgregar.push(this.app._plural(catsNuevas.length, 'categoría nueva', 'categorías nuevas'));
+
+        const partes = [];
+        if (partesAgregar.length > 0) partes.push(`Agrega ${partesAgregar.join(', ')}`);
+        if (facturasConflicto > 0) partes.push(facturasConflicto === 1 ? 'Se actualiza 1 factura' : `Se actualizan ${facturasConflicto} facturas`);
+        const textoCombinar = partes.length > 0 ? partes.join('. ') : 'No modifica nada';
+
+        const partesReempl = [];
+        if (totalServRem > 0) partesReempl.push(this.app._plural(totalServRem, 'servicio', 'servicios'));
+        if (totalFactRem > 0) partesReempl.push(this.app._plural(totalFactRem, 'factura', 'facturas'));
+        if (totalIngRem > 0) partesReempl.push(this.app._plural(totalIngRem, 'ingreso', 'ingresos'));
+        if (categoriasRemoto.length > 0) partesReempl.push(this.app._plural(categoriasRemoto.length, 'categoría', 'categorías'));
+        const textoReemplazar = partesReempl.length > 0 ? `Carga ${partesReempl.join(', ')}` : 'No modifica nada';
+
+        return `<strong>Combinar:</strong> ${textoCombinar}<br><strong>Reemplazar:</strong> ${textoReemplazar}`;
     }
 }
 
