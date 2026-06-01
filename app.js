@@ -1172,7 +1172,19 @@ class GestionServicios {
         // Lista de servicios: toggle grupos por categoría + long press
         const listaSvc = document.getElementById('servicios-lista');
         if (listaSvc) {
+            // Detectar si el pointerdown derivó en scroll para ignorar el click posterior
+            let _pdownY = 0;
+            let _scrolled = false;
+            listaSvc.addEventListener('pointerdown', (e) => {
+                _pdownY = e.clientY;
+                _scrolled = false;
+            }, { passive: true });
+            listaSvc.addEventListener('pointermove', (e) => {
+                if (!_scrolled && Math.abs(e.clientY - _pdownY) > 8) _scrolled = true;
+            }, { passive: true });
+
             listaSvc.addEventListener('click', (e) => {
+                if (_scrolled) return;
                 const header = e.target.closest('[data-action="toggle-grupo-cat"]');
                 if (header) this.toggleGrupoCat(header);
             });
