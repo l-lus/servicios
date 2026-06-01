@@ -941,26 +941,19 @@ class GestionServicios {
         });
         // Atajos de teclado
         document.addEventListener('keydown', (e) => {
-            // ESC para cerrar modales o salir del modo calculadora
+            // ESC: cerrar modales, menús, modo calculadora o búsqueda
             if (e.key === 'Escape') {
                 const hayModalAbierto = document.querySelector('.modal.active');
                 const hayMenuAbierto = document.getElementById('menu-ajustes').classList.contains('active')
                     || document.getElementById('menu-agregar').classList.contains('active');
 
-                if (this.modoCalculadora) {
-                    this.desactivarModoCalculadora();
-                    return;
-                }
+                if (this.modoCalculadora) { this.desactivarModoCalculadora(); return; }
                 if (hayModalAbierto || hayMenuAbierto) {
                     this.cerrarTodosLosModales();
                     this.cerrarMenuAjustes();
                     return;
                 }
-                // Sin modales ni menús: limpiar búsqueda si hay una activa
-                if (this.terminoBusqueda) {
-                    this._limpiarBusqueda();
-                    return;
-                }
+                if (this.terminoBusqueda) { this._limpiarBusqueda(); return; }
             }
 
             // Enter en modal nueva categoría
@@ -976,12 +969,34 @@ class GestionServicios {
             // Ctrl/Cmd + Z/Y para undo/redo
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.deshacer();
+                    e.preventDefault(); this.deshacer();
                 } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
-                    e.preventDefault();
-                    this.rehacer();
+                    e.preventDefault(); this.rehacer();
                 }
+                return; // no continuar al bloque de letra suelta
+            }
+
+            // Atajo de letra suelta → foco al buscador (solo desktop, sin modales/menús)
+            if (window.innerWidth < 768) return;
+            if (document.querySelector('.modal.active')) return;
+            if (document.getElementById('menu-ajustes').classList.contains('active')) return;
+            if (document.getElementById('menu-agregar').classList.contains('active')) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+            if (e.altKey) return;
+
+            if (/^[a-zA-Z]$/.test(e.key)) {
+                e.preventDefault();
+                const serviciosContent = document.getElementById('servicios-content');
+                if (serviciosContent.classList.contains('collapsed') || serviciosContent.classList.contains('semi-collapsed')) {
+                    serviciosContent.classList.remove('collapsed', 'semi-collapsed');
+                    document.getElementById('servicios-chevron').classList.remove('collapsed', 'semi-collapsed');
+                    localStorage.setItem('servicios-collapse-state', 'expanded');
+                    this.serviciosCollapseState = 'expanded';
+                }
+                const searchInput = document.getElementById('search-input');
+                searchInput.focus();
+                searchInput.value = e.key;
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         });
 
@@ -1001,61 +1016,6 @@ class GestionServicios {
             this.cerrarModal('modal-informacion');
         });
 
-        // Atajo para escribir directamente en el buscador (solo desktop)
-        document.addEventListener('keydown', (e) => {
-            // Solo en desktop (más de 768px)
-            if (window.innerWidth < 768) return;
-
-            // No hacer nada si hay modales abiertos
-            const hayModalAbierto = document.querySelector('.modal.active');
-            if (hayModalAbierto) return;
-
-            // No hacer nada si el menú de ajustes está abierto
-            const menuAjustesAbierto = document.getElementById('menu-ajustes').classList.contains('active');
-            if (menuAjustesAbierto) return;
-
-            // No hacer nada si el menú agregar está abierto
-            const menuAgregarAbierto = document.getElementById('menu-agregar').classList.contains('active');
-            if (menuAgregarAbierto) return;
-
-            // No hacer nada si ya estamos escribiendo en algún input
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
-                return;
-            }
-
-            // No hacer nada si se presionan teclas especiales
-            if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-            // Detectar letras de A-Z (tanto mayúsculas como minúsculas)
-            const esLetra = /^[a-zA-Z]$/.test(e.key);
-
-            if (esLetra) {
-                e.preventDefault(); // Prevenir comportamiento por defecto
-
-                // Si la tarjeta de servicios está colapsada, expandirla
-                const serviciosContent = document.getElementById('servicios-content');
-                const serviciosChevron = document.getElementById('servicios-chevron');
-
-                if (serviciosContent.classList.contains('collapsed') || serviciosContent.classList.contains('semi-collapsed')) {
-                    serviciosContent.classList.remove('collapsed', 'semi-collapsed');
-                    serviciosChevron.classList.remove('collapsed', 'semi-collapsed');
-
-                    // Guardar estado
-                    localStorage.setItem('servicios-collapse-state', 'expanded');
-                    this.serviciosCollapseState = 'expanded';
-                }
-
-                // Enfocar el campo de búsqueda y agregar la letra presionada
-                const searchInput = document.getElementById('search-input');
-                searchInput.focus();
-                searchInput.value = e.key; // Agregar la letra presionada
-
-                // Disparar el evento input para activar la búsqueda
-                const inputEvent = new Event('input', { bubbles: true });
-                searchInput.dispatchEvent(inputEvent);
-            }
-        });
-
         // ---- Listeners migrados desde inline handlers en el HTML ----
 
         // btn-reporte-estadisticas
@@ -1069,6 +1029,15 @@ class GestionServicios {
         });
         document.getElementById('btn-cerrar-modal-info-resumen-footer').addEventListener('click', () => {
             this.cerrarModal('modal-info-resumen');
+        });
+
+        // btn-info-resumen: delegado en el contenedor estático para evitar
+        // acumulación de listeners en cada llamada a _renderResumen (memory leak)
+        document.getElementById('resumen-mes').addEventListener('click', (e) => {
+            if (e.target.closest('#btn-info-resumen')) {
+                e.stopPropagation();
+                this.abrirModalInfoResumen();
+            }
         });
 
         // Gist modal: toggle visibilidad token
@@ -1439,8 +1408,7 @@ class GestionServicios {
     _postGuardado() {
         this.guardarDatos();
         this.guardarEstado();
-        this.renderServicios();
-        this.actualizarEstadisticas();
+        this.renderServicios(); // → actualizarResumenMes() → actualizarEstadisticas() ya incluido
     }
 
     // Helper 1: parsear fecha en hora local (evita offset UTC en GMT-3)
@@ -1615,13 +1583,6 @@ class GestionServicios {
         // Aplicar width de la barra de progreso via custom property (no viola CSP)
         const barra = document.getElementById('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
-
-        // Atar listener del botón info (recreado con innerHTML)
-        const btnInfo = document.getElementById('btn-info-resumen');
-        if (btnInfo) btnInfo.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.abrirModalInfoResumen();
-        });
 
         // Animar si los datos cambiaron
         if (debeAnimar) {
@@ -4560,7 +4521,10 @@ class GestionServicios {
     cerrarModal(modalId) {
         const modal = document.getElementById(modalId);
         modal.classList.remove('active');
-        document.body.classList.remove('modal-open');
+        // Solo quitar modal-open si no queda ningún otro modal activo
+        if (!document.querySelector('.modal.active')) {
+            document.body.classList.remove('modal-open');
+        }
         if (modalId === 'modal-gist') this.actualizarBotonesGist();
     }
 
