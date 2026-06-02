@@ -36,9 +36,11 @@
 
 class GestionServicios {
     constructor() {
-        // Sistema de perfiles - NUEVO
+        // Sistema de perfiles — PerfilService se instancia primero porque
+        // cargar() se necesita durante la construcción
         this.perfilActivo = localStorage.getItem('gestion_servicios_perfil_activo') || 'default';
-        this.perfiles = this.cargarPerfiles();
+        this.perfil = new PerfilService(this);
+        this.perfiles = this.perfil.cargar();
 
         // Datos y estado
         this.servicios = [];
@@ -253,262 +255,20 @@ class GestionServicios {
     // GESTIÓN DE PERFILES
     // ========================================
 
-    cargarPerfiles() {
-        try {
-            const perfilesGuardados = localStorage.getItem('gestion_servicios_perfiles');
-            if (perfilesGuardados) {
-                return JSON.parse(perfilesGuardados);
-            }
-        } catch (error) {
-            console.error('Error al cargar perfiles:', error);
-        }
+    // ── Delegación a PerfilService ────────────────────────────
+    cargarPerfiles()                    { return this.perfil.cargar(); }
+    guardarPerfiles()                   { this.perfil.guardar(); }
+    cancelarEditarPerfil()              { this.perfil.cancelarEditar(); }
+    cambiarPerfil(perfilId)             { this.perfil.cambiar(perfilId); }
+    abrirModalPerfiles()                { this.perfil.abrirModal(); }
+    renderListaPerfiles()               { this.perfil.renderLista(); }
+    crearPerfilInline()                 { this.perfil.crearInline(); }
+    abrirModalEditarPerfil(perfilId)    { this.perfil.abrirModalEditar(perfilId); }
+    guardarPerfil(e)                    { this.perfil.guardarEdicion(e); }
+    eliminarPerfil(perfilId)            { this.perfil.eliminar(perfilId); }
 
-        // Perfil por defecto
-        return {
-            'default': {
-                id: 'default',
-                nombre: 'Principal',
-                creado: new Date().toISOString()
-            }
-        };
-    }
-
-    guardarPerfiles() {
-        try {
-            localStorage.setItem('gestion_servicios_perfiles', JSON.stringify(this.perfiles));
-        } catch (error) {
-            console.error('Error al guardar perfiles:', error);
-            this.mostrarToast('Error al guardar perfiles', 'error');
-        }
-    }
-
-    cancelarEditarPerfil() {
-        this.cerrarModal('modal-editar-perfil');
-        this.abrirModalPerfiles();
-    }
-
-    cargarDatosPerfilActivo() { this.storage.cargarDatosPerfilActivo(); }
-
+    cargarDatosPerfilActivo()  { this.storage.cargarDatosPerfilActivo(); }
     guardarDatosPerfilActivo() { this.storage.guardarDatosPerfilActivo(); }
-
-    cambiarPerfil(perfilId) {
-        if (perfilId === this.perfilActivo) return;
-
-        // Guardar datos del perfil actual
-        this.guardarDatosPerfilActivo();
-
-        // Cambiar al nuevo perfil
-        this.perfilActivo = perfilId;
-        localStorage.setItem('gestion_servicios_perfil_activo', perfilId);
-
-        // Cargar datos del nuevo perfil
-        this.cargarDatosPerfilActivo(); // Esta función ahora también inicializa el historial
-
-        // Resetear filtro de categoría al cambiar de perfil
-        this._estadisticaCategoriaActiva = null;
-        this.ultimoEstadoEstadisticas = null;
-
-        // Actualizar interfaz
-        this.renderServicios();
-        this.cerrarModal('modal-perfiles');
-        this.cerrarMenuAjustes();
-
-        const nombrePerfil = this.perfiles[perfilId].nombre;
-        this.mostrarToast(`Cambiado a perfil: ${nombrePerfil}`, 'success');
-    }
-
-    abrirModalPerfiles() {
-        this.renderListaPerfiles();
-        this.cerrarMenuAjustes();
-        this.abrirModal('modal-perfiles');
-    }
-
-    renderListaPerfiles() {
-        const lista = document.getElementById('perfiles-lista');
-        const perfilesArray = Object.values(this.perfiles);
-
-        // Deshabilitar input si se alcanzó el máximo
-        const inputNuevo = document.getElementById('perfil-nuevo-nombre');
-        if (inputNuevo) {
-            const maxAlcanzado = perfilesArray.length >= 4;
-            inputNuevo.disabled = maxAlcanzado;
-            inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
-        }
-
-        lista.innerHTML = perfilesArray.map(perfil => {
-            const esActivo = perfil.id === this.perfilActivo;
-            const esDefault = perfil.id === 'default';
-
-            // Contar datos del perfil
-            const key = `gestion_servicios_datos_${perfil.id}`;
-            let cantidadServicios = 0;
-            try {
-                const datos = localStorage.getItem(key);
-                if (datos) {
-                    const servicios = JSON.parse(datos);
-                    cantidadServicios = servicios.length;
-                }
-            } catch (e) { }
-
-            return `
-    <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}" 
-         data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
-        <div class="flex-1">
-            <div class="perfil-header d-flex align-items-center gap-2">
-                ${this.escaparHTML(perfil.nombre)}
-                ${esActivo ? '<span class="perfil-activo-badge">● Activo</span>' : ''}
-            </div>
-            <div class="perfil-stats">
-                ${this._plural(cantidadServicios, 'servicio', 'servicios')}
-            </div>
-        </div>
-        <div class="d-flex gap-2" data-action="stop-propagation">
-            ${!esDefault ? `
-                <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${perfil.id}" title="Eliminar perfil">
-                    <svg class="icon"><use href="#icon-trash" /></svg>
-                </button>
-            ` : ''}
-            <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${perfil.id}" title="Editar perfil">
-                <svg class="icon"><use href="#icon-edit" /></svg>
-            </button>
-         </div>
-    </div>
-`;
-        }).join('');
-    }
-
-    crearPerfilInline() {
-        const input = document.getElementById('perfil-nuevo-nombre');
-        const nombre = input.value.trim();
-
-        if (!nombre) {
-            this.mostrarToast('Ingresá un nombre', 'error');
-            return;
-        }
-
-        const nombreExiste = Object.values(this.perfiles).some(p =>
-            p.nombre.toLowerCase() === nombre.toLowerCase()
-        );
-        if (nombreExiste) {
-            this.mostrarToast('Ya existe un perfil con ese nombre', 'error');
-            return;
-        }
-
-        if (Object.keys(this.perfiles).length >= 4) {
-            this.mostrarToast('Máximo 4 perfiles permitidos', 'error');
-            return;
-        }
-
-        const nuevoId = 'perfil_' + Date.now();
-        this.perfiles[nuevoId] = {
-            id: nuevoId,
-            nombre: nombre,
-            creado: new Date().toISOString()
-        };
-        localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
-
-        input.value = '';
-        this.guardarPerfiles();
-        this.mostrarToast('Perfil creado', 'success');
-        this.abrirModalPerfiles();
-    }
-
-    abrirModalEditarPerfil(perfilId) {
-        this.perfilEditando = perfilId;
-        const perfil = this.perfiles[perfilId];
-        document.getElementById('titulo-editar-perfil').textContent = 'Editar Perfil';
-        document.getElementById('perfil-nombre').value = perfil.nombre;
-        const inputNuevo = document.getElementById('perfil-nuevo-nombre');
-        if (inputNuevo) inputNuevo.value = '';
-        this.cerrarModal('modal-perfiles');
-        this.abrirModal('modal-editar-perfil');
-    }
-
-    guardarPerfil(e) {
-        e.preventDefault();
-
-        const nombre = document.getElementById('perfil-nombre').value.trim();
-
-        if (!nombre) {
-            this.mostrarToast('El nombre es requerido', 'error');
-            return;
-        }
-
-        // Validar nombre duplicado
-        const nombreExiste = Object.values(this.perfiles).some(perfil =>
-            perfil.nombre.toLowerCase() === nombre.toLowerCase() &&
-            perfil.id !== this.perfilEditando
-        );
-
-        if (nombreExiste) {
-            this.mostrarToast('Ya existe un perfil con ese nombre', 'error');
-            return;
-        }
-
-        if (this.perfilEditando) {
-            // Editar perfil existente
-            this.perfiles[this.perfilEditando].nombre = nombre;
-
-            // Si editamos el perfil activo, actualizar el header
-            if (this.perfilEditando === this.perfilActivo) {
-                this.renderServicios();
-            }
-
-            this.mostrarToast('Perfil actualizado', 'success');
-        } else {
-            // Crear nuevo perfil
-            if (Object.keys(this.perfiles).length >= 4) {
-                this.mostrarToast('Máximo 4 perfiles permitidos', 'error');
-                return;
-            }
-
-            const nuevoId = 'perfil_' + Date.now();
-            this.perfiles[nuevoId] = {
-                id: nuevoId,
-                nombre: nombre,
-                creado: new Date().toISOString()
-            };
-
-            // Inicializar datos vacíos para el nuevo perfil
-            const key = `gestion_servicios_datos_${nuevoId}`;
-            localStorage.setItem(key, JSON.stringify([]));
-
-            this.mostrarToast('Perfil creado', 'success');
-        }
-
-        this.guardarPerfiles();
-        this.cerrarModal('modal-editar-perfil');
-        this.abrirModalPerfiles();
-    }
-
-    eliminarPerfil(perfilId) {
-        if (perfilId === 'default') {
-            this.mostrarToast('No puedes eliminar el perfil principal', 'error');
-            return;
-        }
-
-        const perfil = this.perfiles[perfilId];
-
-        if (!confirm(`¿Eliminar el perfil "${perfil.nombre}"? Todos sus datos se perderán.`)) {
-            return;
-        }
-
-        // Si es el perfil activo, cambiar al default
-        if (perfilId === this.perfilActivo) {
-            this.cambiarPerfil('default');
-        }
-
-        // Eliminar datos del perfil
-        const key = `gestion_servicios_datos_${perfilId}`;
-        localStorage.removeItem(key);
-
-        // Eliminar perfil
-        delete this.perfiles[perfilId];
-        this.guardarPerfiles();
-
-        this.mostrarToast('Perfil eliminado', 'success');
-        this.renderListaPerfiles();
-    }
 
     // ========================================
     // MENÚ CONTEXTUAL Y CALCULADORA
@@ -4610,6 +4370,180 @@ class GestionServicios {
                 this.toastTimeout = null;
             }, 3000);
         }, 150);
+    }
+}
+
+// ============================================================
+// PERFIL SERVICE — gestión de perfiles de usuario
+// ============================================================
+class PerfilService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Getters de conveniencia ───────────────────────────────
+    get perfiles()      { return this.app.perfiles; }
+    set perfiles(v)     { this.app.perfiles = v; }
+    get perfilActivo()  { return this.app.perfilActivo; }
+    set perfilActivo(v) { this.app.perfilActivo = v; }
+
+    // ── Persistencia ──────────────────────────────────────────
+    cargar() {
+        try {
+            const guardados = localStorage.getItem('gestion_servicios_perfiles');
+            if (guardados) return JSON.parse(guardados);
+        } catch (error) {
+            console.error('Error al cargar perfiles:', error);
+        }
+        return { 'default': { id: 'default', nombre: 'Principal', creado: new Date().toISOString() } };
+    }
+
+    guardar() {
+        try {
+            localStorage.setItem('gestion_servicios_perfiles', JSON.stringify(this.perfiles));
+        } catch (error) {
+            console.error('Error al guardar perfiles:', error);
+            this.app.mostrarToast('Error al guardar perfiles', 'error');
+        }
+    }
+
+    // ── Cambio de perfil activo ───────────────────────────────
+    cambiar(perfilId) {
+        if (perfilId === this.perfilActivo) return;
+        this.app.guardarDatosPerfilActivo();
+        this.perfilActivo = perfilId;
+        localStorage.setItem('gestion_servicios_perfil_activo', perfilId);
+        this.app.cargarDatosPerfilActivo();
+        this.app._estadisticaCategoriaActiva = null;
+        this.app.ultimoEstadoEstadisticas = null;
+        this.app.renderServicios();
+        this.app.cerrarModal('modal-perfiles');
+        this.app.cerrarMenuAjustes();
+        this.app.mostrarToast(`Cambiado a perfil: ${this.perfiles[perfilId].nombre}`, 'success');
+    }
+
+    // ── UI — modal lista ──────────────────────────────────────
+    abrirModal() {
+        this.renderLista();
+        this.app.cerrarMenuAjustes();
+        this.app.abrirModal('modal-perfiles');
+    }
+
+    renderLista() {
+        const lista = document.getElementById('perfiles-lista');
+        const perfilesArray = Object.values(this.perfiles);
+        const inputNuevo = document.getElementById('perfil-nuevo-nombre');
+        if (inputNuevo) {
+            const maxAlcanzado = perfilesArray.length >= 4;
+            inputNuevo.disabled = maxAlcanzado;
+            inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
+        }
+        lista.innerHTML = perfilesArray.map(perfil => {
+            const esActivo  = perfil.id === this.perfilActivo;
+            const esDefault = perfil.id === 'default';
+            let cantidadServicios = 0;
+            try {
+                const datos = localStorage.getItem(`gestion_servicios_datos_${perfil.id}`);
+                if (datos) cantidadServicios = JSON.parse(datos).length;
+            } catch (e) {}
+            return `
+    <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
+         data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
+        <div class="flex-1">
+            <div class="perfil-header d-flex align-items-center gap-2">
+                ${this.app.escaparHTML(perfil.nombre)}
+                ${esActivo ? '<span class="perfil-activo-badge">● Activo</span>' : ''}
+            </div>
+            <div class="perfil-stats">${this.app._plural(cantidadServicios, 'servicio', 'servicios')}</div>
+        </div>
+        <div class="d-flex gap-2" data-action="stop-propagation">
+            ${!esDefault ? `
+                <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${perfil.id}" title="Eliminar perfil">
+                    <svg class="icon"><use href="#icon-trash" /></svg>
+                </button>` : ''}
+            <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${perfil.id}" title="Editar perfil">
+                <svg class="icon"><use href="#icon-edit" /></svg>
+            </button>
+        </div>
+    </div>`;
+        }).join('');
+    }
+
+    crearInline() {
+        const input  = document.getElementById('perfil-nuevo-nombre');
+        const nombre = input.value.trim();
+        if (!nombre) { this.app.mostrarToast('Ingresá un nombre', 'error'); return; }
+        if (Object.values(this.perfiles).some(p => p.nombre.toLowerCase() === nombre.toLowerCase())) {
+            this.app.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return;
+        }
+        if (Object.keys(this.perfiles).length >= 4) {
+            this.app.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
+        }
+        const nuevoId = 'perfil_' + Date.now();
+        this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
+        localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
+        input.value = '';
+        this.guardar();
+        this.app.mostrarToast('Perfil creado', 'success');
+        this.abrirModal();
+    }
+
+    // ── UI — modal editar ─────────────────────────────────────
+    abrirModalEditar(perfilId) {
+        this.app.perfilEditando = perfilId;
+        const perfil = this.perfiles[perfilId];
+        document.getElementById('titulo-editar-perfil').textContent = 'Editar Perfil';
+        document.getElementById('perfil-nombre').value = perfil.nombre;
+        const inputNuevo = document.getElementById('perfil-nuevo-nombre');
+        if (inputNuevo) inputNuevo.value = '';
+        this.app.cerrarModal('modal-perfiles');
+        this.app.abrirModal('modal-editar-perfil');
+    }
+
+    cancelarEditar() {
+        this.app.cerrarModal('modal-editar-perfil');
+        this.abrirModal();
+    }
+
+    guardarEdicion(e) {
+        e.preventDefault();
+        const nombre = document.getElementById('perfil-nombre').value.trim();
+        if (!nombre) { this.app.mostrarToast('El nombre es requerido', 'error'); return; }
+        const nombreExiste = Object.values(this.perfiles).some(p =>
+            p.nombre.toLowerCase() === nombre.toLowerCase() && p.id !== this.app.perfilEditando
+        );
+        if (nombreExiste) { this.app.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
+        if (this.app.perfilEditando) {
+            this.perfiles[this.app.perfilEditando].nombre = nombre;
+            if (this.app.perfilEditando === this.perfilActivo) this.app.renderServicios();
+            this.app.mostrarToast('Perfil actualizado', 'success');
+        } else {
+            if (Object.keys(this.perfiles).length >= 4) {
+                this.app.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
+            }
+            const nuevoId = 'perfil_' + Date.now();
+            this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
+            localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
+            this.app.mostrarToast('Perfil creado', 'success');
+        }
+        this.guardar();
+        this.app.cerrarModal('modal-editar-perfil');
+        this.abrirModal();
+    }
+
+    // ── Eliminar ──────────────────────────────────────────────
+    eliminar(perfilId) {
+        if (perfilId === 'default') {
+            this.app.mostrarToast('No puedes eliminar el perfil principal', 'error'); return;
+        }
+        const perfil = this.perfiles[perfilId];
+        if (!confirm(`¿Eliminar el perfil "${perfil.nombre}"? Todos sus datos se perderán.`)) return;
+        if (perfilId === this.perfilActivo) this.cambiar('default');
+        localStorage.removeItem(`gestion_servicios_datos_${perfilId}`);
+        delete this.perfiles[perfilId];
+        this.guardar();
+        this.app.mostrarToast('Perfil eliminado', 'success');
+        this.renderLista();
     }
 }
 
