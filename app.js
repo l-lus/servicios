@@ -1439,19 +1439,21 @@ class GestionServicios {
         const barra = document.getElementById('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
 
-        // Animar si los datos cambiaron
-        if (debeAnimar) {
-            const toggle = document.getElementById('resumen-toggle');
-            if (toggle) {
-                toggle.classList.remove('anim-slide-down-fade');
-                void toggle.offsetWidth;
-                toggle.classList.add('anim-slide-down-fade');
-            }
-        }
         localStorage.setItem('resumen-mostrar-pagado', esPendiente ? 'false' : 'true');
         this._aplicarBlurResumen(hayARS || hayUSD);
         this.ultimoEstadoResumen = estadoActual;
         this._actualizarBordeResumen(colorBorde);
+
+        // Animar entrada — después de todos los DOM writes, en el próximo frame
+        if (debeAnimar) {
+            const toggle = document.getElementById('resumen-toggle');
+            if (toggle) {
+                toggle.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade');
+                requestAnimationFrame(() => {
+                    toggle.classList.add('anim-slide-down-fade');
+                });
+            }
+        }
     }
 
     abrirModalInfoResumen() {
@@ -1554,7 +1556,7 @@ class GestionServicios {
 
         // Ya desblurado: toggle normal de vista
         if (resumenActual) {
-            resumenActual.classList.remove('anim-slide-up-fade');
+            resumenActual.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
             void resumenActual.offsetWidth;
             resumenActual.classList.add('anim-slide-up-fade');
             setTimeout(() => {
@@ -1788,12 +1790,10 @@ class GestionServicios {
                 lista.innerHTML = itemsHTML;
                 // Solo animar si hubo cambio
                 if (estadoCambio) {
-                    lista.classList.add('opacity-0');
-                    setTimeout(() => {
-                        lista.classList.remove('anim-slide-down-fade', 'opacity-0');
-                        void lista.offsetWidth;
-                        lista.classList.add('anim-slide-down-fade', 'opacity-1');
-                    }, 10);
+                    lista.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade');
+                    requestAnimationFrame(() => {
+                        lista.classList.add('anim-slide-down-fade');
+                    });
                 }
             }
         };
@@ -1857,7 +1857,7 @@ class GestionServicios {
             const lista = document.querySelector('#estadisticas-mensual-container .estadisticas-lista');
             if (lista && estadoCambio) {
                 // Animación de salida
-                lista.classList.remove('anim-slide-up-fade');
+                lista.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
                 void lista.offsetWidth;
                 lista.classList.add('anim-slide-up-fade');
 
@@ -2216,17 +2216,15 @@ class GestionServicios {
             resultadosContainer.innerHTML = generarResultadosHTML(totalRegistros, variacionTexto);
 
             if (calculadorCambio) {
-                resultadosContainer.classList.add('opacity-0');
-                setTimeout(() => {
-                    resultadosContainer.classList.remove('anim-slide-down-fade', 'opacity-0');
-                    void resultadosContainer.offsetWidth;
-                    resultadosContainer.classList.add('anim-slide-down-fade', 'opacity-1');
-                }, 10);
+                resultadosContainer.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade');
+                requestAnimationFrame(() => {
+                    resultadosContainer.classList.add('anim-slide-down-fade');
+                });
             }
         };
 
         if (calculadorCambio) {
-            resultadosContainer.classList.remove('anim-slide-up-fade');
+            resultadosContainer.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
             void resultadosContainer.offsetWidth;
             resultadosContainer.classList.add('anim-slide-up-fade');
             setTimeout(() => {
@@ -4773,16 +4771,14 @@ class CalculadorService {
         const renderizarResultados = () => {
             resultadosContainer.innerHTML = generarResultadosHTML(totalRegistros, variacionTexto);
             if (calculadorCambio) {
-                resultadosContainer.classList.add('opacity-0');
-                setTimeout(() => {
-                    resultadosContainer.classList.remove('anim-slide-down-fade', 'opacity-0');
-                    void resultadosContainer.offsetWidth;
-                    resultadosContainer.classList.add('anim-slide-down-fade', 'opacity-1');
-                }, 10);
+                resultadosContainer.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade');
+                requestAnimationFrame(() => {
+                    resultadosContainer.classList.add('anim-slide-down-fade');
+                });
             }
         };
         if (calculadorCambio) {
-            resultadosContainer.classList.remove('anim-slide-up-fade');
+            resultadosContainer.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
             void resultadosContainer.offsetWidth;
             resultadosContainer.classList.add('anim-slide-up-fade');
             setTimeout(() => { renderizarResultados(); this.app.ultimoEstadoCalculador = estadoCalculador; }, 190);
