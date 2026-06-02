@@ -863,8 +863,6 @@
             flex-direction: column;
             gap: 0.5rem;
             max-height: 700px;
-            overflow-y: auto;
-            overflow-x: hidden;
             margin-top: 1rem;
             opacity: 1;
             transition: max-height var(--transition-base), opacity var(--transition-base);
@@ -969,7 +967,6 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            overflow-y: auto;
             padding: 1rem;
             margin: 0 -1rem;
         }
@@ -1814,26 +1811,24 @@
         .d-block-force   { display: block !important; }
 
         /* --- Aliases bootstrap-like (usados en HTML y app.js) --- */
-        .w-100            { width: 100%; }
-        .d-none           { display: none !important; }
-        .flex-column      { flex-direction: column; }
-        .align-items-center   { align-items: center; }
-        .align-items-stretch  { align-items: stretch; }
-        .justify-content-center  { justify-content: center; }
-        .justify-content-between { justify-content: space-between; }
-        .d-flex-imp       { display: flex !important; }
+        /* Unificados con las clases canónicas abajo */
 
         /* --- Flex --- */
-        .flex-col        { flex-direction: column; }
+        .flex-col,
+        .flex-column { flex-direction: column; }
         .flex-wrap       { flex-wrap: wrap; }
         .flex-1          { flex: 1; }
         .flex-shrink-0   { flex-shrink: 0; }
 
         /* --- Align / Justify --- */
-        .items-center    { align-items: center; }
-        .items-stretch   { align-items: stretch; }
-        .justify-center  { justify-content: center; }
-        .justify-between { justify-content: space-between; }
+        .items-center,
+        .align-items-center   { align-items: center; }
+        .items-stretch,
+        .align-items-stretch  { align-items: stretch; }
+        .justify-center,
+        .justify-content-center  { justify-content: center; }
+        .justify-between,
+        .justify-content-between { justify-content: space-between; }
 
         /* --- Gap --- */
         .gap-1  { gap: 0.25rem; }
@@ -1844,7 +1839,8 @@
         .grid-cols-2 { grid-template-columns: 1fr 1fr; }
 
         /* --- Dimensiones --- */
-        .w-full { width: 100%; }
+        .w-full,
+        .w-100 { width: 100%; }
 
         /* --- Spacing --- */
         .mt-1 { margin-top: 0.25rem; }

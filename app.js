@@ -211,7 +211,7 @@ class GestionServicios {
 
             this.terminoBusqueda = termino;
             this.enModoBusqueda = true;
-            searchClear.classList.toggle('d-flex-imp', !!this.terminoBusqueda);
+            searchClear.classList.toggle('d-flex-force', !!this.terminoBusqueda);
 
             // Si hay búsqueda activa, expandir grupos con resultados
             if (this.terminoBusqueda) {
@@ -4366,7 +4366,7 @@ class UtilsService {
         if (!searchInput) return;
         searchInput.value = '';
         this.app.terminoBusqueda = '';
-        searchClear.classList.remove('d-flex-imp');
+        searchClear.classList.remove('d-flex-force');
         if (this.app._catColapsadasAntesBusqueda !== null) {
             this.app._catColapsadas = this.app._catColapsadasAntesBusqueda;
             this.app._catColapsadasAntesBusqueda = null;
@@ -5696,13 +5696,20 @@ class CustomSelect {
         if (this.onChange) this.onChange();
     }
 
-    // Absorbe el pointerup y click que el browser despacha tras el pointerdown
+    // Absorbe el click que el browser despacha tras el pointerdown
     // en móvil, evitando que caigan sobre elementos que quedaron debajo del dropdown
     _absorbNextEvents() {
         const absorb = e => { e.stopPropagation(); e.preventDefault(); };
         const opts = { capture: true, once: true, passive: false };
-        document.addEventListener('pointerup', absorb, opts);
-        document.addEventListener('click',    absorb, opts);
+        
+        // Solo absorbemos el 'click', quitamos el 'pointerup' para no bloquear el siguiente toque.
+        document.addEventListener('click', absorb, opts);
+
+        // Timeout de seguridad: Si pasados 300ms el navegador no disparó ningún clic fantasma,
+        // retiramos la trampa para que no atrape el próximo clic real del usuario.
+        setTimeout(() => {
+            document.removeEventListener('click', absorb, opts);
+        }, 300);
     }
 
     toggle() {
