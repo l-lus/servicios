@@ -716,9 +716,14 @@ class GestionServicios {
         });
 
         // Cerrar modales al hacer click fuera
+        // Solo si el pointerdown también empezó en el overlay (no si viene de arrastrar desde dentro)
         document.querySelectorAll('.modal').forEach(modal => {
+            let _downOnOverlay = false;
+            modal.addEventListener('pointerdown', (e) => {
+                _downOnOverlay = e.target === modal;
+            }, { passive: true });
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
+                if (e.target === modal && _downOnOverlay) {
                     this.cerrarTodosLosModales();
                 }
             });
@@ -1073,7 +1078,10 @@ class GestionServicios {
             listaSvc.addEventListener('pointerup', () => this._lpCancel());
             listaSvc.addEventListener('pointerleave', () => this._lpCancel());
             listaSvc.addEventListener('contextmenu', (e) => {
-                if (e.target.closest('[data-lp="true"]')) e.preventDefault();
+                if (e.target.closest('[data-lp="true"]') || this._lpFired) {
+                    e.preventDefault();
+                    this._lpFired = false;
+                }
             });
         }
 
@@ -4438,6 +4446,11 @@ class GestionServicios {
 
     _ctxAbrir(e, servicioId) {
         e.preventDefault();
+        // Si el long press de grupos acaba de disparar, este contextmenu es residual — ignorarlo
+        if (this._lpFired) {
+            this._lpFired = false;
+            return;
+        }
         this._ctxServicioId = servicioId;
 
         const estaSeleccionado = this.serviciosSeleccionados.has(servicioId);
@@ -5684,6 +5697,8 @@ class CustomSelect {
         this.labelEl = wrapper.querySelector('.csd-label');
         this.dropdown = wrapper.querySelector('.custom-select-dropdown');
         this._boundClose = this._onOutsideClick.bind(this);
+        this._boundEsc   = this._onEsc.bind(this);
+        this._boundScroll = this._onScroll.bind(this);
         this.trigger.addEventListener('pointerdown', e => {
             e.preventDefault();
             e.stopPropagation();
@@ -5759,11 +5774,28 @@ class CustomSelect {
         }
         this.wrapper.classList.add('open');
         document.addEventListener('pointerdown', this._boundClose, true);
+        document.addEventListener('keydown',     this._boundEsc,   true);
+        window.addEventListener('scroll',        this._boundScroll, { capture: true, passive: true });
     }
 
     close() {
         this.wrapper.classList.remove('open');
         document.removeEventListener('pointerdown', this._boundClose, true);
+        document.removeEventListener('keydown',     this._boundEsc,   true);
+        window.removeEventListener('scroll',        this._boundScroll, { capture: true, passive: true });
+    }
+
+    _onScroll(e) {
+        // Ignorar scroll dentro del propio dropdown; cerrar solo si el scroll es externo
+        if (this.wrapper.contains(e.target)) return;
+        this.close();
+    }
+
+    _onEsc(e) {
+        if (e.key === 'Escape') {
+            e.stopPropagation();
+            this.close();
+        }
     }
 
     _onOutsideClick(e) {
