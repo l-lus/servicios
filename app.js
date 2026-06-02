@@ -1047,8 +1047,17 @@ class GestionServicios {
                 _scrolled = false;
             }, { passive: true });
             listaSvc.addEventListener('pointermove', (e) => {
-                if (!_scrolled && Math.abs(e.clientY - _pdownY) > 8) _scrolled = true;
+                if (!_scrolled && Math.abs(e.clientY - _pdownY) > 8) {
+                    _scrolled = true;
+                    // Cancelar long press en cuanto se detecta intención de scroll
+                    this._lpCancel();
+                }
             }, { passive: true });
+            // El browser dispara pointercancel cuando toma control del touch (scroll nativo)
+            listaSvc.addEventListener('pointercancel', () => {
+                _scrolled = true;
+                this._lpCancel();
+            });
 
             listaSvc.addEventListener('click', (e) => {
                 if (_scrolled) return;
@@ -1059,12 +1068,10 @@ class GestionServicios {
                 const header = e.target.closest('[data-lp="true"]');
                 if (header) this._lpStart(e, header);
             });
-            listaSvc.addEventListener('pointerup', (e) => {
-                if (e.target.closest('[data-lp="true"]')) this._lpCancel();
-            });
-            listaSvc.addEventListener('pointerleave', (e) => {
-                if (e.target.closest('[data-lp="true"]')) this._lpCancel();
-            });
+            // pointerup y pointerleave cancelan el LP sin importar el target actual
+            // (el dedo pudo haberse movido fuera del header durante el drag)
+            listaSvc.addEventListener('pointerup', () => this._lpCancel());
+            listaSvc.addEventListener('pointerleave', () => this._lpCancel());
             listaSvc.addEventListener('contextmenu', (e) => {
                 if (e.target.closest('[data-lp="true"]')) e.preventDefault();
             });

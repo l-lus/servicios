@@ -1,4 +1,4 @@
-        /* ============================================================
+/* ============================================================
            VARIABLES
         ============================================================ */
         :root {
@@ -34,13 +34,6 @@
             --border: #313333;
             --input-bg: #313333;
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Suprimir transiciones durante carga inicial para evitar parpadeo */
-        html.no-transition *,
-        html.no-transition *::before,
-        html.no-transition *::after {
-            transition: none !important;
         }
 
         /* ============================================================
@@ -891,7 +884,8 @@
         }
 
         .servicios-actions.hidden,
-        #servicios-content.semi-collapsed .servicios-actions {
+        #servicios-content.semi-collapsed .servicios-actions,
+        #servicios-content.semi-collapsed .search-container {
             max-height: 0;
             opacity: 0;
             margin-bottom: 0;
@@ -899,8 +893,7 @@
 
         #servicios-content.collapsed .servicios-actions,
         #servicios-content.collapsed .servicios-lista,
-        #servicios-content.collapsed .search-container,
-        #servicios-content.semi-collapsed .search-container {
+        #servicios-content.collapsed .search-container {
             max-height: 0;
             opacity: 0;
             margin: 0;
