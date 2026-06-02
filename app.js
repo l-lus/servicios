@@ -5692,9 +5692,26 @@ class CustomSelect {
         ).join('');
         this.dropdown.querySelectorAll('.custom-select-option').forEach(el => {
             el.addEventListener('pointerdown', e => {
-                e.preventDefault();
+                // No cancelar el evento — permite que el scroll nativo funcione
                 e.stopPropagation();
-                this.select(el.dataset.value);
+                const startY = e.clientY;
+                let moved = false;
+
+                const onMove = mv => {
+                    if (Math.abs(mv.clientY - startY) > 6) moved = true;
+                };
+                const onUp = up => {
+                    el.removeEventListener('pointermove', onMove);
+                    el.removeEventListener('pointerup', onUp);
+                    el.removeEventListener('pointercancel', onUp);
+                    if (!moved) {
+                        up.stopPropagation();
+                        this.select(el.dataset.value);
+                    }
+                };
+                el.addEventListener('pointermove', onMove);
+                el.addEventListener('pointerup', onUp);
+                el.addEventListener('pointercancel', onUp);
             });
         });
         const sel = this.native.options[this.native.selectedIndex];
