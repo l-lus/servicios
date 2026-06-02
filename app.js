@@ -5704,8 +5704,18 @@ class CustomSelect {
     select(value) {
         this.native.value = value;
         this.close();
+        this._absorbNextEvents();
         this.refresh();
         if (this.onChange) this.onChange();
+    }
+
+    // Absorbe el pointerup y click que el browser despacha tras el pointerdown
+    // en móvil, evitando que caigan sobre elementos que quedaron debajo del dropdown
+    _absorbNextEvents() {
+        const absorb = e => { e.stopPropagation(); e.preventDefault(); };
+        const opts = { capture: true, once: true, passive: false };
+        document.addEventListener('pointerup', absorb, opts);
+        document.addEventListener('click',    absorb, opts);
     }
 
     toggle() {
