@@ -107,6 +107,7 @@ class GestionServicios {
         this._estadisticaCategoriaActiva = null;
 
         // Servicios auxiliares
+        this.utils = new UtilsService(this);
         this.calculador = new CalculadorService(this);
         this.gist = new GistService(this);
         this.historial_mgr = new HistorialManager(this);
@@ -1018,100 +1019,15 @@ class GestionServicios {
 
     // ── Helpers reutilizables ──────────────────────────────────────
 
-    _plural(n, singular, plural) {
-        return `${n} ${n !== 1 ? plural : singular}`;
-    }
-
-    _mesActualInfo() {
-        const ahora = new Date();
-        const mes = ahora.getMonth();
-        const anio = ahora.getFullYear();
-        return {
-            mes, anio,
-            mesSiguiente: mes === 11 ? 0 : mes + 1,
-            anioSiguiente: mes === 11 ? anio + 1 : anio,
-            mesPasado: mes === 0 ? 11 : mes - 1,
-            anioPasado: mes === 0 ? anio - 1 : anio,
-        };
-    }
-
-    _postGuardado() {
-        this.guardarDatos();
-        this.guardarEstado();
-        this.renderServicios(); // → actualizarResumenMes() → actualizarEstadisticas() ya incluido
-    }
-
-    // Helper 1: parsear fecha en hora local (evita offset UTC en GMT-3)
-    _parseDate(str) {
-        return new Date(str + 'T00:00:00');
-    }
-
-    // Helper 2: limpiar el buscador y restaurar grupos colapsados previos
-    _limpiarBusqueda() {
-        const searchInput = document.getElementById('search-input');
-        const searchClear = document.getElementById('search-clear');
-        if (!searchInput) return;
-        searchInput.value = '';
-        this.terminoBusqueda = '';
-        searchClear.classList.remove('d-flex-imp');
-        if (this._catColapsadasAntesBusqueda !== null) {
-            this._catColapsadas = this._catColapsadasAntesBusqueda;
-            this._catColapsadasAntesBusqueda = null;
-        }
-        this.renderServicios();
-        setTimeout(() => { this.enModoBusqueda = false; }, 100);
-    }
-
-    // Helper 3: descargar contenido como archivo
-    _descargarBlob(contenido, nombreArchivo, tipo = 'text/plain;charset=utf-8') {
-        const blob = new Blob([contenido], { type: tipo });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = nombreArchivo;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    // Helper 4: IDs de campos del formulario de factura según modo editar/agregar
-    _idsFormFactura(esEditar) {
-        const p = esEditar ? 'editar-factura' : 'factura';
-        return {
-            monto:       `${p}-monto`,
-            tipo:        `${p}-tipo`,
-            fecha:       `${p}-fecha`,
-            moneda:      `${p}-moneda`,
-            fechaPago:   `${p}-fecha-pago`,
-            conCredito:  `${p}-con-credito`,
-            servicio:    `${p}-servicio`,
-            btnPagada:   esEditar ? 'btn-editar-toggle-pagada'  : 'btn-toggle-pagada',
-            btnCredito:  esEditar ? 'btn-editar-toggle-credito' : 'btn-toggle-credito',
-            btnMoneda:   esEditar ? 'btn-editar-factura-moneda' : 'btn-factura-moneda',
-            btnNegativo: esEditar ? 'btn-editar-toggle-negativo': 'btn-toggle-negativo',
-        };
-    }
-
-    // Helper 5: abrir/cerrar un submenú del menú ajustes, cerrando los otros
-    _toggleSubMenuAjustes(opcionesId, padreId) {
-        const subMenus = [
-            ['opciones-importacion', 'menu-importar'],
-            ['opciones-borrar',      'menu-limpiar'],
-            ['opciones-dolar',       'menu-dolar'],
-        ];
-        const abriendo = !document.getElementById(opcionesId).classList.contains('open');
-        // Cerrar todos los que no son el activo
-        subMenus.forEach(([oId, pId]) => {
-            if (oId !== opcionesId) {
-                document.getElementById(oId).classList.remove('open');
-                document.getElementById(pId).classList.remove('open');
-            }
-        });
-        document.getElementById(opcionesId).classList.toggle('open', abriendo);
-        document.getElementById(padreId).classList.toggle('open', abriendo);
-    }
-
+    // ── Delegación a UtilsService ─────────────────────────────
+    _plural(n, s, p)                    { return this.utils.plural(n, s, p); }
+    _mesActualInfo()                    { return this.utils.mesActualInfo(); }
+    _parseDate(str)                     { return this.utils.parseDate(str); }
+    _postGuardado()                     { this.utils.postGuardado(); }
+    _limpiarBusqueda()                  { this.utils.limpiarBusqueda(); }
+    _descargarBlob(c, n, t)             { this.utils.descargarBlob(c, n, t); }
+    _idsFormFactura(esEditar)           { return this.utils.idsFormFactura(esEditar); }
+    _toggleSubMenuAjustes(oId, pId)     { this.utils.toggleSubMenuAjustes(oId, pId); }
     _aplicarBlurResumen(hayMonto) {
         if (this.blurHabilitado && !this.resumenDesblurado && hayMonto) {
             const el = document.getElementById('resumen-toggle');
@@ -3778,88 +3694,15 @@ class GestionServicios {
     // UTILIDADES
     // ========================================
 
-    generarId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
-
-    obtenerFechaLocal() {
-        const hoy = new Date();
-        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-    }
-
-    // Comparación shallow de objetos planos (evita JSON.stringify para detección de cambios)
-    _objetosCambiaron(anterior, actual) {
-        if (!anterior) return true;
-        const keysA = Object.keys(anterior);
-        const keysB = Object.keys(actual);
-        if (keysA.length !== keysB.length) return true;
-        for (const k of keysA) {
-            if (anterior[k] !== actual[k]) return true;
-        }
-        return false;
-    }
-
-    formatearMoneda(monto, moneda = 'ars') {
-        const esEntero = Number.isInteger(monto) || monto % 1 === 0;
-        const decimales = esEntero ? 0 : 2;
-        if (moneda === 'usd') {
-            return 'u$s ' + new Intl.NumberFormat('es-AR', {
-                minimumFractionDigits: decimales,
-                maximumFractionDigits: decimales
-            }).format(monto);
-        }
-        return new Intl.NumberFormat('es-AR', {
-            style: 'currency',
-            currency: 'ARS',
-            minimumFractionDigits: decimales,
-            maximumFractionDigits: decimales
-        }).format(monto);
-    }
-
-    // Alterna entre ARS y USD en los campos ocultos + actualiza el botón visual
-    toggleMoneda(hiddenId, btnId) {
-        const hidden = document.getElementById(hiddenId);
-        const btn = document.getElementById(btnId);
-        if (!hidden || !btn) return;
-        const nuevo = hidden.value === 'ars' ? 'usd' : 'ars';
-        hidden.value = nuevo;
-        btn.textContent = nuevo.toUpperCase();
-        btn.classList.toggle('activo-usd', nuevo === 'usd');
-        this.mostrarToast(nuevo === 'usd' ? 'Dolares' : 'Pesos', 'info');
-    }
-
-    // Fija la moneda de un icon-btn desde código (usado al cargar datos para editar)
-    setMonedaBtn(hiddenId, btnId, moneda) {
-        const hidden = document.getElementById(hiddenId);
-        const btn = document.getElementById(btnId);
-        if (!hidden || !btn) return;
-        const m = (moneda || 'ars').toLowerCase();
-        hidden.value = m;
-        btn.textContent = m.toUpperCase();
-        btn.classList.toggle('activo-usd', m === 'usd');
-    }
-
-    formatearFecha(fecha) {
-        const date = this._parseDate(fecha);
-        return date.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    }
-
-    escaparHTML(texto) {
-        const div = document.createElement('div');
-        div.textContent = texto;
-        return div.innerHTML;
-    }
-
-    escaparAtributoHTML(texto) {
-        if (!texto) return '';
-        const div = document.createElement('div');
-        div.setAttribute('data-attr', texto);
-        return div.getAttribute('data-attr');
-    }
+    generarId()                         { return this.utils.generarId(); }
+    obtenerFechaLocal()                 { return this.utils.obtenerFechaLocal(); }
+    _objetosCambiaron(ant, act)         { return this.utils.objetosCambiaron(ant, act); }
+    formatearMoneda(monto, moneda)      { return this.utils.formatearMoneda(monto, moneda); }
+    toggleMoneda(hiddenId, btnId)       { this.utils.toggleMoneda(hiddenId, btnId); }
+    setMonedaBtn(hiddenId, btnId, mon)  { this.utils.setMonedaBtn(hiddenId, btnId, mon); }
+    formatearFecha(fecha)               { return this.utils.formatearFecha(fecha); }
+    escaparHTML(texto)                  { return this.utils.escaparHTML(texto); }
+    escaparAtributoHTML(texto)          { return this.utils.escaparAtributoHTML(texto); }
 
     // ========================================
     // GESTIÓN DE INGRESOS
@@ -4374,6 +4217,177 @@ class GestionServicios {
 }
 
 // ============================================================
+// UTILS SERVICE — helpers puros, formateo, DOM liviano
+// ============================================================
+class UtilsService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Helpers puros (sin DOM ni estado) ────────────────────
+
+    plural(n, singular, plural) {
+        return `${n} ${n !== 1 ? plural : singular}`;
+    }
+
+    mesActualInfo() {
+        const ahora = new Date();
+        const mes   = ahora.getMonth();
+        const anio  = ahora.getFullYear();
+        return {
+            mes, anio,
+            mesSiguiente: mes === 11 ? 0      : mes + 1,
+            anioSiguiente: mes === 11 ? anio + 1 : anio,
+            mesPasado:    mes === 0  ? 11     : mes - 1,
+            anioPasado:   mes === 0  ? anio - 1 : anio,
+        };
+    }
+
+    parseDate(str) {
+        return new Date(str + 'T00:00:00');
+    }
+
+    objetosCambiaron(anterior, actual) {
+        if (!anterior) return true;
+        const keysA = Object.keys(anterior);
+        const keysB = Object.keys(actual);
+        if (keysA.length !== keysB.length) return true;
+        for (const k of keysA) { if (anterior[k] !== actual[k]) return true; }
+        return false;
+    }
+
+    formatearMoneda(monto, moneda = 'ars') {
+        const decimales = (Number.isInteger(monto) || monto % 1 === 0) ? 0 : 2;
+        if (moneda === 'usd') {
+            return 'u$s ' + new Intl.NumberFormat('es-AR', {
+                minimumFractionDigits: decimales, maximumFractionDigits: decimales
+            }).format(monto);
+        }
+        return new Intl.NumberFormat('es-AR', {
+            style: 'currency', currency: 'ARS',
+            minimumFractionDigits: decimales, maximumFractionDigits: decimales
+        }).format(monto);
+    }
+
+    formatearFecha(fecha) {
+        return this.parseDate(fecha).toLocaleDateString('es-AR', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+    }
+
+    generarId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    obtenerFechaLocal() {
+        const hoy = new Date();
+        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+    }
+
+    // ── DOM liviano (sin estado de la app) ───────────────────
+
+    escaparHTML(texto) {
+        const div = document.createElement('div');
+        div.textContent = texto;
+        return div.innerHTML;
+    }
+
+    escaparAtributoHTML(texto) {
+        if (!texto) return '';
+        const div = document.createElement('div');
+        div.setAttribute('data-attr', texto);
+        return div.getAttribute('data-attr');
+    }
+
+    descargarBlob(contenido, nombreArchivo, tipo = 'text/plain;charset=utf-8') {
+        const blob = new Blob([contenido], { type: tipo });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = nombreArchivo;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    idsFormFactura(esEditar) {
+        const p = esEditar ? 'editar-factura' : 'factura';
+        return {
+            monto:       `${p}-monto`,
+            tipo:        `${p}-tipo`,
+            fecha:       `${p}-fecha`,
+            moneda:      `${p}-moneda`,
+            fechaPago:   `${p}-fecha-pago`,
+            conCredito:  `${p}-con-credito`,
+            servicio:    `${p}-servicio`,
+            btnPagada:   esEditar ? 'btn-editar-toggle-pagada'   : 'btn-toggle-pagada',
+            btnCredito:  esEditar ? 'btn-editar-toggle-credito'  : 'btn-toggle-credito',
+            btnMoneda:   esEditar ? 'btn-editar-factura-moneda'  : 'btn-factura-moneda',
+            btnNegativo: esEditar ? 'btn-editar-toggle-negativo' : 'btn-toggle-negativo',
+        };
+    }
+
+    toggleSubMenuAjustes(opcionesId, padreId) {
+        const subMenus = [
+            ['opciones-importacion', 'menu-importar'],
+            ['opciones-borrar',      'menu-limpiar'],
+            ['opciones-dolar',       'menu-dolar'],
+        ];
+        const abriendo = !document.getElementById(opcionesId).classList.contains('open');
+        subMenus.forEach(([oId, pId]) => {
+            if (oId !== opcionesId) {
+                document.getElementById(oId).classList.remove('open');
+                document.getElementById(pId).classList.remove('open');
+            }
+        });
+        document.getElementById(opcionesId).classList.toggle('open', abriendo);
+        document.getElementById(padreId).classList.toggle('open', abriendo);
+    }
+
+    setMonedaBtn(hiddenId, btnId, moneda) {
+        const hidden = document.getElementById(hiddenId);
+        const btn    = document.getElementById(btnId);
+        if (!hidden || !btn) return;
+        const m = (moneda || 'ars').toLowerCase();
+        hidden.value = m;
+        btn.textContent = m.toUpperCase();
+        btn.classList.toggle('activo-usd', m === 'usd');
+    }
+
+    // ── Mixtos (necesitan this.app) ───────────────────────────
+
+    postGuardado() {
+        this.app.guardarDatos();
+        this.app.guardarEstado();
+        this.app.renderServicios(); // → actualizarResumenMes() → actualizarEstadisticas()
+    }
+
+    limpiarBusqueda() {
+        const searchInput = document.getElementById('search-input');
+        const searchClear = document.getElementById('search-clear');
+        if (!searchInput) return;
+        searchInput.value = '';
+        this.app.terminoBusqueda = '';
+        searchClear.classList.remove('d-flex-imp');
+        if (this.app._catColapsadasAntesBusqueda !== null) {
+            this.app._catColapsadas = this.app._catColapsadasAntesBusqueda;
+            this.app._catColapsadasAntesBusqueda = null;
+        }
+        this.app.renderServicios();
+        setTimeout(() => { this.app.enModoBusqueda = false; }, 100);
+    }
+
+    toggleMoneda(hiddenId, btnId) {
+        const hidden = document.getElementById(hiddenId);
+        const btn    = document.getElementById(btnId);
+        if (!hidden || !btn) return;
+        const nuevo = hidden.value === 'ars' ? 'usd' : 'ars';
+        hidden.value = nuevo;
+        btn.textContent = nuevo.toUpperCase();
+        btn.classList.toggle('activo-usd', nuevo === 'usd');
+        this.app.mostrarToast(nuevo === 'usd' ? 'Dolares' : 'Pesos', 'info');
+    }
+}
+
+// ============================================================
 // PERFIL SERVICE — gestión de perfiles de usuario
 // ============================================================
 class PerfilService {
@@ -4451,10 +4465,10 @@ class PerfilService {
          data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
         <div class="flex-1">
             <div class="perfil-header d-flex align-items-center gap-2">
-                ${this.app.escaparHTML(perfil.nombre)}
+                ${this.app.utils.escaparHTML(perfil.nombre)}
                 ${esActivo ? '<span class="perfil-activo-badge">● Activo</span>' : ''}
             </div>
-            <div class="perfil-stats">${this.app._plural(cantidadServicios, 'servicio', 'servicios')}</div>
+            <div class="perfil-stats">${this.app.utils.plural(cantidadServicios, 'servicio', 'servicios')}</div>
         </div>
         <div class="d-flex gap-2" data-action="stop-propagation">
             ${!esDefault ? `
@@ -4616,24 +4630,24 @@ class CalculadorService {
     actualizar() {
         if (!this.modoActivo) return;
         let totalARS = 0, totalUSD = 0, contadorFacturas = 0;
-        const { mes: mesActual, anio: anioActual, mesSiguiente, anioSiguiente } = this.app._mesActualInfo();
+        const { mes: mesActual, anio: anioActual, mesSiguiente, anioSiguiente } = this.app.utils.mesActualInfo();
         this.seleccionados.forEach(servicioId => {
             const servicio = this.servicios.find(s => s.id === servicioId);
             if (!servicio) return;
             servicio.facturas.forEach(factura => {
                 if (factura.monto <= 0) return;
-                const fechaFactura = this.app._parseDate(factura.fecha);
+                const fechaFactura = this.app.utils.parseDate(factura.fecha);
                 const mesF = fechaFactura.getMonth(), anioF = fechaFactura.getFullYear();
                 const esMesActual = mesF === mesActual && anioF === anioActual;
                 if (this.tipo === 'pendientes') {
                     if (factura.pagada) return;
-                    const { mesPasado, anioPasado } = this.app._mesActualInfo();
+                    const { mesPasado, anioPasado } = this.app.utils.mesActualInfo();
                     const esSiguiente = mesF === mesSiguiente && anioF === anioSiguiente;
                     const esPasado    = mesF === mesPasado    && anioF === anioPasado;
                     if (!esMesActual && !esSiguiente && !esPasado) return;
                 } else if (this.tipo === 'pagados') {
                     if (!factura.pagada) return;
-                    const fechaPago = factura.fechaPago ? this.app._parseDate(factura.fechaPago) : null;
+                    const fechaPago = factura.fechaPago ? this.app.utils.parseDate(factura.fechaPago) : null;
                     const esPagadaEsteMes = fechaPago && fechaPago.getMonth() === mesActual && fechaPago.getFullYear() === anioActual;
                     if (!esMesActual && !esPagadaEsteMes) return;
                 }
@@ -4644,9 +4658,9 @@ class CalculadorService {
         });
         this.app._calcTotalARS = totalARS;
         this.app._calcTotalUSD = totalUSD;
-        document.getElementById('calculadora-total').textContent = this.app.formatearMoneda(totalARS, 'ars');
+        document.getElementById('calculadora-total').textContent = this.app.utils.formatearMoneda(totalARS, 'ars');
         const elUSD = document.getElementById('calculadora-total-usd');
-        if (totalUSD > 0) { elUSD.textContent = this.app.formatearMoneda(totalUSD, 'usd'); elUSD.classList.add('visible'); }
+        if (totalUSD > 0) { elUSD.textContent = this.app.utils.formatearMoneda(totalUSD, 'usd'); elUSD.classList.add('visible'); }
         else              { elUSD.classList.remove('visible'); }
         document.getElementById('calculadora-contador').textContent =
             `${contadorFacturas} ${contadorFacturas === 1 ? 'factura' : 'facturas'}`;
@@ -4670,8 +4684,8 @@ class CalculadorService {
             if (servicio) {
                 const esServicioIngresos = servicioId === this.app.SERVICIO_INGRESOS_ID;
                 let facturasFiltradas = servicio.facturas;
-                if (desde) { const fd = this.app._parseDate(desde); facturasFiltradas = facturasFiltradas.filter(f => this.app._parseDate(f.fecha) >= fd); }
-                if (hasta) { const fh = this.app._parseDate(hasta); facturasFiltradas = facturasFiltradas.filter(f => this.app._parseDate(f.fecha) <= fh); }
+                if (desde) { const fd = this.app.utils.parseDate(desde); facturasFiltradas = facturasFiltradas.filter(f => this.app.utils.parseDate(f.fecha) >= fd); }
+                if (hasta) { const fh = this.app.utils.parseDate(hasta); facturasFiltradas = facturasFiltradas.filter(f => this.app.utils.parseDate(f.fecha) <= fh); }
                 facturasFiltradas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
                 totalRegistros = facturasFiltradas.length;
                 facturasFiltradas.forEach(f => {
@@ -4704,9 +4718,9 @@ class CalculadorService {
         }
 
         const estadoCalculador = { servicioId, desde, hasta, totalRegistros, _arsTotal, _usdTotal, variacionTexto, variacionUSDTexto };
-        const calculadorCambio = this.app._objetosCambiaron(this.app.ultimoEstadoCalculador, estadoCalculador);
+        const calculadorCambio = this.app.utils.objetosCambiaron(this.app.ultimoEstadoCalculador, estadoCalculador);
         const _hayARS = _arsTotal !== 0, _hayUSD = _usdTotal !== 0;
-        const fmt = (m, mon) => this.app.formatearMoneda(m, mon);
+        const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         const _montoHTML = _hayARS ? fmt(_arsTotal, 'ars') : _hayUSD ? fmt(_usdTotal, 'usd') : fmt(0, 'ars');
         const _montoUSDItem = _hayUSD ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total USD</span><span class="calculador-resultado-valor">${fmt(_usdTotal, 'usd')}</span></div>` : '';
         const _promARS = _arsCount > 0 ? _arsTotal / _arsCount : 0;
@@ -4762,7 +4776,7 @@ class CalculadorService {
         this.servicios.forEach(servicio => {
             if (categoriaActiva && servicio.id !== this.app.SERVICIO_INGRESOS_ID && (servicio.categoria || '') !== categoriaActiva) return;
             servicio.facturas.forEach(factura => {
-                const fechaVenc = this.app._parseDate(factura.fecha);
+                const fechaVenc = this.app.utils.parseDate(factura.fecha);
                 const venceEsteMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
                 if (servicio.id === this.app.SERVICIO_INGRESOS_ID) {
                     if (venceEsteMes) ingresos.push({ servicio, factura });
@@ -4770,16 +4784,16 @@ class CalculadorService {
                 }
                 if (venceEsteMes) { facturasMes.push({ servicio, factura, venceEsteMes: true }); }
                 else if (factura.pagada && factura.fechaPago) {
-                    const fp = this.app._parseDate(factura.fechaPago);
+                    const fp = this.app.utils.parseDate(factura.fechaPago);
                     if (fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado) facturasPagadasMes.push({ servicio, factura, venceEsteMes: false });
                 }
             });
         });
-        const fmtFecha = str => !str ? '—' : this.app._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const fmtFecha = str => !str ? '—' : this.app.utils.parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const estadoFactura = factura => {
             if (factura.conCredito) return 'Con crédito';
-            if (factura.pagada) { const mp = factura.fechaPago ? this.app._parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' }) : ''; return `Pagada${mp ? ` en ${mp}` : ''}`; }
-            const venc = this.app._parseDate(factura.fecha); venc.setHours(0, 0, 0, 0);
+            if (factura.pagada) { const mp = factura.fechaPago ? this.app.utils.parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' }) : ''; return `Pagada${mp ? ` en ${mp}` : ''}`; }
+            const venc = this.app.utils.parseDate(factura.fecha); venc.setHours(0, 0, 0, 0);
             return venc < hoy ? 'Vencida (pendiente)' : 'Pendiente';
         };
         const sumar = (lista, pagada) => lista.filter(({ factura: f }) => pagada ? f.pagada : !f.pagada).reduce((acc, { factura: f }) => { if ((f.moneda || 'ars') === 'usd') acc.usd += f.monto; else acc.ars += f.monto; return acc; }, { ars: 0, usd: 0 });
@@ -4793,7 +4807,7 @@ class CalculadorService {
         const totalIngresosUSD = ingresos.reduce((a, { factura: f }) => (f.moneda || 'ars') === 'usd' ? a + f.monto : a, 0);
         const sep = '─'.repeat(48), sep2 = '═'.repeat(48);
         const linea = (label, valor) => `  ${label.padEnd(28)} ${valor}`;
-        const fmt = (m, mon) => this.app.formatearMoneda(m, mon);
+        const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         let txt = `${sep2}\n  REPORTE DE ESTADÍSTICAS\n  Período: ${nombreMes.toUpperCase()}${categoriaActiva ? `  |  Categoría: ${categoriaActiva}` : ''}\n  Generado: ${new Date().toLocaleString('es-AR')}\n${sep2}\n\n`;
         txt += `FACTURAS QUE VENCEN EN ${nombreMesCorto.toUpperCase()}\n${sep}\n`;
         if (facturasMes.length === 0) { txt += `  (ninguna)\n`; }
@@ -4815,7 +4829,7 @@ class CalculadorService {
         if (facturasPagadasMes.length === 0) { txt += `  (ninguna)\n`; }
         else {
             facturasPagadasMes.forEach(({ servicio, factura }) => {
-                const mesVenc = this.app._parseDate(factura.fecha).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+                const mesVenc = this.app.utils.parseDate(factura.fecha).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
                 txt += `\n  ${servicio.nombre}\n${linea('  Vencimiento original:', `${fmtFecha(factura.fecha)} (${mesVenc})`)}\n${linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars'))}\n${linea('  Fecha de pago:', fmtFecha(factura.fechaPago))}\n`;
             });
             txt += `\n${sep}\n`;
@@ -4832,7 +4846,7 @@ class CalculadorService {
             if (totalIngresosUSD > 0) txt += linea('  Total ingresos (USD):', fmt(totalIngresosUSD, 'usd')) + '\n';
         }
         txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
-        this.app._descargarBlob(txt, `reporte_${nombreMes.replace(' ', '_')}.txt`);
+        this.app.utils.descargarBlob(txt, `reporte_${nombreMes.replace(' ', '_')}.txt`);
         this.app.mostrarToast('Reporte generado', 'success');
     }
 
@@ -4844,10 +4858,10 @@ class CalculadorService {
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-        const fmtFecha = str => !str ? '—' : this.app._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const fmtFecha = str => !str ? '—' : this.app.utils.parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         let facturas = [...servicio.facturas];
-        if (desde) facturas = facturas.filter(f => this.app._parseDate(f.fecha) >= this.app._parseDate(desde));
-        if (hasta) facturas = facturas.filter(f => this.app._parseDate(f.fecha) <= this.app._parseDate(hasta));
+        if (desde) facturas = facturas.filter(f => this.app.utils.parseDate(f.fecha) >= this.app.utils.parseDate(desde));
+        if (hasta) facturas = facturas.filter(f => this.app.utils.parseDate(f.fecha) <= this.app.utils.parseDate(hasta));
         facturas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
         let totalARS = 0, totalUSD = 0, pagadasARS = 0, pagadasUSD = 0, pendientesARS = 0, pendientesUSD = 0;
         facturas.forEach(f => {
@@ -4859,7 +4873,7 @@ class CalculadorService {
         const usdF = facturas.filter(f => (f.moneda || 'ars') === 'usd').length;
         const promARS = arsF > 0 ? totalARS / arsF : 0;
         const promUSD = usdF > 0 ? totalUSD / usdF : 0;
-        const fmt = (m, mon) => this.app.formatearMoneda(m, mon);
+        const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         const sep = '─'.repeat(48), sep2 = '═'.repeat(48);
         const linea = (label, valor) => `  ${label.padEnd(28)} ${valor}`;
         const periodoTxt = desde || hasta ? `${desde ? fmtFecha(desde) : '—'}  →  ${hasta ? fmtFecha(hasta) : '—'}` : 'Sin filtro de fechas';
@@ -4870,8 +4884,8 @@ class CalculadorService {
                 const moneda = f.moneda || 'ars';
                 let estadoTxt;
                 if      (f.conCredito) { estadoTxt = 'Con crédito'; }
-                else if (f.pagada)     { const mp = f.fechaPago ? this.app._parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : ''; estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`; }
-                else                   { const venc = this.app._parseDate(f.fecha); venc.setHours(0, 0, 0, 0); estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente'; }
+                else if (f.pagada)     { const mp = f.fechaPago ? this.app.utils.parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : ''; estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`; }
+                else                   { const venc = this.app.utils.parseDate(f.fecha); venc.setHours(0, 0, 0, 0); estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente'; }
                 txt += `\n  #${String(i + 1).padStart(2, '0')}  ${fmtFecha(f.fecha)}\n${linea('  Monto:', fmt(f.monto, moneda))}\n${linea('  Estado:', estadoTxt)}\n`;
                 if (f.pagada && f.fechaPago) txt += linea('  Fecha de pago:', fmtFecha(f.fechaPago)) + '\n';
                 if (f.tipo && f.tipo !== 'mensual') txt += linea('  Tipo:', f.tipo) + '\n';
@@ -4887,7 +4901,7 @@ class CalculadorService {
             if (pendientesUSD > 0) txt += linea('  Pendiente USD:',fmt(pendientesUSD,'usd')) + '\n';
         }
         txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
-        this.app._descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
+        this.app.utils.descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
         this.app.mostrarToast('Reporte generado', 'success');
     }
 }
@@ -5192,14 +5206,14 @@ class GistService {
                 return;
             }
             const partes = [];
-            if (serviciosAgregados  > 0) partes.push(this.app._plural(serviciosAgregados,  'servicio',       'servicios'));
-            if (facturasAgregadas   > 0) partes.push(this.app._plural(facturasAgregadas,   'factura nueva',  'facturas nuevas'));
-            if (facturasActualizadas > 0) partes.push(this.app._plural(facturasActualizadas,'actualizada',    'actualizadas'));
-            if (ingresosAgregados   > 0) partes.push(this.app._plural(ingresosAgregados,   'ingreso nuevo',  'ingresos nuevos'));
-            if (categoriasAgregadas > 0) partes.push(this.app._plural(categoriasAgregadas, 'categoría',      'categorías'));
+            if (serviciosAgregados  > 0) partes.push(this.app.utils.plural(serviciosAgregados,  'servicio',       'servicios'));
+            if (facturasAgregadas   > 0) partes.push(this.app.utils.plural(facturasAgregadas,   'factura nueva',  'facturas nuevas'));
+            if (facturasActualizadas > 0) partes.push(this.app.utils.plural(facturasActualizadas,'actualizada',    'actualizadas'));
+            if (ingresosAgregados   > 0) partes.push(this.app.utils.plural(ingresosAgregados,   'ingreso nuevo',  'ingresos nuevos'));
+            if (categoriasAgregadas > 0) partes.push(this.app.utils.plural(categoriasAgregadas, 'categoría',      'categorías'));
             toastMsg = `Importado: ${partes.join(', ')}`;
         }
-        this.app._postGuardado();
+        this.app.utils.postGuardado();
         const ahora = new Date().toLocaleString('es-AR');
         this.setPerfil({ gistLastSync: ahora });
         this.marcarSync('bajar');
@@ -5432,9 +5446,9 @@ class StorageService {
                 categorias: this.app._getCategorias(),
                 servicios: this.servicios
             };
-            this.app._descargarBlob(
+            this.app.utils.descargarBlob(
                 JSON.stringify(datos, null, 2),
-                `servicios_${this.app.obtenerFechaLocal()}.json`,
+                `servicios_${this.app.utils.obtenerFechaLocal()}.json`,
                 'application/json'
             );
             this.app.mostrarToast('Datos exportados correctamente', 'success');
@@ -5481,10 +5495,10 @@ class StorageService {
                         this._aplicarImportacion('combinar', datos);
                     } else {
                         const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
-                        const partes = [this.app._plural(cantidad, 'servicio', 'servicios')];
-                        if (facturas > 0) partes.push(this.app._plural(facturas, 'factura', 'facturas'));
-                        if (ingresos > 0) partes.push(this.app._plural(ingresos, 'ingreso', 'ingresos'));
-                        if (cats.length > 0) partes.push(this.app._plural(cats.length, 'categoría', 'categorías'));
+                        const partes = [this.app.utils.plural(cantidad, 'servicio', 'servicios')];
+                        if (facturas > 0) partes.push(this.app.utils.plural(facturas, 'factura', 'facturas'));
+                        if (ingresos > 0) partes.push(this.app.utils.plural(ingresos, 'ingreso', 'ingresos'));
+                        if (cats.length > 0) partes.push(this.app.utils.plural(cats.length, 'categoría', 'categorías'));
                         if (confirm(`Se restaurarán ${partes.join(', ')}. ¿Deseas reemplazar todos los datos actuales?`)) {
                             this._aplicarImportacion('reemplazar', datos);
                         }
@@ -5542,24 +5556,24 @@ class StorageService {
                 this.app.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
             }
             const partes = [];
-            if (serviciosAgregados > 0) partes.push(this.app._plural(serviciosAgregados, 'servicio', 'servicios'));
-            if (facturasAgregadas > 0) partes.push(this.app._plural(facturasAgregadas, 'factura nueva', 'facturas nuevas'));
-            if (facturasActualizadas > 0) partes.push(this.app._plural(facturasActualizadas, 'actualizada', 'actualizadas'));
-            if (ingresosAgregados > 0) partes.push(this.app._plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
-            if (categoriasAgregadas > 0) partes.push(this.app._plural(categoriasAgregadas, 'categoría', 'categorías'));
-            this.app._postGuardado();
+            if (serviciosAgregados > 0) partes.push(this.app.utils.plural(serviciosAgregados, 'servicio', 'servicios'));
+            if (facturasAgregadas > 0) partes.push(this.app.utils.plural(facturasAgregadas, 'factura nueva', 'facturas nuevas'));
+            if (facturasActualizadas > 0) partes.push(this.app.utils.plural(facturasActualizadas, 'actualizada', 'actualizadas'));
+            if (ingresosAgregados > 0) partes.push(this.app.utils.plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
+            if (categoriasAgregadas > 0) partes.push(this.app.utils.plural(categoriasAgregadas, 'categoría', 'categorías'));
+            this.app.utils.postGuardado();
             this.app.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
         } else {
             this.servicios = datos.servicios;
             this.app._saveCategorias(cats);
-            this.app._postGuardado();
+            this.app.utils.postGuardado();
             const cantidad = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).length;
             const facturas = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
             const ingresos = datos.servicios.find(s => s.id === this.INGRESOS_ID)?.facturas.length || 0;
-            const partes = [this.app._plural(cantidad, 'servicio', 'servicios')];
-            if (facturas > 0) partes.push(this.app._plural(facturas, 'factura', 'facturas'));
-            if (ingresos > 0) partes.push(this.app._plural(ingresos, 'ingreso', 'ingresos'));
-            if (cats.length > 0) partes.push(this.app._plural(cats.length, 'categoría', 'categorías'));
+            const partes = [this.app.utils.plural(cantidad, 'servicio', 'servicios')];
+            if (facturas > 0) partes.push(this.app.utils.plural(facturas, 'factura', 'facturas'));
+            if (ingresos > 0) partes.push(this.app.utils.plural(ingresos, 'ingreso', 'ingresos'));
+            if (cats.length > 0) partes.push(this.app.utils.plural(cats.length, 'categoría', 'categorías'));
             this.app.mostrarToast(`Restaurados: ${partes.join(', ')}`, 'success');
         }
     }
@@ -5597,11 +5611,11 @@ class StorageService {
 
         const facturasEnNuevos = soloEnRemoto.reduce((a, s) => a + s.facturas.length, 0);
         const partesAgregar = [];
-        if (soloEnRemoto.length > 0) partesAgregar.push(this.app._plural(soloEnRemoto.length, 'servicio nuevo', 'servicios nuevos'));
-        if (facturasEnNuevos > 0) partesAgregar.push(this.app._plural(facturasEnNuevos, 'factura nueva', 'facturas nuevas'));
-        if (facturasNuevas > 0) partesAgregar.push(this.app._plural(facturasNuevas, 'factura nueva en servicios existentes', 'facturas nuevas en servicios existentes'));
-        if (ingresosNuevos > 0) partesAgregar.push(this.app._plural(ingresosNuevos, 'ingreso nuevo', 'ingresos nuevos'));
-        if (catsNuevas.length > 0) partesAgregar.push(this.app._plural(catsNuevas.length, 'categoría nueva', 'categorías nuevas'));
+        if (soloEnRemoto.length > 0) partesAgregar.push(this.app.utils.plural(soloEnRemoto.length, 'servicio nuevo', 'servicios nuevos'));
+        if (facturasEnNuevos > 0) partesAgregar.push(this.app.utils.plural(facturasEnNuevos, 'factura nueva', 'facturas nuevas'));
+        if (facturasNuevas > 0) partesAgregar.push(this.app.utils.plural(facturasNuevas, 'factura nueva en servicios existentes', 'facturas nuevas en servicios existentes'));
+        if (ingresosNuevos > 0) partesAgregar.push(this.app.utils.plural(ingresosNuevos, 'ingreso nuevo', 'ingresos nuevos'));
+        if (catsNuevas.length > 0) partesAgregar.push(this.app.utils.plural(catsNuevas.length, 'categoría nueva', 'categorías nuevas'));
 
         const partes = [];
         if (partesAgregar.length > 0) partes.push(`Agrega ${partesAgregar.join(', ')}`);
@@ -5609,10 +5623,10 @@ class StorageService {
         const textoCombinar = partes.length > 0 ? partes.join('. ') : 'No modifica nada';
 
         const partesReempl = [];
-        if (totalServRem > 0) partesReempl.push(this.app._plural(totalServRem, 'servicio', 'servicios'));
-        if (totalFactRem > 0) partesReempl.push(this.app._plural(totalFactRem, 'factura', 'facturas'));
-        if (totalIngRem > 0) partesReempl.push(this.app._plural(totalIngRem, 'ingreso', 'ingresos'));
-        if (categoriasRemoto.length > 0) partesReempl.push(this.app._plural(categoriasRemoto.length, 'categoría', 'categorías'));
+        if (totalServRem > 0) partesReempl.push(this.app.utils.plural(totalServRem, 'servicio', 'servicios'));
+        if (totalFactRem > 0) partesReempl.push(this.app.utils.plural(totalFactRem, 'factura', 'facturas'));
+        if (totalIngRem > 0) partesReempl.push(this.app.utils.plural(totalIngRem, 'ingreso', 'ingresos'));
+        if (categoriasRemoto.length > 0) partesReempl.push(this.app.utils.plural(categoriasRemoto.length, 'categoría', 'categorías'));
         const textoReemplazar = partesReempl.length > 0 ? `Carga ${partesReempl.join(', ')}` : 'No modifica nada';
 
         return `<strong>Combinar:</strong> ${textoCombinar}<br><strong>Reemplazar:</strong> ${textoReemplazar}`;
