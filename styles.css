@@ -24,7 +24,8 @@
             --transition-base: 0.3s;
         }
 
-        body.dark-mode {
+        body.dark-mode,
+        html.dark-mode body {
             --bg-body: #131314;
             --bg-card: #1e1f20;
             --bg-header: #131314f6;
@@ -33,6 +34,13 @@
             --border: #313333;
             --input-bg: #313333;
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Suprimir transiciones durante carga inicial para evitar parpadeo */
+        html.no-transition *,
+        html.no-transition *::before,
+        html.no-transition *::after {
+            transition: none !important;
         }
 
         /* ============================================================

@@ -30,22 +30,6 @@
     });
 })();
 
-// Aplicar tema INMEDIATAMENTE antes de renderizar (evitar parpadeo)
-(function () {
-    try {
-        var tema = localStorage.getItem('gestion_servicios_theme');
-        if (tema === 'dark' || tema === null) {
-            // Si es dark O primera vez (null), activar modo oscuro
-            document.body.classList.add('dark-mode');
-        } else if (tema === 'light') {
-            document.body.classList.remove('dark-mode');
-        }
-    } catch (e) {
-        // En caso de error, modo oscuro por defecto
-        document.body.classList.add('dark-mode');
-    }
-})();
-
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
 // ============================================
@@ -121,6 +105,8 @@ class GestionServicios {
         this._estadisticaCategoriaActiva = null;
 
         // Servicios auxiliares
+        this.calculador = new CalculadorService(this);
+        this.gist = new GistService(this);
         this.historial_mgr = new HistorialManager(this);
         this.storage = new StorageService(this);
 
@@ -528,133 +514,14 @@ class GestionServicios {
     // MENÚ CONTEXTUAL Y CALCULADORA
     // ========================================
 
-    activarModoCalculadora(silencioso = false) {
-        this.modoCalculadora = true;
-        this.serviciosSeleccionados.clear();
-
-        const btnAdd = document.getElementById('btn-agregar-servicio');
-        btnAdd.classList.add('modo-calculadora');
-
-        this.actualizarCalculadora();
-        this.renderServicios();
-
-        if (!silencioso) {
-            const flotante = document.getElementById('calculadora-flotante');
-            flotante.classList.add('visible');
-
-            flotante.onclick = () => {
-                const arsVal = this._calcTotalARS ?? 0;
-                const usdVal = this._calcTotalUSD ?? 0;
-                const fmt = n => Number.isInteger(n) ? String(n) : n.toFixed(2);
-                let texto = fmt(arsVal);
-                if (usdVal > 0) texto += ` / ${fmt(usdVal)}`;
-                navigator.clipboard.writeText(texto).then(() => {
-                    const contador = document.getElementById('calculadora-contador');
-                    const textoOriginal = contador.textContent;
-                    contador.textContent = '✓ Copiado';
-                    setTimeout(() => { contador.textContent = textoOriginal; }, 1200);
-                });
-            };
-        }
-    }
-
-    desactivarModoCalculadora(silencioso = false) {
-        this.modoCalculadora = false;
-        this.modoCalculadoraTipo = 'pendientes';
-        this.serviciosSeleccionados.clear();
-
-        const btnAdd = document.getElementById('btn-agregar-servicio');
-        btnAdd.classList.remove('modo-calculadora');
-
-        this.actualizarCalculadora();
-        this.renderServicios();
-
-        document.getElementById('calculadora-flotante').classList.remove('visible');
-        if (!silencioso) this.mostrarToast('Calculadora Desactivada', 'info');
-    }
-
-    toggleServicioCalculadora(servicioId) {
-        if (!this.modoCalculadora) return;
-
-        if (this.serviciosSeleccionados.has(servicioId)) {
-            this.serviciosSeleccionados.delete(servicioId);
-
-            // Si no quedan servicios seleccionados, salir del modo
-            if (this.serviciosSeleccionados.size === 0) {
-                this.desactivarModoCalculadora();
-                return;
-            }
-        } else {
-            this.serviciosSeleccionados.add(servicioId);
-        }
-
-        this.actualizarCalculadora();
-        this.renderServicios();
-    }
-
-    actualizarCalculadora() {
-        if (!this.modoCalculadora) return;
-
-        let totalARS = 0;
-        let totalUSD = 0;
-        let contadorFacturas = 0;
-
-        const { mes: mesActual, anio: anioActual, mesSiguiente, anioSiguiente } = this._mesActualInfo();
-
-        this.serviciosSeleccionados.forEach(servicioId => {
-            const servicio = this.servicios.find(s => s.id === servicioId);
-            if (!servicio) return;
-
-            servicio.facturas.forEach(factura => {
-                /* if (factura.monto > 0 && !factura.conCredito) { 
-                NO CONTAR FACTURAS CON CREDITO COMENTADO */
-                if (factura.monto > 0) {
-                    const fechaFactura = this._parseDate(factura.fecha);
-                    const mesFactura = fechaFactura.getMonth();
-                    const anioFactura = fechaFactura.getFullYear();
-                    const esMesActual = (mesFactura === mesActual && anioFactura === anioActual);
-
-                    if (this.modoCalculadoraTipo === 'pendientes') {
-                        if (factura.pagada) return;
-                        const { mesPasado, anioPasado } = this._mesActualInfo();
-                        const esMesSiguiente = (mesFactura === mesSiguiente && anioFactura === anioSiguiente);
-                        const esMesPasado = (mesFactura === mesPasado && anioFactura === anioPasado);
-                        if (!esMesActual && !esMesSiguiente && !esMesPasado) return;
-                    } else if (this.modoCalculadoraTipo === 'pagados') {
-                        if (!factura.pagada) return;
-                        const fechaPago = factura.fechaPago ? this._parseDate(factura.fechaPago) : null;
-                        const esPagadaEsteMes = fechaPago && fechaPago.getMonth() === mesActual && fechaPago.getFullYear() === anioActual;
-                        if (!esMesActual && !esPagadaEsteMes) return;
-                    }
-
-                    if ((factura.moneda || 'ars') === 'usd') {
-                        totalUSD += factura.monto;
-                    } else {
-                        totalARS += factura.monto;
-                    }
-                    contadorFacturas++;
-                }
-            });
-        });
-
-        // Mostrar ARS (siempre visible, aunque sea $0)
-        this._calcTotalARS = totalARS;
-        this._calcTotalUSD = totalUSD;
-        document.getElementById('calculadora-total').textContent = this.formatearMoneda(totalARS, 'ars');
-
-        // Mostrar USD solo si hay monto
-        const elUSD = document.getElementById('calculadora-total-usd');
-        if (totalUSD > 0) {
-            elUSD.textContent = this.formatearMoneda(totalUSD, 'usd');
-            elUSD.classList.add('visible');
-        } else {
-            elUSD.classList.remove('visible');
-        }
-
-        // Actualizar contador con plural correcto
-        const textoFacturas = contadorFacturas === 1 ? 'factura' : 'facturas';
-        document.getElementById('calculadora-contador').textContent = `${contadorFacturas} ${textoFacturas}`;
-    }
+    // ── Delegación a CalculadorService ───────────────────────
+    activarModoCalculadora(silencioso = false)   { this.calculador.activarModo(silencioso); }
+    desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
+    toggleServicioCalculadora(servicioId)        { this.calculador.toggleServicio(servicioId); }
+    actualizarCalculadora()                      { this.calculador.actualizar(); }
+    calcularPeriodo()                            { this.calculador.calcularPeriodo(); }
+    generarReporteEstadisticas()                 { this.calculador.generarReporte(); }
+    _generarReporteIndividual()                  { this.calculador._generarReporteIndividual(); }
 
     validarMonto(monto, permitirNegativos = false) {
         // Validar que sea un número
@@ -3949,6 +3816,7 @@ class GestionServicios {
     toggleTema() {
         document.body.classList.toggle('dark-mode');
         const esDark = document.body.classList.contains('dark-mode');
+        document.documentElement.classList.toggle('dark-mode', esDark);
         localStorage.setItem(this.THEME_KEY, esDark ? 'dark' : 'light');
         this._actualizarIconoTema(esDark);
         this.mostrarToast(`Tema ${esDark ? 'oscuro' : 'claro'} activado`, 'success');
@@ -4503,668 +4371,31 @@ class GestionServicios {
     // GIST SYNC
     // ========================================
 
-    gistGetToken() {
-        return localStorage.getItem('gist_token') || '';
-    }
+    // ── Delegación a GistService ──────────────────────────────
+    gistGetToken()                       { return this.gist.getToken(); }
+    gistGetPerfil()                      { return this.gist.getPerfil(); }
+    gistSetPerfil(campos)                { this.gist.setPerfil(campos); }
+    gistEsIdValido(id)                   { return this.gist.esIdValido(id); }
+    _gistClaveHoraActual()               { return this.gist._claveHoraActual(); }
+    gistSuperaLimite(tipo, limite)       { return this.gist.superaLimite(tipo, limite); }
+    gistMarcarSync(tipo)                 { this.gist.marcarSync(tipo); }
+    gistDentroDelRango()                 { return this.gist.dentroDelRango(); }
+    gistGetMergeBehavior()               { return this.gist.getMergeBehavior(); }
+    async gistCalcularHash(texto)        { return this.gist.calcularHash(texto); }
+    actualizarBotonesGist()              { this.gist.actualizarBotones(); }
+    gistCiclarAutoSync()                 { this.gist.ciclarAutoSync(); }
+    gistCiclarMerge()                    { this.gist.ciclarMerge(); }
+    abrirModalGist()                     { this.gist.abrirModal(); }
+    gistGuardarConfig()                  { this.gist.guardarConfig(); }
+    _gistGuardarCredencialesModal()      { this.gist._guardarCredencialesModal(); }
+    async gistSubir()                    { await this.gist.subir(); }
+    async _gistDescargar()               { return this.gist._descargar(); }
+    async gistBajar(esAutomatico = false){ await this.gist.bajar(esAutomatico); }
+    _mergeCategorias(catsNuevas)         { return this.gist.mergeCategorias(catsNuevas); }
+    gistMergeAplicar(modo, esAuto)       { this.gist.mergeAplicar(modo, esAuto); }
+    async gistAutoSyncInit()             { await this.gist.autoSyncInit(); }
 
-    gistGetPerfil() {
-        return this.perfiles[this.perfilActivo] || {};
-    }
 
-    gistSetPerfil(campos) {
-        if (!this.perfiles[this.perfilActivo]) return;
-        Object.assign(this.perfiles[this.perfilActivo], campos);
-        this.guardarPerfiles();
-    }
-
-    gistEsIdValido(id) {
-        return /^[a-f0-9]{20,40}$/i.test(id || '');
-    }
-
-    // Clave por hora para límites de auto-sync (se resetea al cambiar de hora)
-    _gistClaveHoraActual() {
-        const ahora = new Date();
-        return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ${String(ahora.getHours()).padStart(2, '0')}`;
-    }
-
-    // Devuelve true si ya alcanzó el límite de syncs de ese tipo en esta hora
-    gistSuperaLimite(tipo, limite) {
-        const perfil = this.gistGetPerfil();
-        const claveHora = this._gistClaveHoraActual();
-        const fechaGuardada = perfil[`gistSyncFecha_${tipo}`];
-        const count = perfil[`gistSyncCount_${tipo}`] ?? 0;
-        if (fechaGuardada !== claveHora) return false; // hora nueva, contador resetado
-        return count >= limite;
-    }
-
-    // Marca una sync del tipo indicado (incrementa contador si es la misma hora)
-    gistMarcarSync(tipo) {
-        const perfil = this.gistGetPerfil();
-        const claveHora = this._gistClaveHoraActual();
-        const fechaGuardada = perfil[`gistSyncFecha_${tipo}`];
-        const count = fechaGuardada === claveHora ? (perfil[`gistSyncCount_${tipo}`] ?? 0) : 0;
-        this.gistSetPerfil({
-            [`gistSyncFecha_${tipo}`]: claveHora,
-            [`gistSyncCount_${tipo}`]: count + 1
-        });
-    }
-
-    // Rango horario — soporta rangos que cruzan medianoche
-    gistDentroDelRango() {
-        const perfil = this.gistGetPerfil();
-        const desde = perfil.gistRangoDesde || '00:00';
-        const hasta = perfil.gistRangoHasta || '23:59';
-        const ahora = new Date();
-        const hhmm = ahora.getHours().toString().padStart(2, '0') + ':' + ahora.getMinutes().toString().padStart(2, '0');
-        if (desde <= hasta) {
-            return hhmm >= desde && hhmm <= hasta; // rango normal
-        } else {
-            return hhmm >= desde || hhmm <= hasta; // cruza medianoche
-        }
-    }
-
-    // Comportamiento de bajada: 'merge' | 'replace'
-    gistGetMergeBehavior() {
-        return this.gistGetPerfil().gistMergeBehavior || 'merge';
-    }
-
-    async gistCalcularHash(texto) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(texto);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    actualizarBotonesGist() {
-        const btnRespaldar = document.getElementById('btn-hist-respaldar');
-        const btnRestaurar = document.getElementById('btn-hist-restaurar');
-        if (!btnRespaldar || !btnRestaurar) return;
-
-        const tieneGist = this.gistEsIdValido(this.gistGetPerfil().gistId);
-
-        if (tieneGist) {
-            btnRespaldar.title = 'Subir a Gist';
-            btnRespaldar.onclick = () => this.gistSubir();
-            btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
-
-            btnRestaurar.title = 'Bajar de Gist';
-            btnRestaurar.onclick = () => this.gistBajar();
-            btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
-        } else {
-            btnRespaldar.title = 'Respaldar';
-            btnRespaldar.onclick = () => this.exportarDatos();
-            btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
-
-            btnRestaurar.title = 'Restaurar';
-            btnRestaurar.onclick = () => this.importarDatos('reemplazar');
-            btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
-        }
-    }
-
-    gistCiclarAutoSync() {
-        const estados = ['Sin automatizar', 'Restaurar al iniciar', 'Respaldo automático'];
-        const actual = this._gistAutoSyncTemp ?? (this.gistGetPerfil().gistAutoSync ?? 0);
-        this._gistAutoSyncTemp = (actual + 1) % 3;
-        document.getElementById('gist-autosync-btn').textContent = estados[this._gistAutoSyncTemp];
-        document.getElementById('gist-rango-container').classList.toggle('visible', this._gistAutoSyncTemp > 0);
-    }
-
-    gistCiclarMerge() {
-        const opciones = ['merge', 'replace'];
-        const etiquetas = ['Combinar (no reemplaza existentes)', 'Reemplazar todo con datos del Gist'];
-        const actual = this._gistMergeBehaviorTemp ?? (this.gistGetMergeBehavior());
-        const siguiente = actual === 'merge' ? 'replace' : 'merge';
-        this._gistMergeBehaviorTemp = siguiente;
-        document.getElementById('gist-merge-btn').textContent = etiquetas[opciones.indexOf(siguiente)];
-    }
-
-    abrirModalGist() {
-        const perfil = this.gistGetPerfil();
-        const token = this.gistGetToken();
-        const autoSync = perfil.gistAutoSync ?? 0;
-        const merge = perfil.gistMergeBehavior || 'merge';
-        const estados = ['Sin automatizar', 'Restaurar al iniciar', 'Respaldo automático'];
-        const etiquetasMerge = { merge: 'Combinar (no reemplaza existentes)', replace: 'Reemplazar todo con datos del Gist' };
-
-        this._gistAutoSyncTemp = autoSync;
-        this._gistMergeBehaviorTemp = merge;
-
-        document.getElementById('gist-token').value = token;
-        document.getElementById('gist-id').value = perfil.gistId || '';
-        document.getElementById('gist-autosync-btn').textContent = estados[autoSync];
-        document.getElementById('gist-rango-container').classList.toggle('visible', autoSync > 0);
-        document.getElementById('gist-rango-desde').value = perfil.gistRangoDesde || '00:00';
-        document.getElementById('gist-rango-hasta').value = perfil.gistRangoHasta || '23:59';
-        document.getElementById('gist-merge-btn').textContent = etiquetasMerge[merge];
-
-        const elSync = document.getElementById('gist-ultima-sync');
-        if (perfil.gistLastSync) {
-            elSync.textContent = `Última sincronización: ${perfil.gistLastSync}`;
-            elSync.classList.add('visible');
-        } else {
-            elSync.classList.remove('visible');
-        }
-
-        this.abrirModal('modal-gist');
-    }
-
-    gistGuardarConfig() {
-        const token = document.getElementById('gist-token').value.trim();
-        const gistId = document.getElementById('gist-id').value.trim();
-        const autoSync = this._gistAutoSyncTemp ?? 0;
-        const merge = this._gistMergeBehaviorTemp ?? 'merge';
-        const desde = document.getElementById('gist-rango-desde').value;
-        const hasta = document.getElementById('gist-rango-hasta').value;
-
-        if (token) {
-            localStorage.setItem('gist_token', token);
-        } else {
-            localStorage.removeItem('gist_token');
-        }
-
-        this.gistSetPerfil({
-            gistId: gistId || '',
-            gistAutoSync: autoSync,
-            gistRangoDesde: desde || '00:00',
-            gistRangoHasta: hasta || '23:59',
-            gistMergeBehavior: merge,
-        });
-
-        this.mostrarToast('Configuración guardada', 'success');
-        this.cerrarModal('modal-gist');
-        this.actualizarBotonesGist();
-    }
-
-    _gistGuardarCredencialesModal() {
-        const inputToken = document.getElementById('gist-token');
-        const inputId = document.getElementById('gist-id');
-        if (inputToken?.value.trim()) localStorage.setItem('gist_token', inputToken.value.trim());
-        if (inputId?.value.trim()) this.gistSetPerfil({ gistId: inputId.value.trim() });
-    }
-
-    async gistSubir() {
-        const token = this.gistGetToken();
-        const perfil = this.gistGetPerfil();
-        if (!token) { this.mostrarToast('Falta el token', 'error'); return; }
-
-        this._gistGuardarCredencialesModal();
-        const inputId = document.getElementById('gist-id');
-
-        const categorias = this._getCategorias();
-        const datos = JSON.stringify({ servicios: this.servicios, categorias }, null, 2);
-        const hash = await this.gistCalcularHash(datos);
-        const contenido = JSON.stringify({ hash, servicios: this.servicios, categorias }, null, 2);
-        const nombreArchivo = `deltaF_${this.perfilActivo}.json`;
-
-        const btnSubir = document.getElementById('gist-btn-subir');
-        if (btnSubir) btnSubir.disabled = true;
-
-        try {
-            this.mostrarToast('Subiendo...', 'info');
-            const perfilActual = this.gistGetPerfil();
-            let url, method;
-            if (this.gistEsIdValido(perfilActual.gistId)) {
-                url = `https://api.github.com/gists/${perfilActual.gistId}`;
-                method = 'PATCH';
-            } else {
-                url = 'https://api.github.com/gists';
-                method = 'POST';
-            }
-
-            const res = await fetch(url, {
-                method,
-                headers: {
-                    'Authorization': `Bearer ${this.gistGetToken()}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    description: `DeltaF backup — ${this.perfiles[this.perfilActivo]?.nombre || this.perfilActivo}`,
-                    public: false,
-                    files: { [nombreArchivo]: { content: contenido } }
-                })
-            });
-
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
-
-            const ahora = new Date().toLocaleString('es-AR');
-            this.gistSetPerfil({ gistId: json.id, gistLastSync: ahora });
-            this.gistMarcarSync('subir');
-
-            if (inputId) inputId.value = json.id;
-            const elSync = document.getElementById('gist-ultima-sync');
-            if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
-
-            this.mostrarToast('Subida exitosa ✓', 'success');
-        } catch (err) {
-            console.error(err);
-            this.mostrarToast('Error al subir', 'error');
-        } finally {
-            if (btnSubir) btnSubir.disabled = false;
-        }
-    }
-
-    // Descarga del Gist y retorna los servicios parseados (sin aplicar aún)
-    async _gistDescargar() {
-        const token = this.gistGetToken();
-        const perfil = this.gistGetPerfil();
-        if (!token) throw new Error('Falta el token');
-        if (!this.gistEsIdValido(perfil.gistId)) throw new Error('Gist ID inválido');
-
-        const res = await fetch(`https://api.github.com/gists/${perfil.gistId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-
-        const nombreArchivo = `deltaF_${this.perfilActivo}.json`;
-        const archivoObj = json.files[nombreArchivo];
-        if (!archivoObj) throw new Error('Archivo no encontrado en el Gist');
-
-        let parsed;
-        try { parsed = JSON.parse(archivoObj.content); } catch { throw new Error('JSON inválido'); }
-
-        const datosStr = JSON.stringify({ servicios: parsed.servicios, categorias: parsed.categorias || [] }, null, 2);
-        const hashEsperado = await this.gistCalcularHash(datosStr);
-        if (hashEsperado !== parsed.hash) throw new Error('Hash no coincide — datos corruptos');
-
-        const servicios = parsed.servicios;
-        const categorias = parsed.categorias || [];
-        if (!Array.isArray(servicios)) throw new Error('Estructura inválida');
-
-        return { servicios, categorias };
-    }
-
-    async gistBajar(esAutomatico = false) {
-        this._gistGuardarCredencialesModal();
-
-        const btnBajar = document.getElementById('gist-btn-bajar');
-        if (btnBajar) btnBajar.disabled = true;
-
-        try {
-            this.mostrarToast('Bajando...', 'info');
-            const { servicios: serviciosGist, categorias: categoriasGist } = await this._gistDescargar();
-
-            // Analizar diferencias
-            const fechasLocales = new Set(this.servicios.map(s => s.id));
-            const fechasGist = new Set(serviciosGist.map(s => s.id));
-
-            const soloEnGist = serviciosGist.filter(s => !fechasLocales.has(s.id));
-            const enAmbos = serviciosGist.filter(s => fechasLocales.has(s.id));
-            const soloLocal = this.servicios.filter(s => !fechasGist.has(s.id));
-
-            this._gistDatosPendientes = { servicios: serviciosGist, categorias: categoriasGist };
-
-            if (esAutomatico) {
-                this.gistMergeAplicar(this.gistGetMergeBehavior(), true);
-            } else {
-                const resumen = document.getElementById('gist-merge-resumen');
-                if (resumen) {
-                    resumen.innerHTML = this._generarResumenComparacion(serviciosGist, 'Gist', categoriasGist);
-                }
-                this.abrirModal('modal-gist-merge');
-            }
-        } catch (err) {
-            console.error(err);
-            this.mostrarToast(`Error al bajar: ${err.message}`, 'error');
-        } finally {
-            if (btnBajar) btnBajar.disabled = false;
-        }
-    }
-
-    _mergeCategorias(catsNuevas) {
-        if (!Array.isArray(catsNuevas) || catsNuevas.length === 0) return 0;
-        const actuales = this._getCategorias();
-        const nuevas = catsNuevas.filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
-        if (nuevas.length > 0) this._saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
-        return nuevas.length;
-    }
-
-    gistMergeAplicar(modo, esAutomatico = false) {
-        const { servicios: serviciosGist, categorias: categoriasGist } = this._gistDatosPendientes || {};
-        if (!serviciosGist) return;
-
-        let toastMsg;
-
-        if (modo === 'replace') {
-            this.servicios = serviciosGist;
-            this._saveCategorias(categoriasGist.length > 0 ? categoriasGist : this._getCategorias());
-            toastMsg = 'Datos reemplazados ✓';
-        } else {
-            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(serviciosGist);
-            const categoriasAgregadas = this._mergeCategorias(categoriasGist);
-
-            if (serviciosAgregados === 0 && facturasAgregadas === 0 && facturasActualizadas === 0 && ingresosAgregados === 0 && categoriasAgregadas === 0) {
-                this._gistDatosPendientes = null;
-                this.cerrarModal('modal-gist-merge');
-                this.mostrarToast('No hay datos nuevos para agregar', 'info');
-                return;
-            }
-
-            const partes = [];
-            if (serviciosAgregados > 0) partes.push(this._plural(serviciosAgregados, 'servicio', 'servicios'));
-            if (facturasAgregadas > 0) partes.push(this._plural(facturasAgregadas, 'factura nueva', 'facturas nuevas'));
-            if (facturasActualizadas > 0) partes.push(this._plural(facturasActualizadas, 'actualizada', 'actualizadas'));
-            if (ingresosAgregados > 0) partes.push(this._plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
-            if (categoriasAgregadas > 0) partes.push(this._plural(categoriasAgregadas, 'categoría', 'categorías'));
-            toastMsg = `Importado: ${partes.join(', ')}`;
-        }
-
-        this._postGuardado();
-
-        const ahora = new Date().toLocaleString('es-AR');
-        this.gistSetPerfil({ gistLastSync: ahora });
-        this.gistMarcarSync('bajar');
-
-        const elSync = document.getElementById('gist-ultima-sync');
-        if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
-
-        this._gistDatosPendientes = null;
-        this.cerrarModal('modal-gist-merge');
-        this.mostrarToast(toastMsg, 'success');
-    }
-
-    async gistAutoSyncInit() {
-        const perfil = this.gistGetPerfil();
-        const token = this.gistGetToken();
-        const autoSync = perfil.gistAutoSync ?? 0;
-        if (!token || !this.gistEsIdValido(perfil.gistId)) return;
-
-        // modo 1 = Restaurar: baja si está en rango y no superó 2 bajas/hora
-        if (autoSync === 1 && this.gistDentroDelRango() && !this.gistSuperaLimite('bajar', 2)) {
-            setTimeout(() => this.gistBajar(true), 2000);
-        }
-        // modo 2 = Respaldo: sube si está en rango y no superó 1 subida/hora
-        else if (autoSync === 2 && this.gistDentroDelRango() && !this.gistSuperaLimite('subir', 1)) {
-            setTimeout(() => this.gistSubir(), 2000);
-        }
-    }
-
-    generarReporteEstadisticas() {
-        if (this.tipoEstadisticaActual === 'individual') {
-            this._generarReporteIndividual();
-            return;
-        }
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        const mesActual = hoy.getMonth();
-        const añoActual = hoy.getFullYear();
-
-        const selectMes = document.getElementById('select-mes-estadisticas');
-        let mesSeleccionado, añoSeleccionado;
-        if (selectMes && selectMes.value) {
-            const [año, mes] = selectMes.value.split('-');
-            añoSeleccionado = parseInt(año);
-            mesSeleccionado = parseInt(mes) - 1;
-        } else {
-            mesSeleccionado = mesActual;
-            añoSeleccionado = añoActual;
-        }
-
-        const categoriaActiva = this._estadisticaCategoriaActiva || null;
-        const nombreMes = new Date(añoSeleccionado, mesSeleccionado, 1)
-            .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-        const nombreMesCorto = new Date(añoSeleccionado, mesSeleccionado, 1)
-            .toLocaleDateString('es-AR', { month: 'long' });
-
-        // Recolectar facturas involucradas
-        const facturasMes = [];       // vencen en el mes seleccionado
-        const facturasPagadasMes = []; // pagadas en el mes pero vencen otro mes
-        const ingresos = [];
-
-        this.servicios.forEach(servicio => {
-            if (categoriaActiva && servicio.id !== this.SERVICIO_INGRESOS_ID) {
-                if ((servicio.categoria || '') !== categoriaActiva) return;
-            }
-
-            servicio.facturas.forEach(factura => {
-                const fechaVenc = this._parseDate(factura.fecha);
-                const venceEsteMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
-
-                if (servicio.id === this.SERVICIO_INGRESOS_ID) {
-                    const fechaIngreso = this._parseDate(factura.fecha);
-                    if (fechaIngreso.getMonth() === mesSeleccionado && fechaIngreso.getFullYear() === añoSeleccionado) {
-                        ingresos.push({ servicio, factura });
-                    }
-                    return;
-                }
-
-                if (venceEsteMes) {
-                    facturasMes.push({ servicio, factura, venceEsteMes: true });
-                } else if (factura.pagada && factura.fechaPago) {
-                    const fechaPago = this._parseDate(factura.fechaPago);
-                    if (fechaPago.getMonth() === mesSeleccionado && fechaPago.getFullYear() === añoSeleccionado) {
-                        facturasPagadasMes.push({ servicio, factura, venceEsteMes: false });
-                    }
-                }
-            });
-        });
-
-        // Helper para formatear fecha legible
-        const fmtFecha = (str) => {
-            if (!str) return '—';
-            return this._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        };
-
-        // Helper estado factura
-        const estadoFactura = (factura) => {
-            if (factura.conCredito) return 'Con crédito';
-            if (factura.pagada) {
-                const mp = factura.fechaPago ? this._parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' }) : '';
-                return `Pagada${mp ? ` en ${mp}` : ''}`;
-            }
-            const venc = this._parseDate(factura.fecha);
-            venc.setHours(0, 0, 0, 0);
-            return venc < hoy ? 'Vencida (pendiente)' : 'Pendiente';
-        };
-
-        // Calcular totales
-        const sumar = (lista, pagada) => lista
-            .filter(({ factura: f }) => pagada ? f.pagada : !f.pagada)
-            .reduce((acc, { factura: f }) => {
-                if ((f.moneda || 'ars') === 'usd') acc.usd += f.monto;
-                else acc.ars += f.monto;
-                return acc;
-            }, { ars: 0, usd: 0 });
-
-        const totalVencenARS = facturasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') !== 'usd' && f.monto > 0 ? a + f.monto : a, 0);
-        const totalVencenUSD = facturasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') === 'usd' && f.monto > 0 ? a + f.monto : a, 0);
-        const pagadasMes = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), true);
-        const pendientesMes = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), false);
-        const totalPagadasOtroMesARS = facturasPagadasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') !== 'usd' ? a + f.monto : a, 0);
-        const totalPagadasOtroMesUSD = facturasPagadasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') === 'usd' ? a + f.monto : a, 0);
-        const totalIngresosARS = ingresos.reduce((a, { factura: f }) => (f.moneda || 'ars') !== 'usd' ? a + f.monto : a, 0);
-        const totalIngresosUSD = ingresos.reduce((a, { factura: f }) => (f.moneda || 'ars') === 'usd' ? a + f.monto : a, 0);
-
-        const sep = '─'.repeat(48);
-        const sep2 = '═'.repeat(48);
-        const linea = (label, valor) => `  ${label.padEnd(28)} ${valor}`;
-        const fmt = (m, mon) => this.formatearMoneda(m, mon);
-
-        let txt = '';
-        txt += `${'═'.repeat(48)}\n`;
-        txt += `  REPORTE DE ESTADÍSTICAS\n`;
-        txt += `  Período: ${nombreMes.toUpperCase()}${categoriaActiva ? `  |  Categoría: ${categoriaActiva}` : ''}\n`;
-        txt += `  Generado: ${new Date().toLocaleString('es-AR')}\n`;
-        txt += `${sep2}\n\n`;
-
-        // ── Facturas que vencen en el mes ──
-        txt += `FACTURAS QUE VENCEN EN ${nombreMesCorto.toUpperCase()}\n`;
-        txt += `${sep}\n`;
-        if (facturasMes.length === 0) {
-            txt += `  (ninguna)\n`;
-        } else {
-            facturasMes.forEach(({ servicio, factura }) => {
-                const monto = factura.monto < 0
-                    ? `  [saldo a favor ${fmt(Math.abs(factura.monto), factura.moneda || 'ars')}]`
-                    : fmt(factura.monto, factura.moneda || 'ars');
-                txt += `\n  ${servicio.nombre}\n`;
-                txt += linea('  Vencimiento:', fmtFecha(factura.fecha)) + '\n';
-                txt += linea('  Monto:', monto) + '\n';
-                txt += linea('  Estado:', estadoFactura(factura)) + '\n';
-                if (factura.pagada && factura.fechaPago) {
-                    txt += linea('  Fecha de pago:', fmtFecha(factura.fechaPago)) + '\n';
-                }
-            });
-            txt += `\n${sep}\n`;
-            if (totalVencenARS > 0) txt += linea('  Total del mes (ARS):', fmt(totalVencenARS, 'ars')) + '\n';
-            if (totalVencenUSD > 0) txt += linea('  Total del mes (USD):', fmt(totalVencenUSD, 'usd')) + '\n';
-            if (pagadasMes.ars > 0) txt += linea('  Pagado (ARS):', fmt(pagadasMes.ars, 'ars')) + '\n';
-            if (pagadasMes.usd > 0) txt += linea('  Pagado (USD):', fmt(pagadasMes.usd, 'usd')) + '\n';
-            if (pendientesMes.ars > 0) txt += linea('  Pendiente (ARS):', fmt(pendientesMes.ars, 'ars')) + '\n';
-            if (pendientesMes.usd > 0) txt += linea('  Pendiente (USD):', fmt(pendientesMes.usd, 'usd')) + '\n';
-        }
-
-        // ── Pagadas en el mes pero con otro vencimiento ──
-        txt += `\nPAGADAS EN ${nombreMesCorto.toUpperCase()} (VENCIMIENTO OTRO MES)\n`;
-        txt += `${sep}\n`;
-        if (facturasPagadasMes.length === 0) {
-            txt += `  (ninguna)\n`;
-        } else {
-            facturasPagadasMes.forEach(({ servicio, factura }) => {
-                const mesVenc = this._parseDate(factura.fecha).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-                txt += `\n  ${servicio.nombre}\n`;
-                txt += linea('  Vencimiento original:', `${fmtFecha(factura.fecha)} (${mesVenc})`) + '\n';
-                txt += linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars')) + '\n';
-                txt += linea('  Fecha de pago:', fmtFecha(factura.fechaPago)) + '\n';
-            });
-            txt += `\n${sep}\n`;
-            if (totalPagadasOtroMesARS > 0) txt += linea('  Subtotal (ARS):', fmt(totalPagadasOtroMesARS, 'ars')) + '\n';
-            if (totalPagadasOtroMesUSD > 0) txt += linea('  Subtotal (USD):', fmt(totalPagadasOtroMesUSD, 'usd')) + '\n';
-        }
-
-        // ── Ingresos ──
-        if (this.ingresosHabilitado() && ingresos.length > 0) {
-            txt += `\nINGRESOS DEL MES\n`;
-            txt += `${sep}\n`;
-            ingresos.forEach(({ factura }) => {
-                txt += `\n  ${factura.tipo || 'regular'}\n`;
-                txt += linea('  Fecha:', fmtFecha(factura.fecha)) + '\n';
-                txt += linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars')) + '\n';
-            });
-            txt += `\n${sep}\n`;
-            if (totalIngresosARS > 0) txt += linea('  Total ingresos (ARS):', fmt(totalIngresosARS, 'ars')) + '\n';
-            if (totalIngresosUSD > 0) txt += linea('  Total ingresos (USD):', fmt(totalIngresosUSD, 'usd')) + '\n';
-        }
-
-        txt += `\n${sep2}\n`;
-        txt += `  Fin del reporte\n`;
-        txt += `${'═'.repeat(48)}\n`;
-
-        this._descargarBlob(txt, `reporte_${nombreMes.replace(' ', '_')}.txt`);
-        this.mostrarToast('Reporte generado', 'success');
-    }
-
-    _generarReporteIndividual() {
-        const selectServicio = document.getElementById('calculador-servicio');
-        const inputDesde = document.getElementById('calculador-desde');
-        const inputHasta = document.getElementById('calculador-hasta');
-
-        const servicioId = selectServicio?.value;
-        const desde = inputDesde?.value;
-        const hasta = inputHasta?.value;
-
-        if (!servicioId) {
-            this.mostrarToast('Seleccioná un servicio primero', 'info');
-            return;
-        }
-
-        const servicio = this.servicios.find(s => s.id === servicioId);
-        if (!servicio) return;
-
-        const fmtFecha = (str) => {
-            if (!str) return '—';
-            return this._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        };
-
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-
-        // Filtrar facturas por rango
-        let facturas = [...servicio.facturas];
-        if (desde) facturas = facturas.filter(f => this._parseDate(f.fecha) >= this._parseDate(desde));
-        if (hasta) facturas = facturas.filter(f => this._parseDate(f.fecha) <= this._parseDate(hasta));
-        facturas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-        // Totales
-        let totalARS = 0, totalUSD = 0;
-        let pagadasARS = 0, pagadasUSD = 0;
-        let pendientesARS = 0, pendientesUSD = 0;
-
-        facturas.forEach(f => {
-            const moneda = f.moneda || 'ars';
-            const monto = f.monto;
-            if (moneda === 'usd') { totalUSD += monto; if (f.pagada) pagadasUSD += monto; else pendientesUSD += monto; }
-            else { totalARS += monto; if (f.pagada) pagadasARS += monto; else pendientesARS += monto; }
-        });
-
-        const promARS = facturas.filter(f => (f.moneda || 'ars') === 'ars').length > 0
-            ? totalARS / facturas.filter(f => (f.moneda || 'ars') === 'ars').length : 0;
-        const promUSD = facturas.filter(f => (f.moneda || 'ars') === 'usd').length > 0
-            ? totalUSD / facturas.filter(f => (f.moneda || 'ars') === 'usd').length : 0;
-
-        const fmt = (m, mon) => this.formatearMoneda(m, mon);
-        const sep = '─'.repeat(48);
-        const sep2 = '═'.repeat(48);
-        const linea = (label, valor) => `  ${label.padEnd(28)} ${valor}`;
-
-        const periodoTxt = desde || hasta
-            ? `${desde ? fmtFecha(desde) : '—'}  →  ${hasta ? fmtFecha(hasta) : '—'}`
-            : 'Sin filtro de fechas';
-
-        let txt = '';
-        txt += `${sep2}\n`;
-        txt += `  REPORTE INDIVIDUAL\n`;
-        txt += `  Servicio: ${servicio.nombre}\n`;
-        txt += `  Período: ${periodoTxt}\n`;
-        txt += `  Generado: ${new Date().toLocaleString('es-AR')}\n`;
-        txt += `${sep2}\n\n`;
-
-        txt += `DETALLE DE FACTURAS (${facturas.length})\n`;
-        txt += `${sep}\n`;
-
-        if (facturas.length === 0) {
-            txt += `  (ninguna en el período seleccionado)\n`;
-        } else {
-            facturas.forEach((f, i) => {
-                const moneda = f.moneda || 'ars';
-                let estadoTxt;
-                if (f.conCredito) estadoTxt = 'Con crédito';
-                else if (f.pagada) {
-                    const mp = f.fechaPago ? this._parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : '';
-                    estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`;
-                } else {
-                    const venc = this._parseDate(f.fecha);
-                    venc.setHours(0, 0, 0, 0);
-                    estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente';
-                }
-
-                txt += `\n  #${String(i + 1).padStart(2, '0')}  ${fmtFecha(f.fecha)}\n`;
-                txt += linea('  Monto:', fmt(f.monto, moneda)) + '\n';
-                txt += linea('  Estado:', estadoTxt) + '\n';
-                if (f.pagada && f.fechaPago) txt += linea('  Fecha de pago:', fmtFecha(f.fechaPago)) + '\n';
-                if (f.tipo && f.tipo !== 'mensual') txt += linea('  Tipo:', f.tipo) + '\n';
-            });
-
-            txt += `\n${sep}\n`;
-            txt += `  RESUMEN\n`;
-            txt += `${sep}\n`;
-            if (totalARS !== 0) txt += linea('  Total ARS:', fmt(totalARS, 'ars')) + '\n';
-            if (totalUSD !== 0) txt += linea('  Total USD:', fmt(totalUSD, 'usd')) + '\n';
-            if (promARS !== 0) txt += linea('  Promedio ARS:', fmt(promARS, 'ars')) + '\n';
-            if (promUSD !== 0) txt += linea('  Promedio USD:', fmt(promUSD, 'usd')) + '\n';
-            if (pagadasARS > 0) txt += linea('  Pagado ARS:', fmt(pagadasARS, 'ars')) + '\n';
-            if (pagadasUSD > 0) txt += linea('  Pagado USD:', fmt(pagadasUSD, 'usd')) + '\n';
-            if (pendientesARS > 0) txt += linea('  Pendiente ARS:', fmt(pendientesARS, 'ars')) + '\n';
-            if (pendientesUSD > 0) txt += linea('  Pendiente USD:', fmt(pendientesUSD, 'usd')) + '\n';
-        }
-
-        txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
-
-        this._descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
-        this.mostrarToast('Reporte generado', 'success');
-    }
 
     // ========================================
     // MENÚ CONTEXTUAL SERVICIOS
@@ -5361,6 +4592,685 @@ class GestionServicios {
                 this.toastTimeout = null;
             }, 3000);
         }, 150);
+    }
+}
+
+// ============================================================
+// CALCULADOR SERVICE — modo calculadora flotante + calculador
+//                      de período + generación de reportes
+// ============================================================
+class CalculadorService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Getters de conveniencia ───────────────────────────────
+    get servicios()   { return this.app.servicios; }
+    get modoActivo()  { return this.app.modoCalculadora; }
+    set modoActivo(v) { this.app.modoCalculadora = v; }
+    get tipo()        { return this.app.modoCalculadoraTipo; }
+    set tipo(v)       { this.app.modoCalculadoraTipo = v; }
+    get seleccionados() { return this.app.serviciosSeleccionados; }
+
+    // ── Modo calculadora flotante ─────────────────────────────
+    activarModo(silencioso = false) {
+        this.modoActivo = true;
+        this.seleccionados.clear();
+        document.getElementById('btn-agregar-servicio').classList.add('modo-calculadora');
+        this.actualizar();
+        this.app.renderServicios();
+        if (!silencioso) {
+            const flotante = document.getElementById('calculadora-flotante');
+            flotante.classList.add('visible');
+            flotante.onclick = () => {
+                const arsVal = this.app._calcTotalARS ?? 0;
+                const usdVal = this.app._calcTotalUSD ?? 0;
+                const fmt = n => Number.isInteger(n) ? String(n) : n.toFixed(2);
+                let texto = fmt(arsVal);
+                if (usdVal > 0) texto += ` / ${fmt(usdVal)}`;
+                navigator.clipboard.writeText(texto).then(() => {
+                    const contador = document.getElementById('calculadora-contador');
+                    const original = contador.textContent;
+                    contador.textContent = '✓ Copiado';
+                    setTimeout(() => { contador.textContent = original; }, 1200);
+                });
+            };
+        }
+    }
+
+    desactivarModo(silencioso = false) {
+        this.modoActivo = false;
+        this.tipo = 'pendientes';
+        this.seleccionados.clear();
+        document.getElementById('btn-agregar-servicio').classList.remove('modo-calculadora');
+        this.actualizar();
+        this.app.renderServicios();
+        document.getElementById('calculadora-flotante').classList.remove('visible');
+        if (!silencioso) this.app.mostrarToast('Calculadora Desactivada', 'info');
+    }
+
+    toggleServicio(servicioId) {
+        if (!this.modoActivo) return;
+        if (this.seleccionados.has(servicioId)) {
+            this.seleccionados.delete(servicioId);
+            if (this.seleccionados.size === 0) { this.desactivarModo(); return; }
+        } else {
+            this.seleccionados.add(servicioId);
+        }
+        this.actualizar();
+        this.app.renderServicios();
+    }
+
+    actualizar() {
+        if (!this.modoActivo) return;
+        let totalARS = 0, totalUSD = 0, contadorFacturas = 0;
+        const { mes: mesActual, anio: anioActual, mesSiguiente, anioSiguiente } = this.app._mesActualInfo();
+        this.seleccionados.forEach(servicioId => {
+            const servicio = this.servicios.find(s => s.id === servicioId);
+            if (!servicio) return;
+            servicio.facturas.forEach(factura => {
+                if (factura.monto <= 0) return;
+                const fechaFactura = this.app._parseDate(factura.fecha);
+                const mesF = fechaFactura.getMonth(), anioF = fechaFactura.getFullYear();
+                const esMesActual = mesF === mesActual && anioF === anioActual;
+                if (this.tipo === 'pendientes') {
+                    if (factura.pagada) return;
+                    const { mesPasado, anioPasado } = this.app._mesActualInfo();
+                    const esSiguiente = mesF === mesSiguiente && anioF === anioSiguiente;
+                    const esPasado    = mesF === mesPasado    && anioF === anioPasado;
+                    if (!esMesActual && !esSiguiente && !esPasado) return;
+                } else if (this.tipo === 'pagados') {
+                    if (!factura.pagada) return;
+                    const fechaPago = factura.fechaPago ? this.app._parseDate(factura.fechaPago) : null;
+                    const esPagadaEsteMes = fechaPago && fechaPago.getMonth() === mesActual && fechaPago.getFullYear() === anioActual;
+                    if (!esMesActual && !esPagadaEsteMes) return;
+                }
+                if ((factura.moneda || 'ars') === 'usd') totalUSD += factura.monto;
+                else totalARS += factura.monto;
+                contadorFacturas++;
+            });
+        });
+        this.app._calcTotalARS = totalARS;
+        this.app._calcTotalUSD = totalUSD;
+        document.getElementById('calculadora-total').textContent = this.app.formatearMoneda(totalARS, 'ars');
+        const elUSD = document.getElementById('calculadora-total-usd');
+        if (totalUSD > 0) { elUSD.textContent = this.app.formatearMoneda(totalUSD, 'usd'); elUSD.classList.add('visible'); }
+        else              { elUSD.classList.remove('visible'); }
+        document.getElementById('calculadora-contador').textContent =
+            `${contadorFacturas} ${contadorFacturas === 1 ? 'factura' : 'facturas'}`;
+    }
+
+    // ── Calculador de período ─────────────────────────────────
+    calcularPeriodo() {
+        const selectServicio      = document.getElementById('calculador-servicio');
+        const inputDesde          = document.getElementById('calculador-desde');
+        const inputHasta          = document.getElementById('calculador-hasta');
+        const resultadosContainer = document.getElementById('calculador-resultados');
+        if (!selectServicio || !inputDesde || !inputHasta || !resultadosContainer) return;
+
+        const servicioId = selectServicio.value;
+        const desde = inputDesde.value, hasta = inputHasta.value;
+        let totalRegistros = 0, variacionTexto = '0%', variacionUSDTexto = null;
+        let _arsTotal = 0, _usdTotal = 0, _arsCount = 0, _usdCount = 0;
+
+        if (servicioId) {
+            const servicio = this.servicios.find(s => s.id === servicioId);
+            if (servicio) {
+                const esServicioIngresos = servicioId === this.app.SERVICIO_INGRESOS_ID;
+                let facturasFiltradas = servicio.facturas;
+                if (desde) { const fd = this.app._parseDate(desde); facturasFiltradas = facturasFiltradas.filter(f => this.app._parseDate(f.fecha) >= fd); }
+                if (hasta) { const fh = this.app._parseDate(hasta); facturasFiltradas = facturasFiltradas.filter(f => this.app._parseDate(f.fecha) <= fh); }
+                facturasFiltradas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+                totalRegistros = facturasFiltradas.length;
+                facturasFiltradas.forEach(f => {
+                    if ((f.moneda || 'ars') === 'usd') { _usdTotal += f.monto; _usdCount++; }
+                    else                               { _arsTotal += f.monto; _arsCount++; }
+                });
+                let facturasParaVariacion = esServicioIngresos
+                    ? facturasFiltradas.filter(f => f.tipo !== 'complementario')
+                    : facturasFiltradas;
+                const calcularVariacion = (facturas) => {
+                    const total = facturas.length;
+                    if (total < 2) return total === 1 ? 'N/A' : null;
+                    let promPrim, promUlt;
+                    if      (total <= 3) { promPrim = facturas[0].monto; promUlt = facturas[total - 1].monto; }
+                    else if (total <= 8) { const m = Math.floor(total / 2); promPrim = facturas.slice(0, m).reduce((s, f) => s + f.monto, 0) / m; promUlt = facturas.slice(-m).reduce((s, f) => s + f.monto, 0) / m; }
+                    else                { const g = Math.min(6, Math.max(3, Math.floor(total * 0.3))); promPrim = facturas.slice(0, g).reduce((s, f) => s + f.monto, 0) / g; promUlt = facturas.slice(-g).reduce((s, f) => s + f.monto, 0) / g; }
+                    if (promPrim !== 0) { const v = ((promUlt - promPrim) / Math.abs(promPrim)) * 100; return `${v > 0 ? '+' : ''}${v.toFixed(1)}%`; }
+                    return promUlt > 0 ? '+∞' : '0%';
+                };
+                const facturasVarARS = facturasParaVariacion.filter(f => (f.moneda || 'ars') === 'ars');
+                const facturasVarUSD = facturasParaVariacion.filter(f => (f.moneda || 'ars') === 'usd');
+                const varARS = calcularVariacion(facturasVarARS);
+                const varUSD = calcularVariacion(facturasVarUSD);
+                if      (varARS !== null)                                                  { variacionTexto = varARS; }
+                else if (facturasVarARS.length === 0 && facturasVarUSD.length > 0)        { variacionTexto = null; }
+                else if (facturasParaVariacion.length === 0 && esServicioIngresos && totalRegistros > 0) { variacionTexto = 'Solo extras'; }
+                else if (facturasVarARS.length === 1)                                     { variacionTexto = 'N/A'; }
+                variacionUSDTexto = varUSD;
+            }
+        }
+
+        const estadoCalculador = { servicioId, desde, hasta, totalRegistros, _arsTotal, _usdTotal, variacionTexto, variacionUSDTexto };
+        const calculadorCambio = this.app._objetosCambiaron(this.app.ultimoEstadoCalculador, estadoCalculador);
+        const _hayARS = _arsTotal !== 0, _hayUSD = _usdTotal !== 0;
+        const fmt = (m, mon) => this.app.formatearMoneda(m, mon);
+        const _montoHTML = _hayARS ? fmt(_arsTotal, 'ars') : _hayUSD ? fmt(_usdTotal, 'usd') : fmt(0, 'ars');
+        const _montoUSDItem = _hayUSD ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total USD</span><span class="calculador-resultado-valor">${fmt(_usdTotal, 'usd')}</span></div>` : '';
+        const _promARS = _arsCount > 0 ? _arsTotal / _arsCount : 0;
+        const _promUSD = _usdCount > 0 ? _usdTotal / _usdCount : 0;
+        const _promHTML = _hayARS ? fmt(_promARS, 'ars') : _hayUSD ? fmt(_promUSD, 'usd') : fmt(0, 'ars');
+        const _promUSDItem = _hayUSD ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Promedio USD</span><span class="calculador-resultado-valor">${fmt(_promUSD, 'usd')}</span></div>` : '';
+        const _varUSDItem  = variacionUSDTexto != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación USD</span><span class="calculador-resultado-valor">${variacionUSDTexto}</span></div>` : '';
+        const generarResultadosHTML = (registros, variacion) => `
+    <div class="calculador-resultado-item"><span class="calculador-resultado-label">Facturas</span><span class="calculador-resultado-valor">${registros}</span></div>
+    <div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total</span><span class="calculador-resultado-valor">${_montoHTML}</span></div>
+    ${_montoUSDItem}
+    <div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Promedio</span><span class="calculador-resultado-valor">${_promHTML}</span></div>
+    ${_promUSDItem}
+    ${variacion != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación</span><span class="calculador-resultado-valor">${variacion}</span></div>` : ''}
+    ${_varUSDItem}`;
+        const renderizarResultados = () => {
+            resultadosContainer.innerHTML = generarResultadosHTML(totalRegistros, variacionTexto);
+            if (calculadorCambio) {
+                resultadosContainer.classList.add('opacity-0');
+                setTimeout(() => {
+                    resultadosContainer.classList.remove('anim-slide-down-fade', 'opacity-0');
+                    void resultadosContainer.offsetWidth;
+                    resultadosContainer.classList.add('anim-slide-down-fade', 'opacity-1');
+                }, 10);
+            }
+        };
+        if (calculadorCambio) {
+            resultadosContainer.classList.remove('anim-slide-up-fade');
+            void resultadosContainer.offsetWidth;
+            resultadosContainer.classList.add('anim-slide-up-fade');
+            setTimeout(() => { renderizarResultados(); this.app.ultimoEstadoCalculador = estadoCalculador; }, 190);
+        } else {
+            renderizarResultados();
+        }
+    }
+
+    // ── Reportes ──────────────────────────────────────────────
+    generarReporte() {
+        if (this.app.tipoEstadisticaActual === 'individual') {
+            this._generarReporteIndividual(); return;
+        }
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+        const selectMes = document.getElementById('select-mes-estadisticas');
+        let mesSeleccionado, añoSeleccionado;
+        if (selectMes?.value) {
+            const [año, mes] = selectMes.value.split('-');
+            añoSeleccionado = parseInt(año); mesSeleccionado = parseInt(mes) - 1;
+        } else {
+            mesSeleccionado = hoy.getMonth(); añoSeleccionado = hoy.getFullYear();
+        }
+        const categoriaActiva = this.app._estadisticaCategoriaActiva || null;
+        const nombreMes      = new Date(añoSeleccionado, mesSeleccionado, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+        const nombreMesCorto = new Date(añoSeleccionado, mesSeleccionado, 1).toLocaleDateString('es-AR', { month: 'long' });
+        const facturasMes = [], facturasPagadasMes = [], ingresos = [];
+        this.servicios.forEach(servicio => {
+            if (categoriaActiva && servicio.id !== this.app.SERVICIO_INGRESOS_ID && (servicio.categoria || '') !== categoriaActiva) return;
+            servicio.facturas.forEach(factura => {
+                const fechaVenc = this.app._parseDate(factura.fecha);
+                const venceEsteMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
+                if (servicio.id === this.app.SERVICIO_INGRESOS_ID) {
+                    if (venceEsteMes) ingresos.push({ servicio, factura });
+                    return;
+                }
+                if (venceEsteMes) { facturasMes.push({ servicio, factura, venceEsteMes: true }); }
+                else if (factura.pagada && factura.fechaPago) {
+                    const fp = this.app._parseDate(factura.fechaPago);
+                    if (fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado) facturasPagadasMes.push({ servicio, factura, venceEsteMes: false });
+                }
+            });
+        });
+        const fmtFecha = str => !str ? '—' : this.app._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const estadoFactura = factura => {
+            if (factura.conCredito) return 'Con crédito';
+            if (factura.pagada) { const mp = factura.fechaPago ? this.app._parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' }) : ''; return `Pagada${mp ? ` en ${mp}` : ''}`; }
+            const venc = this.app._parseDate(factura.fecha); venc.setHours(0, 0, 0, 0);
+            return venc < hoy ? 'Vencida (pendiente)' : 'Pendiente';
+        };
+        const sumar = (lista, pagada) => lista.filter(({ factura: f }) => pagada ? f.pagada : !f.pagada).reduce((acc, { factura: f }) => { if ((f.moneda || 'ars') === 'usd') acc.usd += f.monto; else acc.ars += f.monto; return acc; }, { ars: 0, usd: 0 });
+        const totalVencenARS = facturasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') !== 'usd' && f.monto > 0 ? a + f.monto : a, 0);
+        const totalVencenUSD = facturasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') === 'usd' && f.monto > 0 ? a + f.monto : a, 0);
+        const pagadasMes    = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), true);
+        const pendientesMes = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), false);
+        const totalPagadasOtroMesARS = facturasPagadasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') !== 'usd' ? a + f.monto : a, 0);
+        const totalPagadasOtroMesUSD = facturasPagadasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') === 'usd' ? a + f.monto : a, 0);
+        const totalIngresosARS = ingresos.reduce((a, { factura: f }) => (f.moneda || 'ars') !== 'usd' ? a + f.monto : a, 0);
+        const totalIngresosUSD = ingresos.reduce((a, { factura: f }) => (f.moneda || 'ars') === 'usd' ? a + f.monto : a, 0);
+        const sep = '─'.repeat(48), sep2 = '═'.repeat(48);
+        const linea = (label, valor) => `  ${label.padEnd(28)} ${valor}`;
+        const fmt = (m, mon) => this.app.formatearMoneda(m, mon);
+        let txt = `${sep2}\n  REPORTE DE ESTADÍSTICAS\n  Período: ${nombreMes.toUpperCase()}${categoriaActiva ? `  |  Categoría: ${categoriaActiva}` : ''}\n  Generado: ${new Date().toLocaleString('es-AR')}\n${sep2}\n\n`;
+        txt += `FACTURAS QUE VENCEN EN ${nombreMesCorto.toUpperCase()}\n${sep}\n`;
+        if (facturasMes.length === 0) { txt += `  (ninguna)\n`; }
+        else {
+            facturasMes.forEach(({ servicio, factura }) => {
+                const monto = factura.monto < 0 ? `  [saldo a favor ${fmt(Math.abs(factura.monto), factura.moneda || 'ars')}]` : fmt(factura.monto, factura.moneda || 'ars');
+                txt += `\n  ${servicio.nombre}\n${linea('  Vencimiento:', fmtFecha(factura.fecha))}\n${linea('  Monto:', monto)}\n${linea('  Estado:', estadoFactura(factura))}\n`;
+                if (factura.pagada && factura.fechaPago) txt += linea('  Fecha de pago:', fmtFecha(factura.fechaPago)) + '\n';
+            });
+            txt += `\n${sep}\n`;
+            if (totalVencenARS > 0) txt += linea('  Total del mes (ARS):', fmt(totalVencenARS, 'ars')) + '\n';
+            if (totalVencenUSD > 0) txt += linea('  Total del mes (USD):', fmt(totalVencenUSD, 'usd')) + '\n';
+            if (pagadasMes.ars   > 0) txt += linea('  Pagado (ARS):', fmt(pagadasMes.ars, 'ars')) + '\n';
+            if (pagadasMes.usd   > 0) txt += linea('  Pagado (USD):', fmt(pagadasMes.usd, 'usd')) + '\n';
+            if (pendientesMes.ars > 0) txt += linea('  Pendiente (ARS):', fmt(pendientesMes.ars, 'ars')) + '\n';
+            if (pendientesMes.usd > 0) txt += linea('  Pendiente (USD):', fmt(pendientesMes.usd, 'usd')) + '\n';
+        }
+        txt += `\nPAGADAS EN ${nombreMesCorto.toUpperCase()} (VENCIMIENTO OTRO MES)\n${sep}\n`;
+        if (facturasPagadasMes.length === 0) { txt += `  (ninguna)\n`; }
+        else {
+            facturasPagadasMes.forEach(({ servicio, factura }) => {
+                const mesVenc = this.app._parseDate(factura.fecha).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+                txt += `\n  ${servicio.nombre}\n${linea('  Vencimiento original:', `${fmtFecha(factura.fecha)} (${mesVenc})`)}\n${linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars'))}\n${linea('  Fecha de pago:', fmtFecha(factura.fechaPago))}\n`;
+            });
+            txt += `\n${sep}\n`;
+            if (totalPagadasOtroMesARS > 0) txt += linea('  Subtotal (ARS):', fmt(totalPagadasOtroMesARS, 'ars')) + '\n';
+            if (totalPagadasOtroMesUSD > 0) txt += linea('  Subtotal (USD):', fmt(totalPagadasOtroMesUSD, 'usd')) + '\n';
+        }
+        if (this.app.ingresosHabilitado() && ingresos.length > 0) {
+            txt += `\nINGRESOS DEL MES\n${sep}\n`;
+            ingresos.forEach(({ factura }) => {
+                txt += `\n  ${factura.tipo || 'regular'}\n${linea('  Fecha:', fmtFecha(factura.fecha))}\n${linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars'))}\n`;
+            });
+            txt += `\n${sep}\n`;
+            if (totalIngresosARS > 0) txt += linea('  Total ingresos (ARS):', fmt(totalIngresosARS, 'ars')) + '\n';
+            if (totalIngresosUSD > 0) txt += linea('  Total ingresos (USD):', fmt(totalIngresosUSD, 'usd')) + '\n';
+        }
+        txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
+        this.app._descargarBlob(txt, `reporte_${nombreMes.replace(' ', '_')}.txt`);
+        this.app.mostrarToast('Reporte generado', 'success');
+    }
+
+    _generarReporteIndividual() {
+        const servicioId = document.getElementById('calculador-servicio')?.value;
+        const desde      = document.getElementById('calculador-desde')?.value;
+        const hasta      = document.getElementById('calculador-hasta')?.value;
+        if (!servicioId) { this.app.mostrarToast('Seleccioná un servicio primero', 'info'); return; }
+        const servicio = this.servicios.find(s => s.id === servicioId);
+        if (!servicio) return;
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+        const fmtFecha = str => !str ? '—' : this.app._parseDate(str).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        let facturas = [...servicio.facturas];
+        if (desde) facturas = facturas.filter(f => this.app._parseDate(f.fecha) >= this.app._parseDate(desde));
+        if (hasta) facturas = facturas.filter(f => this.app._parseDate(f.fecha) <= this.app._parseDate(hasta));
+        facturas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        let totalARS = 0, totalUSD = 0, pagadasARS = 0, pagadasUSD = 0, pendientesARS = 0, pendientesUSD = 0;
+        facturas.forEach(f => {
+            const m = f.moneda || 'ars';
+            if (m === 'usd') { totalUSD += f.monto; if (f.pagada) pagadasUSD += f.monto; else pendientesUSD += f.monto; }
+            else             { totalARS += f.monto; if (f.pagada) pagadasARS += f.monto; else pendientesARS += f.monto; }
+        });
+        const arsF = facturas.filter(f => (f.moneda || 'ars') === 'ars').length;
+        const usdF = facturas.filter(f => (f.moneda || 'ars') === 'usd').length;
+        const promARS = arsF > 0 ? totalARS / arsF : 0;
+        const promUSD = usdF > 0 ? totalUSD / usdF : 0;
+        const fmt = (m, mon) => this.app.formatearMoneda(m, mon);
+        const sep = '─'.repeat(48), sep2 = '═'.repeat(48);
+        const linea = (label, valor) => `  ${label.padEnd(28)} ${valor}`;
+        const periodoTxt = desde || hasta ? `${desde ? fmtFecha(desde) : '—'}  →  ${hasta ? fmtFecha(hasta) : '—'}` : 'Sin filtro de fechas';
+        let txt = `${sep2}\n  REPORTE INDIVIDUAL\n  Servicio: ${servicio.nombre}\n  Período: ${periodoTxt}\n  Generado: ${new Date().toLocaleString('es-AR')}\n${sep2}\n\nDETALLE DE FACTURAS (${facturas.length})\n${sep}\n`;
+        if (facturas.length === 0) { txt += `  (ninguna en el período seleccionado)\n`; }
+        else {
+            facturas.forEach((f, i) => {
+                const moneda = f.moneda || 'ars';
+                let estadoTxt;
+                if      (f.conCredito) { estadoTxt = 'Con crédito'; }
+                else if (f.pagada)     { const mp = f.fechaPago ? this.app._parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : ''; estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`; }
+                else                   { const venc = this.app._parseDate(f.fecha); venc.setHours(0, 0, 0, 0); estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente'; }
+                txt += `\n  #${String(i + 1).padStart(2, '0')}  ${fmtFecha(f.fecha)}\n${linea('  Monto:', fmt(f.monto, moneda))}\n${linea('  Estado:', estadoTxt)}\n`;
+                if (f.pagada && f.fechaPago) txt += linea('  Fecha de pago:', fmtFecha(f.fechaPago)) + '\n';
+                if (f.tipo && f.tipo !== 'mensual') txt += linea('  Tipo:', f.tipo) + '\n';
+            });
+            txt += `\n${sep}\n  RESUMEN\n${sep}\n`;
+            if (totalARS !== 0)    txt += linea('  Total ARS:',    fmt(totalARS,    'ars')) + '\n';
+            if (totalUSD !== 0)    txt += linea('  Total USD:',    fmt(totalUSD,    'usd')) + '\n';
+            if (promARS  !== 0)    txt += linea('  Promedio ARS:', fmt(promARS,     'ars')) + '\n';
+            if (promUSD  !== 0)    txt += linea('  Promedio USD:', fmt(promUSD,     'usd')) + '\n';
+            if (pagadasARS   > 0)  txt += linea('  Pagado ARS:',   fmt(pagadasARS,  'ars')) + '\n';
+            if (pagadasUSD   > 0)  txt += linea('  Pagado USD:',   fmt(pagadasUSD,  'usd')) + '\n';
+            if (pendientesARS > 0) txt += linea('  Pendiente ARS:',fmt(pendientesARS,'ars')) + '\n';
+            if (pendientesUSD > 0) txt += linea('  Pendiente USD:',fmt(pendientesUSD,'usd')) + '\n';
+        }
+        txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
+        this.app._descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
+        this.app.mostrarToast('Reporte generado', 'success');
+    }
+}
+
+// ============================================================
+// GIST SERVICE — sincronización con GitHub Gist
+// ============================================================
+class GistService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Getters de conveniencia ───────────────────────────────
+    get servicios()      { return this.app.servicios; }
+    set servicios(v)     { this.app.servicios = v; }
+    get perfilActivo()   { return this.app.perfilActivo; }
+    get perfiles()       { return this.app.perfiles; }
+
+    // ── Token y perfil ────────────────────────────────────────
+    getToken() {
+        return localStorage.getItem('gist_token') || '';
+    }
+
+    getPerfil() {
+        return this.app.perfiles[this.perfilActivo] || {};
+    }
+
+    setPerfil(campos) {
+        if (!this.app.perfiles[this.perfilActivo]) return;
+        Object.assign(this.app.perfiles[this.perfilActivo], campos);
+        this.app.guardarPerfiles();
+    }
+
+    esIdValido(id) {
+        return /^[a-f0-9]{20,40}$/i.test(id || '');
+    }
+
+    // ── Rate limiting por hora ────────────────────────────────
+    _claveHoraActual() {
+        const ahora = new Date();
+        return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ${String(ahora.getHours()).padStart(2, '0')}`;
+    }
+
+    superaLimite(tipo, limite) {
+        const perfil = this.getPerfil();
+        const claveHora = this._claveHoraActual();
+        if (perfil[`gistSyncFecha_${tipo}`] !== claveHora) return false;
+        return (perfil[`gistSyncCount_${tipo}`] ?? 0) >= limite;
+    }
+
+    marcarSync(tipo) {
+        const perfil = this.getPerfil();
+        const claveHora = this._claveHoraActual();
+        const count = perfil[`gistSyncFecha_${tipo}`] === claveHora
+            ? (perfil[`gistSyncCount_${tipo}`] ?? 0) : 0;
+        this.setPerfil({
+            [`gistSyncFecha_${tipo}`]: claveHora,
+            [`gistSyncCount_${tipo}`]: count + 1
+        });
+    }
+
+    // ── Rango horario ─────────────────────────────────────────
+    dentroDelRango() {
+        const perfil = this.getPerfil();
+        const desde = perfil.gistRangoDesde || '00:00';
+        const hasta = perfil.gistRangoHasta || '23:59';
+        const ahora = new Date();
+        const hhmm = ahora.getHours().toString().padStart(2, '0') + ':' + ahora.getMinutes().toString().padStart(2, '0');
+        return desde <= hasta
+            ? hhmm >= desde && hhmm <= hasta   // rango normal
+            : hhmm >= desde || hhmm <= hasta;  // cruza medianoche
+    }
+
+    getMergeBehavior() {
+        return this.getPerfil().gistMergeBehavior || 'merge';
+    }
+
+    // ── Hash de integridad ────────────────────────────────────
+    async calcularHash(texto) {
+        const data = new TextEncoder().encode(texto);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hashBuffer))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // ── UI ────────────────────────────────────────────────────
+    actualizarBotones() {
+        const btnRespaldar = document.getElementById('btn-hist-respaldar');
+        const btnRestaurar = document.getElementById('btn-hist-restaurar');
+        if (!btnRespaldar || !btnRestaurar) return;
+        const tieneGist = this.esIdValido(this.getPerfil().gistId);
+        if (tieneGist) {
+            btnRespaldar.title = 'Subir a Gist';
+            btnRespaldar.onclick = () => this.app.gistSubir();
+            btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
+            btnRestaurar.title = 'Bajar de Gist';
+            btnRestaurar.onclick = () => this.app.gistBajar();
+            btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
+        } else {
+            btnRespaldar.title = 'Respaldar';
+            btnRespaldar.onclick = () => this.app.exportarDatos();
+            btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
+            btnRestaurar.title = 'Restaurar';
+            btnRestaurar.onclick = () => this.app.importarDatos('reemplazar');
+            btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
+        }
+    }
+
+    ciclarAutoSync() {
+        const estados = ['Sin automatizar', 'Restaurar al iniciar', 'Respaldo automático'];
+        const actual = this.app._gistAutoSyncTemp ?? (this.getPerfil().gistAutoSync ?? 0);
+        this.app._gistAutoSyncTemp = (actual + 1) % 3;
+        document.getElementById('gist-autosync-btn').textContent = estados[this.app._gistAutoSyncTemp];
+        document.getElementById('gist-rango-container').classList.toggle('visible', this.app._gistAutoSyncTemp > 0);
+    }
+
+    ciclarMerge() {
+        const opciones = ['merge', 'replace'];
+        const etiquetas = ['Combinar (no reemplaza existentes)', 'Reemplazar todo con datos del Gist'];
+        const actual = this.app._gistMergeBehaviorTemp ?? this.getMergeBehavior();
+        const siguiente = actual === 'merge' ? 'replace' : 'merge';
+        this.app._gistMergeBehaviorTemp = siguiente;
+        document.getElementById('gist-merge-btn').textContent = etiquetas[opciones.indexOf(siguiente)];
+    }
+
+    abrirModal() {
+        const perfil = this.getPerfil();
+        const token = this.getToken();
+        const autoSync = perfil.gistAutoSync ?? 0;
+        const merge = perfil.gistMergeBehavior || 'merge';
+        const estados = ['Sin automatizar', 'Restaurar al iniciar', 'Respaldo automático'];
+        const etiquetasMerge = {
+            merge: 'Combinar (no reemplaza existentes)',
+            replace: 'Reemplazar todo con datos del Gist'
+        };
+        this.app._gistAutoSyncTemp = autoSync;
+        this.app._gistMergeBehaviorTemp = merge;
+        document.getElementById('gist-token').value = token;
+        document.getElementById('gist-id').value = perfil.gistId || '';
+        document.getElementById('gist-autosync-btn').textContent = estados[autoSync];
+        document.getElementById('gist-rango-container').classList.toggle('visible', autoSync > 0);
+        document.getElementById('gist-rango-desde').value = perfil.gistRangoDesde || '00:00';
+        document.getElementById('gist-rango-hasta').value = perfil.gistRangoHasta || '23:59';
+        document.getElementById('gist-merge-btn').textContent = etiquetasMerge[merge];
+        const elSync = document.getElementById('gist-ultima-sync');
+        if (perfil.gistLastSync) {
+            elSync.textContent = `Última sincronización: ${perfil.gistLastSync}`;
+            elSync.classList.add('visible');
+        } else {
+            elSync.classList.remove('visible');
+        }
+        this.app.abrirModal('modal-gist');
+    }
+
+    guardarConfig() {
+        const token  = document.getElementById('gist-token').value.trim();
+        const gistId = document.getElementById('gist-id').value.trim();
+        const autoSync = this.app._gistAutoSyncTemp ?? 0;
+        const merge    = this.app._gistMergeBehaviorTemp ?? 'merge';
+        const desde    = document.getElementById('gist-rango-desde').value;
+        const hasta    = document.getElementById('gist-rango-hasta').value;
+        if (token) { localStorage.setItem('gist_token', token); }
+        else       { localStorage.removeItem('gist_token'); }
+        this.setPerfil({
+            gistId: gistId || '',
+            gistAutoSync: autoSync,
+            gistRangoDesde: desde || '00:00',
+            gistRangoHasta: hasta || '23:59',
+            gistMergeBehavior: merge,
+        });
+        this.app.mostrarToast('Configuración guardada', 'success');
+        this.app.cerrarModal('modal-gist');
+        this.actualizarBotones();
+    }
+
+    _guardarCredencialesModal() {
+        const inputToken = document.getElementById('gist-token');
+        const inputId    = document.getElementById('gist-id');
+        if (inputToken?.value.trim()) localStorage.setItem('gist_token', inputToken.value.trim());
+        if (inputId?.value.trim())    this.setPerfil({ gistId: inputId.value.trim() });
+    }
+
+    // ── Subida ────────────────────────────────────────────────
+    async subir() {
+        const token = this.getToken();
+        if (!token) { this.app.mostrarToast('Falta el token', 'error'); return; }
+        this._guardarCredencialesModal();
+        const inputId = document.getElementById('gist-id');
+        const categorias = this.app._getCategorias();
+        const datos = JSON.stringify({ servicios: this.servicios, categorias }, null, 2);
+        const hash = await this.calcularHash(datos);
+        const contenido = JSON.stringify({ hash, servicios: this.servicios, categorias }, null, 2);
+        const nombreArchivo = `deltaF_${this.perfilActivo}.json`;
+        const btnSubir = document.getElementById('gist-btn-subir');
+        if (btnSubir) btnSubir.disabled = true;
+        try {
+            this.app.mostrarToast('Subiendo...', 'info');
+            const perfilActual = this.getPerfil();
+            const url    = this.esIdValido(perfilActual.gistId)
+                ? `https://api.github.com/gists/${perfilActual.gistId}`
+                : 'https://api.github.com/gists';
+            const method = this.esIdValido(perfilActual.gistId) ? 'PATCH' : 'POST';
+            const res = await fetch(url, {
+                method,
+                headers: { 'Authorization': `Bearer ${this.getToken()}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description: `DeltaF backup — ${this.perfiles[this.perfilActivo]?.nombre || this.perfilActivo}`,
+                    public: false,
+                    files: { [nombreArchivo]: { content: contenido } }
+                })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            const ahora = new Date().toLocaleString('es-AR');
+            this.setPerfil({ gistId: json.id, gistLastSync: ahora });
+            this.marcarSync('subir');
+            if (inputId) inputId.value = json.id;
+            const elSync = document.getElementById('gist-ultima-sync');
+            if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
+            this.app.mostrarToast('Subida exitosa ✓', 'success');
+        } catch (err) {
+            console.error(err);
+            this.app.mostrarToast('Error al subir', 'error');
+        } finally {
+            if (btnSubir) btnSubir.disabled = false;
+        }
+    }
+
+    // ── Descarga (sin aplicar) ────────────────────────────────
+    async _descargar() {
+        const token  = this.getToken();
+        const perfil = this.getPerfil();
+        if (!token) throw new Error('Falta el token');
+        if (!this.esIdValido(perfil.gistId)) throw new Error('Gist ID inválido');
+        const res = await fetch(`https://api.github.com/gists/${perfil.gistId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const nombreArchivo = `deltaF_${this.perfilActivo}.json`;
+        const archivoObj = json.files[nombreArchivo];
+        if (!archivoObj) throw new Error('Archivo no encontrado en el Gist');
+        let parsed;
+        try { parsed = JSON.parse(archivoObj.content); } catch { throw new Error('JSON inválido'); }
+        const datosStr = JSON.stringify({ servicios: parsed.servicios, categorias: parsed.categorias || [] }, null, 2);
+        const hashEsperado = await this.calcularHash(datosStr);
+        if (hashEsperado !== parsed.hash) throw new Error('Hash no coincide — datos corruptos');
+        if (!Array.isArray(parsed.servicios)) throw new Error('Estructura inválida');
+        return { servicios: parsed.servicios, categorias: parsed.categorias || [] };
+    }
+
+    // ── Bajada ────────────────────────────────────────────────
+    async bajar(esAutomatico = false) {
+        this._guardarCredencialesModal();
+        const btnBajar = document.getElementById('gist-btn-bajar');
+        if (btnBajar) btnBajar.disabled = true;
+        try {
+            this.app.mostrarToast('Bajando...', 'info');
+            const { servicios: serviciosGist, categorias: categoriasGist } = await this._descargar();
+            this.app._gistDatosPendientes = { servicios: serviciosGist, categorias: categoriasGist };
+            if (esAutomatico) {
+                this.mergeAplicar(this.getMergeBehavior(), true);
+            } else {
+                const resumen = document.getElementById('gist-merge-resumen');
+                if (resumen) {
+                    resumen.innerHTML = this.app._generarResumenComparacion(serviciosGist, 'Gist', categoriasGist);
+                }
+                this.app.abrirModal('modal-gist-merge');
+            }
+        } catch (err) {
+            console.error(err);
+            this.app.mostrarToast(`Error al bajar: ${err.message}`, 'error');
+        } finally {
+            if (btnBajar) btnBajar.disabled = false;
+        }
+    }
+
+    // ── Merge ─────────────────────────────────────────────────
+    mergeCategorias(catsNuevas) {
+        if (!Array.isArray(catsNuevas) || catsNuevas.length === 0) return 0;
+        const actuales = this.app._getCategorias();
+        const nuevas = catsNuevas.filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
+        if (nuevas.length > 0) this.app._saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
+        return nuevas.length;
+    }
+
+    mergeAplicar(modo, esAutomatico = false) {
+        const { servicios: serviciosGist, categorias: categoriasGist } = this.app._gistDatosPendientes || {};
+        if (!serviciosGist) return;
+        let toastMsg;
+        if (modo === 'replace') {
+            this.servicios = serviciosGist;
+            this.app._saveCategorias(categoriasGist.length > 0 ? categoriasGist : this.app._getCategorias());
+            toastMsg = 'Datos reemplazados ✓';
+        } else {
+            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this.app._mergeServicios(serviciosGist);
+            const categoriasAgregadas = this.mergeCategorias(categoriasGist);
+            if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
+                this.app._gistDatosPendientes = null;
+                this.app.cerrarModal('modal-gist-merge');
+                this.app.mostrarToast('No hay datos nuevos para agregar', 'info');
+                return;
+            }
+            const partes = [];
+            if (serviciosAgregados  > 0) partes.push(this.app._plural(serviciosAgregados,  'servicio',       'servicios'));
+            if (facturasAgregadas   > 0) partes.push(this.app._plural(facturasAgregadas,   'factura nueva',  'facturas nuevas'));
+            if (facturasActualizadas > 0) partes.push(this.app._plural(facturasActualizadas,'actualizada',    'actualizadas'));
+            if (ingresosAgregados   > 0) partes.push(this.app._plural(ingresosAgregados,   'ingreso nuevo',  'ingresos nuevos'));
+            if (categoriasAgregadas > 0) partes.push(this.app._plural(categoriasAgregadas, 'categoría',      'categorías'));
+            toastMsg = `Importado: ${partes.join(', ')}`;
+        }
+        this.app._postGuardado();
+        const ahora = new Date().toLocaleString('es-AR');
+        this.setPerfil({ gistLastSync: ahora });
+        this.marcarSync('bajar');
+        const elSync = document.getElementById('gist-ultima-sync');
+        if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
+        this.app._gistDatosPendientes = null;
+        this.app.cerrarModal('modal-gist-merge');
+        this.app.mostrarToast(toastMsg, 'success');
+    }
+
+    // ── Auto-sync al iniciar ──────────────────────────────────
+    async autoSyncInit() {
+        const perfil   = this.getPerfil();
+        const token    = this.getToken();
+        const autoSync = perfil.gistAutoSync ?? 0;
+        if (!token || !this.esIdValido(perfil.gistId)) return;
+        if (autoSync === 1 && this.dentroDelRango() && !this.superaLimite('bajar', 2)) {
+            setTimeout(() => this.app.gistBajar(true), 2000);
+        } else if (autoSync === 2 && this.dentroDelRango() && !this.superaLimite('subir', 1)) {
+            setTimeout(() => this.app.gistSubir(), 2000);
+        }
     }
 }
 
