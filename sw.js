@@ -1,10 +1,13 @@
-const CACHE_NAME = 'SERVICIOS-v260602.1123'; 
+const CACHE_NAME = 'SERVICIOS-v260602.2330';
 
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './app.js',
+  './styles.css',
+  './flash.js',
 ];
 
 self.addEventListener('install', event => {
@@ -27,7 +30,7 @@ self.addEventListener('install', event => {
 });
 self.addEventListener('activate', event => {
   console.log('🔄 SW: Activando y limpiando...');
-  
+
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(

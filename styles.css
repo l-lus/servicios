@@ -369,16 +369,11 @@
             appearance: textfield;
         }
 
-        .form-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-        }
+        .form-actions,
+        .form-actions2 { display: flex; }
 
-        .form-actions2 {
-            display: flex;
-            margin-top: 0.5rem;
-        }
+        .form-actions  { gap: 0.5rem; margin-top: 1.5rem; }
+        .form-actions2 { margin-top: 0.5rem; }
 
         /* ============================================================
            MENÚ CONTEXTUAL SERVICIO
@@ -575,20 +570,21 @@
             overflow: hidden;
         }
 
-        .modal-facturas-header {
+        .modal-facturas-header,
+        .modal-facturas-footer {
             position: sticky;
-            top: 0;
             z-index: 10;
             background: var(--bg-card);
+        }
+
+        .modal-facturas-header {
+            top: 0;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
         }
 
         .modal-facturas-footer {
-            position: sticky;
             bottom: 0;
-            z-index: 10;
-            background: var(--bg-card);
             padding-top: 1rem;
             border-top: 1px solid var(--border);
             display: flex;
@@ -839,10 +835,7 @@
             flex-shrink: 0;
         }
 
-        .cat-alerta-icon.vencido {
-            color: var(--c-red);
-        }
-
+        .cat-alerta-icon.vencido,
         .cat-alerta-icon.urgente {
             color: var(--c-red);
         }
@@ -1226,13 +1219,6 @@
         }
 
         .estadisticas-selector {
-            width: 100%;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            color: var(--text-main);
-            font-size: 1rem;
-            padding: 0.75rem;
             cursor: pointer;
             transition: opacity var(--transition-fast);
         }
@@ -2035,27 +2021,20 @@
         .select-mes-oculto      { display: none; }
 
         /* Textos modal info */
-        .info-muted {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        .info-muted-mb  { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem; }
-        .info-muted-mb2 { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
-        .info-code-box {
-            background: var(--bg-body);
-            padding: 0.75rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
+        .info-muted,
+        .info-muted-mb,
+        .info-muted-mb2 { color: var(--text-muted); font-size: 0.9rem; }
+        .info-muted-mb  { margin-bottom: 0.75rem; }
+        .info-muted-mb2 { margin-bottom: 0.5rem; }
+        .info-code-box,
         .info-code-box-mono {
             background: var(--bg-body);
             padding: 0.75rem;
             border-radius: 8px;
-            font-family: monospace;
             font-size: 0.85rem;
             color: var(--text-muted);
         }
+        .info-code-box-mono { font-family: monospace; }
 
         /* ============================================================
            MEDIA QUERIES

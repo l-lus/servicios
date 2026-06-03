@@ -107,6 +107,7 @@ class GestionServicios {
         this._estadisticaCategoriaActiva = null;
 
         // Servicios auxiliares
+        this.ui = new UIManager(this);
         this.utils = new UtilsService(this);
         this.calculador = new CalculadorService(this);
         this.gist = new GistService(this);
@@ -3460,238 +3461,27 @@ class GestionServicios {
     // TEMA
     // ========================================
 
-    cargarTema() {
-        const tema = localStorage.getItem(this.THEME_KEY);
-        if (tema === 'dark' || tema === null) {
-            // Si es dark O primera vez (null), activar modo oscuro
-            document.body.classList.add('dark-mode');
-            // Guardar preferencia si es la primera vez
-            if (tema === null) {
-                localStorage.setItem(this.THEME_KEY, 'dark');
-            }
-        }
-        // Sincronizar ícono con el tema cargado
-        const esDark = document.body.classList.contains('dark-mode');
-        this._actualizarIconoTema(esDark);
-    }
-
-    async cargarCotizacionDolar() {
-        try {
-            const res = await fetch('https://dolarapi.com/v1/dolares');
-            if (!res.ok) throw new Error('Error al obtener cotización');
-            const data = await res.json();
-
-            const oficial = data.find(d => d.casa === 'oficial');
-            const mep = data.find(d => d.casa === 'bolsa');
-
-            const fmt = (v) => v != null ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
-
-            const elOficial = document.getElementById('dolar-oficial');
-            const elMep = document.getElementById('dolar-mep');
-            const elHora = document.getElementById('dolar-hora');
-
-            if (elOficial) elOficial.textContent = oficial ? fmt(oficial.venta) : '-';
-            if (elMep) elMep.textContent = mep ? fmt(mep.venta) : '-';
-            if (elHora) {
-                const ahora = new Date();
-                elHora.textContent = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
-            }
-        } catch (e) {
-            const elHora = document.getElementById('dolar-hora');
-            if (elHora) elHora.textContent = 'sin conexión';
-        }
-    }
-
-    toggleTema() {
-        document.body.classList.toggle('dark-mode');
-        const esDark = document.body.classList.contains('dark-mode');
-        document.documentElement.classList.toggle('dark-mode', esDark);
-        localStorage.setItem(this.THEME_KEY, esDark ? 'dark' : 'light');
-        this._actualizarIconoTema(esDark);
-        this.mostrarToast(`Tema ${esDark ? 'oscuro' : 'claro'} activado`, 'success');
-        this.cerrarMenuAjustes();
-    }
-
-    _actualizarIconoTema(esDark) {
-        const use = document.getElementById('icon-tema-use');
-        if (use) use.setAttribute('href', esDark ? '#icon-sun' : '#icon-moon');
-    }
-
-    toggleBlur() {
-        this.blurHabilitado = !this.blurHabilitado;
-        localStorage.setItem('blur-montos', this.blurHabilitado.toString());
-
-        const indicator = document.getElementById('blur-indicator');
-        if (indicator) indicator.textContent = this.blurHabilitado ? 'SI' : 'NO';
-
-        // Si se deshabilita, desblurear inmediatamente
-        if (!this.blurHabilitado) {
-            this.resumenDesblurado = true;
-            const el = document.getElementById('resumen-toggle');
-            if (el) el.classList.remove('resumen-blur');
-        } else {
-            // Si se habilita, volver a blurear
-            this.resumenDesblurado = false;
-            const el = document.getElementById('resumen-toggle');
-            if (el) el.classList.add('resumen-blur');
-        }
-
-        this.mostrarToast(`Privacidad ${this.blurHabilitado ? 'habilitado' : 'deshabilitado'}`, 'success');
-        this.cerrarMenuAjustes();
-    }
-
-    toggleIngresos() {
-        const habilitado = localStorage.getItem(this.INGRESOS_KEY) !== 'false';
-        const nuevoEstado = !habilitado;
-
-        localStorage.setItem(this.INGRESOS_KEY, nuevoEstado.toString());
-
-        // Actualizar indicador visual
-        const indicator = document.getElementById('ingresos-indicator');
-        indicator.textContent = nuevoEstado ? 'SI' : 'NO';
-
-        // Re-renderizar servicios
-        this.renderServicios();
-
-        this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
-        this.cerrarMenuAjustes();
-
-        // Actualizar calculador
-        this.actualizarSelectServicios();
-
-        // Si el servicio de ingresos estaba seleccionado y se deshabilitó, limpiar
-        const selectServicio = document.getElementById('calculador-servicio');
-        if (!nuevoEstado && selectServicio && selectServicio.value === this.SERVICIO_INGRESOS_ID) {
-            selectServicio.value = '';
-            this.calcularPeriodo();
-        }
-    }
-
-    ingresosHabilitado() {
-        const valor = localStorage.getItem(this.INGRESOS_KEY);
-        // Si es null (primera vez), retornar false; si es 'true' retornar true; si es 'false' retornar false
-        return valor === 'true';
-    }
+    // ── Delegación a UIManager ────────────────────────────────
+    cargarTema()                        { this.ui.cargarTema(); }
+    toggleTema()                        { this.ui.toggleTema(); }
+    _actualizarIconoTema(esDark)        { this.ui._actualizarIconoTema(esDark); }
+    toggleBlur()                        { this.ui.toggleBlur(); }
+    toggleIngresos()                    { this.ui.toggleIngresos(); }
+    ingresosHabilitado()                { return this.ui.ingresosHabilitado(); }
+    abrirModal(modalId)                 { this.ui.abrirModal(modalId); }
+    cerrarModal(modalId)                { this.ui.cerrarModal(modalId); }
+    cerrarTodosLosModales()             { this.ui.cerrarTodosLosModales(); }
+    toggleMenuAjustes()                 { this.ui.toggleMenuAjustes(); }
+    cerrarMenuAjustes()                 { this.ui.cerrarMenuAjustes(); }
+    toggleMenuAgregar()                 { this.ui.toggleMenuAgregar(); }
+    cerrarMenuAgregar()                 { this.ui.cerrarMenuAgregar(); }
+    actualizarMenuAgregar()             { this.ui.actualizarMenuAgregar(); }
+    abrirModalFacturaRapida()           { this.ui.abrirModalFacturaRapida(); }
+    async cargarCotizacionDolar()       { await this.ui.cargarCotizacionDolar(); }
+    mostrarToast(msg, tipo)             { this.ui.mostrarToast(msg, tipo); }
 
     // ========================================
     // MODALES Y MENÚS
-    // ========================================
-
-    abrirModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.add('active');
-        document.body.classList.add('modal-open');
-    }
-
-    cerrarModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.remove('active');
-        // Solo quitar modal-open si no queda ningún otro modal activo
-        if (!document.querySelector('.modal.active')) {
-            document.body.classList.remove('modal-open');
-        }
-        if (modalId === 'modal-gist') this.actualizarBotonesGist();
-    }
-
-    cerrarTodosLosModales() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.classList.remove('active');
-        });
-        document.body.classList.remove('modal-open');
-
-        // Limpiar años guardados al cerrar por backdrop
-        this._anoExpandidoFacturas = {};
-        this._anoExpandidoIngresos = {};
-    }
-
-    toggleMenuAjustes() {
-        const menu = document.getElementById('menu-ajustes');
-        const overlay = document.getElementById('menu-overlay');
-        menu.classList.toggle('active');
-        overlay.classList.toggle('active');
-
-        // Bloquear/desbloquear scroll
-        if (menu.classList.contains('active')) {
-            document.body.classList.add('modal-open');
-        } else {
-            document.body.classList.remove('modal-open');
-        }
-    }
-
-    cerrarMenuAjustes() {
-        const menu = document.getElementById('menu-ajustes');
-        const overlay = document.getElementById('menu-overlay');
-        menu.classList.remove('active');
-        overlay.classList.remove('active');
-
-        // Cerrar submenús animados
-        document.getElementById('opciones-importacion')?.classList.remove('open');
-        document.getElementById('opciones-borrar')?.classList.remove('open');
-        document.getElementById('opciones-dolar')?.classList.remove('open');
-        document.getElementById('menu-importar')?.classList.remove('open');
-        document.getElementById('menu-limpiar')?.classList.remove('open');
-        document.getElementById('menu-dolar')?.classList.remove('open');
-
-        // Restaurar scroll del body
-        document.body.classList.remove('modal-open');
-    }
-
-    toggleMenuAgregar() {
-        const menu = document.getElementById('menu-agregar');
-        const overlay = document.getElementById('menu-agregar-overlay');
-        menu.classList.toggle('active');
-        overlay.classList.toggle('active');
-        // Bloquear/desbloquear scroll
-        if (menu.classList.contains('active')) {
-            document.body.classList.add('modal-open');
-        } else {
-            document.body.classList.remove('modal-open');
-            // Resetear a vista principal al cerrar
-            const vistaPrincipal = document.getElementById('menu-vista-principal');
-            const vistaCalcular = document.getElementById('menu-vista-calcular');
-            if (vistaPrincipal) { vistaPrincipal.classList.remove('hidden-vista'); }
-            if (vistaCalcular) { vistaCalcular.classList.remove('visible-vista'); vistaCalcular.classList.add('hidden-vista'); }
-        }
-    }
-
-    cerrarMenuAgregar() {
-        const menu = document.getElementById('menu-agregar');
-        const overlay = document.getElementById('menu-agregar-overlay');
-        menu.classList.remove('active');
-        overlay.classList.remove('active');
-        document.body.classList.remove('modal-open');
-        // Resetear a vista principal
-        const vistaPrincipal = document.getElementById('menu-vista-principal');
-        const vistaCalcular = document.getElementById('menu-vista-calcular');
-        if (vistaPrincipal) { vistaPrincipal.classList.remove('hidden-vista'); }
-        if (vistaCalcular) { vistaCalcular.classList.remove('visible-vista'); vistaCalcular.classList.add('hidden-vista'); }
-    }
-
-    actualizarMenuAgregar() {
-        const btnRecibo = document.getElementById('menu-agregar-recibo');
-        if (btnRecibo) {
-            btnRecibo.classList.toggle('visible', this.ingresosHabilitado());
-        }
-    }
-
-    abrirModalFacturaRapida() {
-        // Si no hay servicios, mostrar mensaje y abrir modal de servicio
-        if (this.servicios.length === 0) {
-            this.mostrarToast('Primero debes crear un servicio', 'error');
-            this.abrirModalServicio();
-            return;
-        }
-
-        // Obtener el primer servicio en orden alfabético
-        const serviciosOrdenados = [...this.servicios].sort((a, b) =>
-            a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
-        );
-
-        // Abrir modal de factura con el primer servicio alfabético indicando que viene del menú
-        this.abrirModalFactura(serviciosOrdenados[0].id, null, 'menu');
-    }
-    // ========================================
-    // UTILIDADES
     // ========================================
 
     generarId()                         { return this.utils.generarId(); }
@@ -4190,27 +3980,209 @@ class GestionServicios {
         this.mostrarToast(pagadas === 1 ? 'Factura pagada ✓' : `${pagadas} facturas pagadas ✓`, 'success');
     }
 
+    mostrarToast(mensaje, tipo = 'success') { this.ui.mostrarToast(mensaje, tipo); }
+}
+
+// ============================================================
+// UI MANAGER — modales, menús, tema, blur, toast, dólar
+// ============================================================
+class UIManager {
+    constructor(app) {
+        this.app = app;
+    }
+
+    // ── Tema ──────────────────────────────────────────────────
+    cargarTema() {
+        const tema = localStorage.getItem(this.app.THEME_KEY);
+        if (tema === 'dark' || tema === null) {
+            document.body.classList.add('dark-mode');
+            if (tema === null) localStorage.setItem(this.app.THEME_KEY, 'dark');
+        }
+        this._actualizarIconoTema(document.body.classList.contains('dark-mode'));
+    }
+
+    toggleTema() {
+        document.body.classList.toggle('dark-mode');
+        const esDark = document.body.classList.contains('dark-mode');
+        document.documentElement.classList.toggle('dark-mode', esDark);
+        localStorage.setItem(this.app.THEME_KEY, esDark ? 'dark' : 'light');
+        this._actualizarIconoTema(esDark);
+        this.mostrarToast(`Tema ${esDark ? 'oscuro' : 'claro'} activado`, 'success');
+        this.cerrarMenuAjustes();
+    }
+
+    _actualizarIconoTema(esDark) {
+        const use = document.getElementById('icon-tema-use');
+        if (use) use.setAttribute('href', esDark ? '#icon-sun' : '#icon-moon');
+    }
+
+    // ── Blur / privacidad ─────────────────────────────────────
+    toggleBlur() {
+        this.app.blurHabilitado = !this.app.blurHabilitado;
+        localStorage.setItem('blur-montos', this.app.blurHabilitado.toString());
+        const indicator = document.getElementById('blur-indicator');
+        if (indicator) indicator.textContent = this.app.blurHabilitado ? 'SI' : 'NO';
+        const el = document.getElementById('resumen-toggle');
+        if (!this.app.blurHabilitado) {
+            this.app.resumenDesblurado = true;
+            if (el) el.classList.remove('resumen-blur');
+        } else {
+            this.app.resumenDesblurado = false;
+            if (el) el.classList.add('resumen-blur');
+        }
+        this.mostrarToast(`Privacidad ${this.app.blurHabilitado ? 'habilitado' : 'deshabilitado'}`, 'success');
+        this.cerrarMenuAjustes();
+    }
+
+    // ── Ingresos ──────────────────────────────────────────────
+    ingresosHabilitado() {
+        return localStorage.getItem(this.app.INGRESOS_KEY) === 'true';
+    }
+
+    toggleIngresos() {
+        const nuevoEstado = !this.ingresosHabilitado();
+        localStorage.setItem(this.app.INGRESOS_KEY, nuevoEstado.toString());
+        const indicator = document.getElementById('ingresos-indicator');
+        if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
+        this.app.renderServicios();
+        this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
+        this.cerrarMenuAjustes();
+        this.app.actualizarSelectServicios();
+        const selectServicio = document.getElementById('calculador-servicio');
+        if (!nuevoEstado && selectServicio?.value === this.app.SERVICIO_INGRESOS_ID) {
+            selectServicio.value = '';
+            this.app.calcularPeriodo();
+        }
+    }
+
+    // ── Modales ───────────────────────────────────────────────
+    abrirModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+
+    cerrarModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.remove('active');
+        if (!document.querySelector('.modal.active')) {
+            document.body.classList.remove('modal-open');
+        }
+        if (modalId === 'modal-gist') this.app.gist.actualizarBotones();
+    }
+
+    cerrarTodosLosModales() {
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+        document.body.classList.remove('modal-open');
+        this.app._anoExpandidoFacturas = {};
+        this.app._anoExpandidoIngresos = {};
+    }
+
+    // ── Menú ajustes ──────────────────────────────────────────
+    toggleMenuAjustes() {
+        const menu    = document.getElementById('menu-ajustes');
+        const overlay = document.getElementById('menu-overlay');
+        menu.classList.toggle('active');
+        overlay.classList.toggle('active');
+        document.body.classList.toggle('modal-open', menu.classList.contains('active'));
+    }
+
+    cerrarMenuAjustes() {
+        const menu    = document.getElementById('menu-ajustes');
+        const overlay = document.getElementById('menu-overlay');
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
+        ['opciones-importacion', 'opciones-borrar', 'opciones-dolar',
+         'menu-importar', 'menu-limpiar', 'menu-dolar'].forEach(id => {
+            document.getElementById(id)?.classList.remove('open');
+        });
+        document.body.classList.remove('modal-open');
+    }
+
+    // ── Menú agregar ──────────────────────────────────────────
+    toggleMenuAgregar() {
+        const menu    = document.getElementById('menu-agregar');
+        const overlay = document.getElementById('menu-agregar-overlay');
+        menu.classList.toggle('active');
+        overlay.classList.toggle('active');
+        if (menu.classList.contains('active')) {
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.classList.remove('modal-open');
+            this._resetVistaMenuAgregar();
+        }
+    }
+
+    cerrarMenuAgregar() {
+        const menu    = document.getElementById('menu-agregar');
+        const overlay = document.getElementById('menu-agregar-overlay');
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.classList.remove('modal-open');
+        this._resetVistaMenuAgregar();
+    }
+
+    _resetVistaMenuAgregar() {
+        document.getElementById('menu-vista-principal')?.classList.remove('hidden-vista');
+        const vistaCalc = document.getElementById('menu-vista-calcular');
+        if (vistaCalc) {
+            vistaCalc.classList.remove('visible-vista');
+            vistaCalc.classList.add('hidden-vista');
+        }
+    }
+
+    actualizarMenuAgregar() {
+        const btnRecibo = document.getElementById('menu-agregar-recibo');
+        if (btnRecibo) btnRecibo.classList.toggle('visible', this.ingresosHabilitado());
+    }
+
+    // ── Modal factura rápida ──────────────────────────────────
+    abrirModalFacturaRapida() {
+        if (this.app.servicios.length === 0) {
+            this.mostrarToast('Primero debes crear un servicio', 'error');
+            this.app.abrirModalServicio();
+            return;
+        }
+        const primero = [...this.app.servicios]
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))[0];
+        this.app.abrirModalFactura(primero.id, null, 'menu');
+    }
+
+    // ── Cotización dólar ──────────────────────────────────────
+    async cargarCotizacionDolar() {
+        try {
+            const res = await fetch('https://dolarapi.com/v1/dolares');
+            if (!res.ok) throw new Error('Error al obtener cotización');
+            const data = await res.json();
+            const oficial = data.find(d => d.casa === 'oficial');
+            const mep     = data.find(d => d.casa === 'bolsa');
+            const fmt = v => v != null
+                ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : '-';
+            const elOficial = document.getElementById('dolar-oficial');
+            const elMep     = document.getElementById('dolar-mep');
+            const elHora    = document.getElementById('dolar-hora');
+            if (elOficial) elOficial.textContent = oficial ? fmt(oficial.venta) : '-';
+            if (elMep)     elMep.textContent     = mep     ? fmt(mep.venta)     : '-';
+            if (elHora)    elHora.textContent    = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        } catch {
+            const elHora = document.getElementById('dolar-hora');
+            if (elHora) elHora.textContent = 'sin conexión';
+        }
+    }
+
+    // ── Toast ─────────────────────────────────────────────────
     mostrarToast(mensaje, tipo = 'success') {
         const toast = document.getElementById('toast');
-
-        // Cancelar el timeout anterior si existe
-        if (this.toastTimeout) {
-            clearTimeout(this.toastTimeout);
-        }
-
-        // Ocultar el toast actual si está visible
+        if (this.app.toastTimeout) clearTimeout(this.app.toastTimeout);
         toast.classList.remove('show');
-
-        // Pequeño delay para permitir que la animación de salida se complete
         setTimeout(() => {
             toast.textContent = mensaje;
             toast.className = `toast ${tipo}`;
             toast.classList.add('show');
-
-            // Guardar el nuevo timeout
-            this.toastTimeout = setTimeout(() => {
+            this.app.toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
-                this.toastTimeout = null;
+                this.app.toastTimeout = null;
             }, 3000);
         }, 150);
     }
@@ -4383,7 +4355,7 @@ class UtilsService {
         hidden.value = nuevo;
         btn.textContent = nuevo.toUpperCase();
         btn.classList.toggle('activo-usd', nuevo === 'usd');
-        this.app.mostrarToast(nuevo === 'usd' ? 'Dolares' : 'Pesos', 'info');
+        this.app.ui.mostrarToast(nuevo === 'usd' ? 'Dolares' : 'Pesos', 'info');
     }
 }
 
@@ -4417,7 +4389,7 @@ class PerfilService {
             localStorage.setItem('gestion_servicios_perfiles', JSON.stringify(this.perfiles));
         } catch (error) {
             console.error('Error al guardar perfiles:', error);
-            this.app.mostrarToast('Error al guardar perfiles', 'error');
+            this.app.ui.mostrarToast('Error al guardar perfiles', 'error');
         }
     }
 
@@ -4431,16 +4403,16 @@ class PerfilService {
         this.app._estadisticaCategoriaActiva = null;
         this.app.ultimoEstadoEstadisticas = null;
         this.app.renderServicios();
-        this.app.cerrarModal('modal-perfiles');
-        this.app.cerrarMenuAjustes();
-        this.app.mostrarToast(`Cambiado a perfil: ${this.perfiles[perfilId].nombre}`, 'success');
+        this.app.ui.cerrarModal('modal-perfiles');
+        this.app.ui.cerrarMenuAjustes();
+        this.app.ui.mostrarToast(`Cambiado a perfil: ${this.perfiles[perfilId].nombre}`, 'success');
     }
 
     // ── UI — modal lista ──────────────────────────────────────
     abrirModal() {
         this.renderLista();
-        this.app.cerrarMenuAjustes();
-        this.app.abrirModal('modal-perfiles');
+        this.app.ui.cerrarMenuAjustes();
+        this.app.ui.abrirModal('modal-perfiles');
     }
 
     renderLista() {
@@ -4486,19 +4458,19 @@ class PerfilService {
     crearInline() {
         const input  = document.getElementById('perfil-nuevo-nombre');
         const nombre = input.value.trim();
-        if (!nombre) { this.app.mostrarToast('Ingresá un nombre', 'error'); return; }
+        if (!nombre) { this.app.ui.mostrarToast('Ingresá un nombre', 'error'); return; }
         if (Object.values(this.perfiles).some(p => p.nombre.toLowerCase() === nombre.toLowerCase())) {
-            this.app.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return;
+            this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return;
         }
         if (Object.keys(this.perfiles).length >= 4) {
-            this.app.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
+            this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
         }
         const nuevoId = 'perfil_' + Date.now();
         this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
         localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
         input.value = '';
         this.guardar();
-        this.app.mostrarToast('Perfil creado', 'success');
+        this.app.ui.mostrarToast('Perfil creado', 'success');
         this.abrirModal();
     }
 
@@ -4510,45 +4482,45 @@ class PerfilService {
         document.getElementById('perfil-nombre').value = perfil.nombre;
         const inputNuevo = document.getElementById('perfil-nuevo-nombre');
         if (inputNuevo) inputNuevo.value = '';
-        this.app.cerrarModal('modal-perfiles');
-        this.app.abrirModal('modal-editar-perfil');
+        this.app.ui.cerrarModal('modal-perfiles');
+        this.app.ui.abrirModal('modal-editar-perfil');
     }
 
     cancelarEditar() {
-        this.app.cerrarModal('modal-editar-perfil');
+        this.app.ui.cerrarModal('modal-editar-perfil');
         this.abrirModal();
     }
 
     guardarEdicion(e) {
         e.preventDefault();
         const nombre = document.getElementById('perfil-nombre').value.trim();
-        if (!nombre) { this.app.mostrarToast('El nombre es requerido', 'error'); return; }
+        if (!nombre) { this.app.ui.mostrarToast('El nombre es requerido', 'error'); return; }
         const nombreExiste = Object.values(this.perfiles).some(p =>
             p.nombre.toLowerCase() === nombre.toLowerCase() && p.id !== this.app.perfilEditando
         );
-        if (nombreExiste) { this.app.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
+        if (nombreExiste) { this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
         if (this.app.perfilEditando) {
             this.perfiles[this.app.perfilEditando].nombre = nombre;
             if (this.app.perfilEditando === this.perfilActivo) this.app.renderServicios();
-            this.app.mostrarToast('Perfil actualizado', 'success');
+            this.app.ui.mostrarToast('Perfil actualizado', 'success');
         } else {
             if (Object.keys(this.perfiles).length >= 4) {
-                this.app.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
+                this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
             }
             const nuevoId = 'perfil_' + Date.now();
             this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
             localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
-            this.app.mostrarToast('Perfil creado', 'success');
+            this.app.ui.mostrarToast('Perfil creado', 'success');
         }
         this.guardar();
-        this.app.cerrarModal('modal-editar-perfil');
+        this.app.ui.cerrarModal('modal-editar-perfil');
         this.abrirModal();
     }
 
     // ── Eliminar ──────────────────────────────────────────────
     eliminar(perfilId) {
         if (perfilId === 'default') {
-            this.app.mostrarToast('No puedes eliminar el perfil principal', 'error'); return;
+            this.app.ui.mostrarToast('No puedes eliminar el perfil principal', 'error'); return;
         }
         const perfil = this.perfiles[perfilId];
         if (!confirm(`¿Eliminar el perfil "${perfil.nombre}"? Todos sus datos se perderán.`)) return;
@@ -4556,7 +4528,7 @@ class PerfilService {
         localStorage.removeItem(`gestion_servicios_datos_${perfilId}`);
         delete this.perfiles[perfilId];
         this.guardar();
-        this.app.mostrarToast('Perfil eliminado', 'success');
+        this.app.ui.mostrarToast('Perfil eliminado', 'success');
         this.renderLista();
     }
 }
@@ -4612,7 +4584,7 @@ class CalculadorService {
         this.actualizar();
         this.app.renderServicios();
         document.getElementById('calculadora-flotante').classList.remove('visible');
-        if (!silencioso) this.app.mostrarToast('Calculadora Desactivada', 'info');
+        if (!silencioso) this.app.ui.mostrarToast('Calculadora Desactivada', 'info');
     }
 
     toggleServicio(servicioId) {
@@ -4836,7 +4808,7 @@ class CalculadorService {
             if (totalPagadasOtroMesARS > 0) txt += linea('  Subtotal (ARS):', fmt(totalPagadasOtroMesARS, 'ars')) + '\n';
             if (totalPagadasOtroMesUSD > 0) txt += linea('  Subtotal (USD):', fmt(totalPagadasOtroMesUSD, 'usd')) + '\n';
         }
-        if (this.app.ingresosHabilitado() && ingresos.length > 0) {
+        if (this.app.ui.ingresosHabilitado() && ingresos.length > 0) {
             txt += `\nINGRESOS DEL MES\n${sep}\n`;
             ingresos.forEach(({ factura }) => {
                 txt += `\n  ${factura.tipo || 'regular'}\n${linea('  Fecha:', fmtFecha(factura.fecha))}\n${linea('  Monto:', fmt(factura.monto, factura.moneda || 'ars'))}\n`;
@@ -4847,14 +4819,14 @@ class CalculadorService {
         }
         txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
         this.app.utils.descargarBlob(txt, `reporte_${nombreMes.replace(' ', '_')}.txt`);
-        this.app.mostrarToast('Reporte generado', 'success');
+        this.app.ui.mostrarToast('Reporte generado', 'success');
     }
 
     _generarReporteIndividual() {
         const servicioId = document.getElementById('calculador-servicio')?.value;
         const desde      = document.getElementById('calculador-desde')?.value;
         const hasta      = document.getElementById('calculador-hasta')?.value;
-        if (!servicioId) { this.app.mostrarToast('Seleccioná un servicio primero', 'info'); return; }
+        if (!servicioId) { this.app.ui.mostrarToast('Seleccioná un servicio primero', 'info'); return; }
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
@@ -4902,7 +4874,7 @@ class CalculadorService {
         }
         txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
         this.app.utils.descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
-        this.app.mostrarToast('Reporte generado', 'success');
+        this.app.ui.mostrarToast('Reporte generado', 'success');
     }
 }
 
@@ -5053,7 +5025,7 @@ class GistService {
         } else {
             elSync.classList.remove('visible');
         }
-        this.app.abrirModal('modal-gist');
+        this.app.ui.abrirModal('modal-gist');
     }
 
     guardarConfig() {
@@ -5072,8 +5044,8 @@ class GistService {
             gistRangoHasta: hasta || '23:59',
             gistMergeBehavior: merge,
         });
-        this.app.mostrarToast('Configuración guardada', 'success');
-        this.app.cerrarModal('modal-gist');
+        this.app.ui.mostrarToast('Configuración guardada', 'success');
+        this.app.ui.cerrarModal('modal-gist');
         this.actualizarBotones();
     }
 
@@ -5087,7 +5059,7 @@ class GistService {
     // ── Subida ────────────────────────────────────────────────
     async subir() {
         const token = this.getToken();
-        if (!token) { this.app.mostrarToast('Falta el token', 'error'); return; }
+        if (!token) { this.app.ui.mostrarToast('Falta el token', 'error'); return; }
         this._guardarCredencialesModal();
         const inputId = document.getElementById('gist-id');
         const categorias = this.app._getCategorias();
@@ -5098,7 +5070,7 @@ class GistService {
         const btnSubir = document.getElementById('gist-btn-subir');
         if (btnSubir) btnSubir.disabled = true;
         try {
-            this.app.mostrarToast('Subiendo...', 'info');
+            this.app.ui.mostrarToast('Subiendo...', 'info');
             const perfilActual = this.getPerfil();
             const url    = this.esIdValido(perfilActual.gistId)
                 ? `https://api.github.com/gists/${perfilActual.gistId}`
@@ -5121,10 +5093,10 @@ class GistService {
             if (inputId) inputId.value = json.id;
             const elSync = document.getElementById('gist-ultima-sync');
             if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
-            this.app.mostrarToast('Subida exitosa ✓', 'success');
+            this.app.ui.mostrarToast('Subida exitosa ✓', 'success');
         } catch (err) {
             console.error(err);
-            this.app.mostrarToast('Error al subir', 'error');
+            this.app.ui.mostrarToast('Error al subir', 'error');
         } finally {
             if (btnSubir) btnSubir.disabled = false;
         }
@@ -5159,7 +5131,7 @@ class GistService {
         const btnBajar = document.getElementById('gist-btn-bajar');
         if (btnBajar) btnBajar.disabled = true;
         try {
-            this.app.mostrarToast('Bajando...', 'info');
+            this.app.ui.mostrarToast('Bajando...', 'info');
             const { servicios: serviciosGist, categorias: categoriasGist } = await this._descargar();
             this.app._gistDatosPendientes = { servicios: serviciosGist, categorias: categoriasGist };
             if (esAutomatico) {
@@ -5169,11 +5141,11 @@ class GistService {
                 if (resumen) {
                     resumen.innerHTML = this.app._generarResumenComparacion(serviciosGist, 'Gist', categoriasGist);
                 }
-                this.app.abrirModal('modal-gist-merge');
+                this.app.ui.abrirModal('modal-gist-merge');
             }
         } catch (err) {
             console.error(err);
-            this.app.mostrarToast(`Error al bajar: ${err.message}`, 'error');
+            this.app.ui.mostrarToast(`Error al bajar: ${err.message}`, 'error');
         } finally {
             if (btnBajar) btnBajar.disabled = false;
         }
@@ -5201,8 +5173,8 @@ class GistService {
             const categoriasAgregadas = this.mergeCategorias(categoriasGist);
             if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
                 this.app._gistDatosPendientes = null;
-                this.app.cerrarModal('modal-gist-merge');
-                this.app.mostrarToast('No hay datos nuevos para agregar', 'info');
+                this.app.ui.cerrarModal('modal-gist-merge');
+                this.app.ui.mostrarToast('No hay datos nuevos para agregar', 'info');
                 return;
             }
             const partes = [];
@@ -5220,8 +5192,8 @@ class GistService {
         const elSync = document.getElementById('gist-ultima-sync');
         if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
         this.app._gistDatosPendientes = null;
-        this.app.cerrarModal('modal-gist-merge');
-        this.app.mostrarToast(toastMsg, 'success');
+        this.app.ui.cerrarModal('modal-gist-merge');
+        this.app.ui.mostrarToast(toastMsg, 'success');
     }
 
     // ── Auto-sync al iniciar ──────────────────────────────────
@@ -5296,14 +5268,14 @@ class HistorialManager {
         if (this.historialIndex <= 0) return;
         this.historialIndex--;
         this._aplicarEstado(this.historial[this.historialIndex]);
-        this.app.mostrarToast('Acción deshecha', 'success');
+        this.app.ui.mostrarToast('Acción deshecha', 'success');
     }
 
     rehacer() {
         if (this.historialIndex >= this.historial.length - 1) return;
         this.historialIndex++;
         this._aplicarEstado(this.historial[this.historialIndex]);
-        this.app.mostrarToast('Acción rehecha', 'success');
+        this.app.ui.mostrarToast('Acción rehecha', 'success');
     }
 
     _aplicarEstado(estado) {
@@ -5311,7 +5283,7 @@ class HistorialManager {
         this.app._saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
         this.app.guardarDatos();
         this.app.renderServicios();
-        this.app.cerrarTodosLosModales();
+        this.app.ui.cerrarTodosLosModales();
         this.actualizarBotones();
     }
 
@@ -5362,7 +5334,7 @@ class StorageService {
             localStorage.setItem(key, JSON.stringify(this.servicios));
         } catch (error) {
             console.error('Error al guardar datos del perfil:', error);
-            this.app.mostrarToast('Error al guardar datos', 'error');
+            this.app.ui.mostrarToast('Error al guardar datos', 'error');
         }
     }
 
@@ -5371,7 +5343,7 @@ class StorageService {
             this.guardarDatosPerfilActivo();
         } catch (error) {
             console.error('Error al guardar datos:', error);
-            this.app.mostrarToast('Error al guardar datos', 'error');
+            this.app.ui.mostrarToast('Error al guardar datos', 'error');
         }
     }
 
@@ -5451,11 +5423,11 @@ class StorageService {
                 `servicios_${this.app.utils.obtenerFechaLocal()}.json`,
                 'application/json'
             );
-            this.app.mostrarToast('Datos exportados correctamente', 'success');
-            this.app.cerrarMenuAjustes();
+            this.app.ui.mostrarToast('Datos exportados correctamente', 'success');
+            this.app.ui.cerrarMenuAjustes();
         } catch (error) {
             console.error('Error al exportar:', error);
-            this.app.mostrarToast('Error al exportar datos', 'error');
+            this.app.ui.mostrarToast('Error al exportar datos', 'error');
         }
     }
 
@@ -5469,10 +5441,10 @@ class StorageService {
             const file = e.target.files[0];
             if (!file) return;
             if (file.size > 10 * 1024 * 1024) {
-                this.app.mostrarToast('Archivo demasiado grande (máx 10MB)', 'error'); return;
+                this.app.ui.mostrarToast('Archivo demasiado grande (máx 10MB)', 'error'); return;
             }
             if (!file.name.endsWith('.json')) {
-                this.app.mostrarToast('Solo se permiten archivos .json', 'error'); return;
+                this.app.ui.mostrarToast('Solo se permiten archivos .json', 'error'); return;
             }
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -5505,17 +5477,17 @@ class StorageService {
                     }
                 } catch (error) {
                     console.error('Error al importar:', error);
-                    this.app.mostrarToast('❌ Error: ' + error.message, 'error');
+                    this.app.ui.mostrarToast('❌ Error: ' + error.message, 'error');
                 }
             };
-            reader.onerror = () => this.app.mostrarToast('Error al leer el archivo', 'error');
+            reader.onerror = () => this.app.ui.mostrarToast('Error al leer el archivo', 'error');
             reader.readAsText(file);
         });
 
         input.click();
         document.getElementById('opciones-importacion').classList.remove('open');
         document.getElementById('menu-importar').classList.remove('open');
-        this.app.cerrarMenuAjustes();
+        this.app.ui.cerrarMenuAjustes();
     }
 
     // ── Merge helpers ─────────────────────────────────────────
@@ -5553,7 +5525,7 @@ class StorageService {
             const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
             const categoriasAgregadas = this.app._mergeCategorias(datos.categorias);
             if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
-                this.app.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
+                this.app.ui.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
             }
             const partes = [];
             if (serviciosAgregados > 0) partes.push(this.app.utils.plural(serviciosAgregados, 'servicio', 'servicios'));
@@ -5562,7 +5534,7 @@ class StorageService {
             if (ingresosAgregados > 0) partes.push(this.app.utils.plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
             if (categoriasAgregadas > 0) partes.push(this.app.utils.plural(categoriasAgregadas, 'categoría', 'categorías'));
             this.app.utils.postGuardado();
-            this.app.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
+            this.app.ui.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
         } else {
             this.servicios = datos.servicios;
             this.app._saveCategorias(cats);
@@ -5574,7 +5546,7 @@ class StorageService {
             if (facturas > 0) partes.push(this.app.utils.plural(facturas, 'factura', 'facturas'));
             if (ingresos > 0) partes.push(this.app.utils.plural(ingresos, 'ingreso', 'ingresos'));
             if (cats.length > 0) partes.push(this.app.utils.plural(cats.length, 'categoría', 'categorías'));
-            this.app.mostrarToast(`Restaurados: ${partes.join(', ')}`, 'success');
+            this.app.ui.mostrarToast(`Restaurados: ${partes.join(', ')}`, 'success');
         }
     }
 
