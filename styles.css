@@ -880,6 +880,8 @@
             max-height: 0;
             opacity: 0;
             margin-bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
         }
 
         #servicios-content.collapsed .servicios-actions,
