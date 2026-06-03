@@ -282,7 +282,6 @@ class GestionServicios {
     desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
     toggleServicioCalculadora(servicioId)        { this.calculador.toggleServicio(servicioId); }
     actualizarCalculadora()                      { this.calculador.actualizar(); }
-    calcularPeriodo()                            { this.calculador.calcularPeriodo(); }
     generarReporteEstadisticas()                 { this.calculador.generarReporte(); }
     _generarReporteIndividual()                  { this.calculador._generarReporteIndividual(); }
 
@@ -894,211 +893,7 @@ class GestionServicios {
     inicializarCalculador()             { this.estadisticas.inicializarCalculador(); }
     generarOpcionesMeses(mes, anio)     { return this.estadisticas.generarOpcionesMeses(mes, anio); }
 
-    calcularPeriodo() {
-        const selectServicio = document.getElementById('calculador-servicio');
-        const inputDesde = document.getElementById('calculador-desde');
-        const inputHasta = document.getElementById('calculador-hasta');
-        const resultadosContainer = document.getElementById('calculador-resultados');
-
-        if (!selectServicio || !inputDesde || !inputHasta || !resultadosContainer) {
-            return;
-        }
-
-        const servicioId = selectServicio.value;
-        const desde = inputDesde.value;
-        const hasta = inputHasta.value;
-
-        let totalRegistros = 0;
-        let variacionTexto = '0%';
-        let variacionUSDTexto = null;
-
-        // Variables de moneda — se calculan una sola vez
-        let _arsTotal = 0, _usdTotal = 0;
-        let _arsCount = 0, _usdCount = 0;
-
-        if (servicioId) {
-            const servicio = this.servicios.find(s => s.id === servicioId);
-
-            if (servicio) {
-                const esServicioIngresos = servicioId === this.SERVICIO_INGRESOS_ID;
-
-                // Filtrar facturas por rango de fechas (único pase)
-                let facturasFiltradas = servicio.facturas;
-
-                if (desde) {
-                    const fechaDesde = this._parseDate(desde);
-                    facturasFiltradas = facturasFiltradas.filter(f =>
-                        this._parseDate(f.fecha) >= fechaDesde
-                    );
-                }
-
-                if (hasta) {
-                    const fechaHasta = this._parseDate(hasta);
-                    facturasFiltradas = facturasFiltradas.filter(f =>
-                        this._parseDate(f.fecha) <= fechaHasta
-                    );
-                }
-
-                // Ordenar por fecha (más antiguas primero) — necesario para variación
-                facturasFiltradas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-                totalRegistros = facturasFiltradas.length;
-
-                // Calcular totales por moneda — único pase, reutilizado abajo
-                facturasFiltradas.forEach(f => {
-                    if ((f.moneda || 'ars') === 'usd') {
-                        _usdTotal += f.monto;
-                        _usdCount++;
-                    } else {
-                        _arsTotal += f.monto;
-                        _arsCount++;
-                    }
-                });
-
-                // Para variación: excluir complementarios si es servicio de ingresos
-                let facturasParaVariacion = facturasFiltradas;
-                if (esServicioIngresos) {
-                    facturasParaVariacion = facturasFiltradas.filter(f => f.tipo !== 'complementario');
-                }
-
-                // Helper para calcular variación dado un array de facturas
-                const calcularVariacion = (facturas) => {
-                    const total = facturas.length;
-                    if (total >= 2) {
-                        let promPrim, promUlt;
-                        if (total <= 3) {
-                            promPrim = facturas[0].monto;
-                            promUlt = facturas[total - 1].monto;
-                        } else if (total <= 8) {
-                            const mitad = Math.floor(total / 2);
-                            promPrim = facturas.slice(0, mitad).reduce((s, f) => s + f.monto, 0) / mitad;
-                            promUlt = facturas.slice(-mitad).reduce((s, f) => s + f.monto, 0) / mitad;
-                        } else {
-                            const g = Math.min(6, Math.max(3, Math.floor(total * 0.3)));
-                            promPrim = facturas.slice(0, g).reduce((s, f) => s + f.monto, 0) / g;
-                            promUlt = facturas.slice(-g).reduce((s, f) => s + f.monto, 0) / g;
-                        }
-                        if (promPrim !== 0) {
-                            const v = ((promUlt - promPrim) / Math.abs(promPrim)) * 100;
-                            return `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
-                        } else {
-                            return promUlt > 0 ? '+∞' : '0%';
-                        }
-                    } else if (total === 1) {
-                        return 'N/A';
-                    }
-                    return null;
-                };
-
-                // Calcular variación por moneda usando las facturas ya filtradas
-                const facturasVariacionARS = facturasParaVariacion.filter(f => (f.moneda || 'ars') === 'ars');
-                const facturasVariacionUSD = facturasParaVariacion.filter(f => (f.moneda || 'ars') === 'usd');
-
-                const varARS = calcularVariacion(facturasVariacionARS);
-                const varUSD = calcularVariacion(facturasVariacionUSD);
-
-                if (varARS !== null) {
-                    variacionTexto = varARS;
-                } else if (facturasVariacionARS.length === 0 && facturasVariacionUSD.length > 0) {
-                    variacionTexto = null;
-                } else if (facturasParaVariacion.length === 0 && esServicioIngresos && totalRegistros > 0) {
-                    variacionTexto = 'Solo extras';
-                } else if (facturasVariacionARS.length === 1) {
-                    variacionTexto = 'N/A';
-                }
-
-                variacionUSDTexto = varUSD;
-            }
-        }
-
-        // Hash del estado para comparar y evitar re-renders innecesarios
-        const estadoCalculador = {
-            servicioId, desde, hasta,
-            totalRegistros,
-            _arsTotal, _usdTotal,
-            variacionTexto, variacionUSDTexto
-        };
-
-        const calculadorCambio = this._objetosCambiaron(this.ultimoEstadoCalculador, estadoCalculador);
-
-        // Construir HTML reutilizando las vars ya calculadas (_arsTotal, _usdTotal, etc.)
-        const _hayARS = _arsTotal !== 0;
-        const _hayUSD = _usdTotal !== 0;
-
-        const _montoHTML = _hayARS
-            ? this.formatearMoneda(_arsTotal, 'ars')
-            : _hayUSD ? this.formatearMoneda(_usdTotal, 'usd') : this.formatearMoneda(0, 'ars');
-
-        const _montoUSDItem = _hayUSD ? `
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Monto Total USD</span>
-        <span class="calculador-resultado-valor">${this.formatearMoneda(_usdTotal, 'usd')}</span>
-    </div>` : '';
-
-        const _promARS = _arsCount > 0 ? _arsTotal / _arsCount : 0;
-        const _promUSD = _usdCount > 0 ? _usdTotal / _usdCount : 0;
-        const _promHTML = _hayARS
-            ? this.formatearMoneda(_promARS, 'ars')
-            : _hayUSD ? this.formatearMoneda(_promUSD, 'usd') : this.formatearMoneda(0, 'ars');
-
-        const _promUSDItem = _hayUSD ? `
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Monto Promedio USD</span>
-        <span class="calculador-resultado-valor">${this.formatearMoneda(_promUSD, 'usd')}</span>
-    </div>` : '';
-
-        const _varUSDItem = variacionUSDTexto !== null && variacionUSDTexto !== undefined ? `
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Variación USD</span>
-        <span class="calculador-resultado-valor">${variacionUSDTexto}</span>
-    </div>` : '';
-
-        const generarResultadosHTML = (registros, variacion) => `
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Facturas</span>
-        <span class="calculador-resultado-valor">${registros}</span>
-    </div>
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Monto Total</span>
-        <span class="calculador-resultado-valor">${_montoHTML}</span>
-    </div>
-    ${_montoUSDItem}
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Monto Promedio</span>
-        <span class="calculador-resultado-valor">${_promHTML}</span>
-    </div>
-    ${_promUSDItem}
-    ${variacion !== null && variacion !== undefined ? `
-    <div class="calculador-resultado-item">
-        <span class="calculador-resultado-label">Variación</span>
-        <span class="calculador-resultado-valor">${variacion}</span>
-    </div>` : ''}
-    ${_varUSDItem}
-`;
-
-        const renderizarResultados = () => {
-            resultadosContainer.innerHTML = generarResultadosHTML(totalRegistros, variacionTexto);
-
-            if (calculadorCambio) {
-                resultadosContainer.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade');
-                requestAnimationFrame(() => {
-                    resultadosContainer.classList.add('anim-slide-down-fade');
-                });
-            }
-        };
-
-        if (calculadorCambio) {
-            resultadosContainer.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
-            void resultadosContainer.offsetWidth;
-            resultadosContainer.classList.add('anim-slide-up-fade');
-            setTimeout(() => {
-                renderizarResultados();
-                this.ultimoEstadoCalculador = estadoCalculador;
-            }, 190);
-        } else {
-            renderizarResultados();
-        }
-    }
+    calcularPeriodo()                            { this.calculador.calcularPeriodo(); }
 
     toggleServicios() {
         // Si estamos en expanded y hay timer activo (clic rápido después de abrir botones)
@@ -1193,41 +988,6 @@ class GestionServicios {
             // Estado expanded - chevron normal
             chevron.classList.remove('semi-collapsed');
         }
-    }
-
-    generarOpcionesMeses(mesSeleccionado, añoSeleccionado) {
-        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-        // Obtener todos los meses que tienen facturas
-        const mesesConFacturas = new Set();
-
-        this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
-            servicio.facturas.forEach(factura => {
-                const fechaFactura = this._parseDate(factura.fecha);
-                const año = fechaFactura.getFullYear();
-                const mes = fechaFactura.getMonth();
-                const claveMes = `${año}-${String(mes + 1).padStart(2, '0')}`;
-                mesesConFacturas.add(claveMes);
-            });
-        });
-
-        // Ordenar meses de más reciente a más antiguo
-        const mesesOrdenados = Array.from(mesesConFacturas).sort((a, b) => b.localeCompare(a));
-
-        // Si no hay meses con facturas, mostrar solo el mes actual
-        if (mesesOrdenados.length === 0) {
-            const claveActual = `${añoSeleccionado}-${String(mesSeleccionado + 1).padStart(2, '0')}`;
-            return `<option value="${claveActual}">${meses[mesSeleccionado]} ${añoSeleccionado}</option>`;
-        }
-
-        // Generar opciones
-        return mesesOrdenados.map(claveMes => {
-            const [año, mes] = claveMes.split('-');
-            const nombreMes = meses[parseInt(mes) - 1];
-            const esSeleccionado = parseInt(año) === añoSeleccionado && parseInt(mes) - 1 === mesSeleccionado;
-            return `<option value="${claveMes}" ${esSeleccionado ? 'selected' : ''}>${nombreMes} ${año}</option>`;
-        }).join('');
     }
 
     // ========================================
@@ -2570,6 +2330,10 @@ class GestionServicios {
     _mergeServicios(serviciosRemoto)     { return this.storage._mergeServicios(serviciosRemoto); }
     _aplicarImportacion(modo, datos)     { this.storage._aplicarImportacion(modo, datos); }
 
+    mostrarOpcionesImportacion() {
+        this._toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
+    }
+
     mostrarOpcionesBorrar() {
         this._toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
     }
@@ -2650,7 +2414,6 @@ class GestionServicios {
     actualizarMenuAgregar()             { this.ui.actualizarMenuAgregar(); }
     abrirModalFacturaRapida()           { this.ui.abrirModalFacturaRapida(); }
     async cargarCotizacionDolar()       { await this.ui.cargarCotizacionDolar(); }
-    mostrarToast(msg, tipo)             { this.ui.mostrarToast(msg, tipo); }
 
     // ========================================
     // MODALES Y MENÚS
