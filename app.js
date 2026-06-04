@@ -127,7 +127,7 @@ class GestionServicios {
     // ========================================
 
     init() {
-        this.cargarTema();
+        this.ui.cargarTema();
         this.actualizarResumenMes();
         this.renderServicios();
         this.setupEventListeners();
@@ -247,7 +247,7 @@ class GestionServicios {
         });
 
         // Inicializar botones de respaldo/restauración según Gist
-        this.actualizarBotonesGist();
+        this.gist.actualizarBotones();
 
         // Inicializar menú contextual
         this._ctxInit();
@@ -259,16 +259,8 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a PerfilService ────────────────────────────
-    cargarPerfiles()                    { return this.perfil.cargar(); }
     guardarPerfiles()                   { this.perfil.guardar(); }
-    cancelarEditarPerfil()              { this.perfil.cancelarEditar(); }
-    cambiarPerfil(perfilId)             { this.perfil.cambiar(perfilId); }
-    abrirModalPerfiles()                { this.perfil.abrirModal(); }
-    renderListaPerfiles()               { this.perfil.renderLista(); }
     crearPerfilInline()                 { this.perfil.crearInline(); }
-    abrirModalEditarPerfil(perfilId)    { this.perfil.abrirModalEditar(perfilId); }
-    guardarPerfil(e)                    { this.perfil.guardarEdicion(e); }
-    eliminarPerfil(perfilId)            { this.perfil.eliminar(perfilId); }
 
     cargarDatosPerfilActivo()  { this.storage.cargarDatosPerfilActivo(); }
     guardarDatosPerfilActivo() { this.storage.guardarDatosPerfilActivo(); }
@@ -280,10 +272,7 @@ class GestionServicios {
     // ── Delegación a CalculadorService ───────────────────────
     activarModoCalculadora(silencioso = false)   { this.calculador.activarModo(silencioso); }
     desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
-    toggleServicioCalculadora(servicioId)        { this.calculador.toggleServicio(servicioId); }
     actualizarCalculadora()                      { this.calculador.actualizar(); }
-    generarReporteEstadisticas()                 { this.calculador.generarReporte(); }
-    _generarReporteIndividual()                  { this.calculador._generarReporteIndividual(); }
 
     validarMonto(monto, permitirNegativos = false) {
         // Validar que sea un número
@@ -362,7 +351,7 @@ class GestionServicios {
             if (this.modoCalculadora) {
                 this.desactivarModoCalculadora();
             } else {
-                this.toggleMenuAgregar();
+                this.ui.toggleMenuAgregar();
             }
         });
         document.getElementById('btn-ajustes').addEventListener('click', () => this.toggleMenuAjustes());
@@ -374,7 +363,7 @@ class GestionServicios {
         document.getElementById('btn-redo').addEventListener('click', () => this.rehacer());
 
         // Menú ajustes
-        document.getElementById('menu-tema').addEventListener('click', () => this.toggleTema());
+        document.getElementById('menu-tema').addEventListener('click', () => this.ui.toggleTema());
         document.getElementById('menu-exportar').addEventListener('click', () => this.exportarDatos());
         document.getElementById('menu-importar').addEventListener('click', () => this.mostrarOpcionesImportacion());
         document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.importarDatos('reemplazar'));
@@ -386,8 +375,8 @@ class GestionServicios {
         document.getElementById('menu-borrar-facturas').addEventListener('click', () => this.limpiarDatos('facturas'));
         document.getElementById('menu-borrar-ingresos').addEventListener('click', () => this.limpiarDatos('ingresos'));
         document.getElementById('menu-borrar-categorias').addEventListener('click', () => this.limpiarDatos('categorias'));
-        document.getElementById('menu-toggle-ingresos').addEventListener('click', () => this.toggleIngresos());
-        document.getElementById('menu-toggle-blur').addEventListener('click', () => this.toggleBlur());
+        document.getElementById('menu-toggle-ingresos').addEventListener('click', () => this.ui.toggleIngresos());
+        document.getElementById('menu-toggle-blur').addEventListener('click', () => this.ui.toggleBlur());
 
         // Menú agregar
         document.getElementById('menu-agregar-overlay').addEventListener('click', () => this.cerrarMenuAgregar());
@@ -397,7 +386,7 @@ class GestionServicios {
         });
         document.getElementById('menu-agregar-factura').addEventListener('click', () => {
             this.cerrarMenuAgregar();
-            this.abrirModalFacturaRapida();
+            this.ui.abrirModalFacturaRapida();
         });
         document.getElementById('menu-agregar-recibo').addEventListener('click', () => {
             this.cerrarMenuAgregar();
@@ -437,7 +426,7 @@ class GestionServicios {
         // Listener para toggle de resumen (solo una vez)
         document.addEventListener('click', (e) => {
             if (e.target.closest('#resumen-toggle')) {
-                this.toggleResumen();
+                this.estadisticas.toggleResumen();
             }
         });
 
@@ -461,11 +450,11 @@ class GestionServicios {
         // Menú de perfiles
         document.getElementById('menu-gist').addEventListener('click', () => {
             this.cerrarMenuAjustes();
-            this.abrirModalGist();
+            this.gist.abrirModal();
         });
 
         document.getElementById('menu-perfiles').addEventListener('click', () => {
-            this.abrirModalPerfiles();
+            this.perfil.abrirModal();
         });
 
         // Event listener para el botón volver del grid (modo agregar)
@@ -527,7 +516,7 @@ class GestionServicios {
         });
 
         document.getElementById('estadisticas-header').addEventListener('click', () => {
-            this.toggleEstadisticas();
+            this.estadisticas.toggleEstadisticas();
         });
 
         // Selector de tipo de estadística
@@ -543,7 +532,7 @@ class GestionServicios {
         });
 
         // Inicializar calculador individual
-        this.inicializarCalculador();
+        this.estadisticas.inicializarCalculador();
 
         // Toggle de servicios colapsable (3 estados)
         document.getElementById('servicios-header').addEventListener('click', () => {
@@ -630,7 +619,7 @@ class GestionServicios {
 
         // btn-reporte-estadisticas
         document.getElementById('btn-reporte-estadisticas').addEventListener('click', () => {
-            this.generarReporteEstadisticas();
+            this.calculador.generarReporte();
         });
 
         // Modal info-resumen (botón header + botón footer)
@@ -646,7 +635,7 @@ class GestionServicios {
         document.getElementById('resumen-mes').addEventListener('click', (e) => {
             if (e.target.closest('#btn-info-resumen')) {
                 e.stopPropagation();
-                this.abrirModalInfoResumen();
+                this.estadisticas.abrirModalInfoResumen();
             }
         });
 
@@ -661,11 +650,11 @@ class GestionServicios {
         document.getElementById('gist-btn-bajar').addEventListener('click', () => this.gistBajar());
 
         // Gist modal: ciclar autosync / merge
-        document.getElementById('gist-autosync-btn').addEventListener('click', () => this.gistCiclarAutoSync());
-        document.getElementById('gist-merge-btn').addEventListener('click', () => this.gistCiclarMerge());
+        document.getElementById('gist-autosync-btn').addEventListener('click', () => this.gist.ciclarAutoSync());
+        document.getElementById('gist-merge-btn').addEventListener('click', () => this.gist.ciclarMerge());
 
         // Gist modal: guardar / cerrar
-        document.getElementById('btn-gist-guardar').addEventListener('click', () => this.gistGuardarConfig());
+        document.getElementById('btn-gist-guardar').addEventListener('click', () => this.gist.guardarConfig());
         document.getElementById('btn-gist-cerrar').addEventListener('click', () => {
             this.cerrarModal('modal-gist');
             this.toggleMenuAjustes();
@@ -773,10 +762,10 @@ class GestionServicios {
 
         // Modal editar-perfil: submit + volver
         document.getElementById('form-perfil').addEventListener('submit', (e) => {
-            this.guardarPerfil(e);
+            this.perfil.guardarEdicion(e);
         });
         document.getElementById('btn-cancelar-editar-perfil').addEventListener('click', () => {
-            this.cancelarEditarPerfil();
+            this.perfil.cancelarEditar();
         });
 
         // Modal debug-estadisticas: cerrar
@@ -792,9 +781,9 @@ class GestionServicios {
             const btnEliminar = e.target.closest('[data-action="eliminar-perfil"]');
             const btnEditar = e.target.closest('[data-action="editar-perfil"]');
             const stop = e.target.closest('[data-action="stop-propagation"]');
-            if (btnEliminar) { e.stopPropagation(); this.eliminarPerfil(btnEliminar.dataset.perfilId); return; }
-            if (btnEditar) { e.stopPropagation(); this.abrirModalEditarPerfil(btnEditar.dataset.perfilId); return; }
-            if (card) this.cambiarPerfil(card.dataset.perfilId);
+            if (btnEliminar) { e.stopPropagation(); this.perfil.eliminar(btnEliminar.dataset.perfilId); return; }
+            if (btnEditar) { e.stopPropagation(); this.perfil.abrirModalEditar(btnEditar.dataset.perfilId); return; }
+            if (card) this.perfil.cambiar(card.dataset.perfilId);
         });
 
         // Estadísticas mensuales: abrir debug al clickear un item
@@ -879,19 +868,7 @@ class GestionServicios {
 
     // ── Delegación a EstadisticasService ─────────────────────
     actualizarResumenMes()              { this.estadisticas.actualizarResumenMes(); }
-    obtenerColorBordeMasPrioritario()   { return this.estadisticas.obtenerColorBordeMasPrioritario(); }
-    mostrarPendienteEnResumen()         { this.estadisticas.mostrarPendienteEnResumen(); }
-    mostrarPagadoEnResumen()            { this.estadisticas.mostrarPagadoEnResumen(); }
-    _renderResumen(tipo)                { this.estadisticas._renderResumen(tipo); }
-    abrirModalInfoResumen()             { this.estadisticas.abrirModalInfoResumen(); }
-    toggleResumen()                     { this.estadisticas.toggleResumen(); }
-    actualizarEstadisticas()            { this.estadisticas.actualizarEstadisticas(); }
-    _renderTagsCategoriaEstadisticas()  { this.estadisticas._renderTagsCategoriaEstadisticas(); }
-    toggleEstadisticas()                { this.estadisticas.toggleEstadisticas(); }
     cambiarTipoEstadistica()            { this.estadisticas.cambiarTipoEstadistica(); }
-    actualizarSelectServicios()         { this.estadisticas.actualizarSelectServicios(); }
-    inicializarCalculador()             { this.estadisticas.inicializarCalculador(); }
-    generarOpcionesMeses(mes, anio)     { return this.estadisticas.generarOpcionesMeses(mes, anio); }
 
     calcularPeriodo()                            { this.calculador.calcularPeriodo(); }
 
@@ -1282,7 +1259,7 @@ class GestionServicios {
 
                 // Si está en modo calculadora, toggle selección
                 if (this.modoCalculadora) {
-                    this.toggleServicioCalculadora(servicioId);
+                    this.calculador.toggleServicio(servicioId);
                     return;
                 }
 
@@ -1301,7 +1278,7 @@ class GestionServicios {
             }
 
             // Actualizar menú flotante
-            this.actualizarMenuAgregar();
+            this.ui.actualizarMenuAgregar();
         });
 
         // Restaurar posición de scroll
@@ -1312,7 +1289,7 @@ class GestionServicios {
         // Solo actualizar resumen y calculador si no estamos filtrando por búsqueda
         if (!this.enModoBusqueda) {
             this.actualizarResumenMes();
-            this.actualizarSelectServicios();
+            this.estadisticas.actualizarSelectServicios();
             this.calcularPeriodo();
         }
     }
@@ -2316,11 +2293,8 @@ class GestionServicios {
     // El flujo real de carga es: constructor → cargarDatosPerfilActivo() → inicializarHistorial()
     // Se conserva por compatibilidad pero NO debe llamarse directamente.
     // TODO: eliminar en la próxima limpieza de código.
-    cargarDatos() { this.storage.cargarDatosPerfilActivo(); }
 
-    verificarEspacioDisponible()   { return this.storage.verificarEspacioDisponible(); }
     guardarDatos()                 { this.storage.guardarDatos(); }
-    validarDatos(datos)            { return this.storage.validarDatos(datos); }
     exportarDatos()                { this.storage.exportarDatos(); }
     importarDatos(modo)            { this.storage.importarDatos(modo); }
 
@@ -2328,7 +2302,6 @@ class GestionServicios {
         return this.storage.generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto);
     }
     _mergeServicios(serviciosRemoto)     { return this.storage._mergeServicios(serviciosRemoto); }
-    _aplicarImportacion(modo, datos)     { this.storage._aplicarImportacion(modo, datos); }
 
     mostrarOpcionesImportacion() {
         this._toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
@@ -2398,21 +2371,13 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a UIManager ────────────────────────────────
-    cargarTema()                        { this.ui.cargarTema(); }
-    toggleTema()                        { this.ui.toggleTema(); }
-    _actualizarIconoTema(esDark)        { this.ui._actualizarIconoTema(esDark); }
-    toggleBlur()                        { this.ui.toggleBlur(); }
-    toggleIngresos()                    { this.ui.toggleIngresos(); }
     ingresosHabilitado()                { return this.ui.ingresosHabilitado(); }
     abrirModal(modalId)                 { this.ui.abrirModal(modalId); }
     cerrarModal(modalId)                { this.ui.cerrarModal(modalId); }
     cerrarTodosLosModales()             { this.ui.cerrarTodosLosModales(); }
     toggleMenuAjustes()                 { this.ui.toggleMenuAjustes(); }
     cerrarMenuAjustes()                 { this.ui.cerrarMenuAjustes(); }
-    toggleMenuAgregar()                 { this.ui.toggleMenuAgregar(); }
     cerrarMenuAgregar()                 { this.ui.cerrarMenuAgregar(); }
-    actualizarMenuAgregar()             { this.ui.actualizarMenuAgregar(); }
-    abrirModalFacturaRapida()           { this.ui.abrirModalFacturaRapida(); }
     async cargarCotizacionDolar()       { await this.ui.cargarCotizacionDolar(); }
 
     // ========================================
@@ -2421,16 +2386,12 @@ class GestionServicios {
 
     // ── Delegación a UtilsService ─────────────────────────────
     _parseDate(str)                     { return this.utils.parseDate(str); }
-    _plural(n, s, p)                    { return this.utils.plural(n, s, p); }
-    _mesActualInfo()                    { return this.utils.mesActualInfo(); }
     _postGuardado()                     { this.utils.postGuardado(); }
     _limpiarBusqueda()                  { this.utils.limpiarBusqueda(); }
-    _descargarBlob(c, n, t)             { this.utils.descargarBlob(c, n, t); }
     _idsFormFactura(esEditar)           { return this.utils.idsFormFactura(esEditar); }
     _toggleSubMenuAjustes(oId, pId)     { this.utils.toggleSubMenuAjustes(oId, pId); }
     generarId()                         { return this.utils.generarId(); }
     obtenerFechaLocal()                 { return this.utils.obtenerFechaLocal(); }
-    _objetosCambiaron(ant, act)         { return this.utils.objetosCambiaron(ant, act); }
     formatearMoneda(monto, moneda)      { return this.utils.formatearMoneda(monto, moneda); }
     toggleMoneda(hiddenId, btnId)       { this.utils.toggleMoneda(hiddenId, btnId); }
     setMonedaBtn(hiddenId, btnId, mon)  { this.utils.setMonedaBtn(hiddenId, btnId, mon); }
@@ -2722,22 +2683,7 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a GistService ──────────────────────────────
-    gistGetToken()                       { return this.gist.getToken(); }
-    gistGetPerfil()                      { return this.gist.getPerfil(); }
-    gistSetPerfil(campos)                { this.gist.setPerfil(campos); }
-    gistEsIdValido(id)                   { return this.gist.esIdValido(id); }
-    _gistClaveHoraActual()               { return this.gist._claveHoraActual(); }
-    gistSuperaLimite(tipo, limite)       { return this.gist.superaLimite(tipo, limite); }
-    gistMarcarSync(tipo)                 { this.gist.marcarSync(tipo); }
-    gistDentroDelRango()                 { return this.gist.dentroDelRango(); }
-    gistGetMergeBehavior()               { return this.gist.getMergeBehavior(); }
     async gistCalcularHash(texto)        { return this.gist.calcularHash(texto); }
-    actualizarBotonesGist()              { this.gist.actualizarBotones(); }
-    gistCiclarAutoSync()                 { this.gist.ciclarAutoSync(); }
-    gistCiclarMerge()                    { this.gist.ciclarMerge(); }
-    abrirModalGist()                     { this.gist.abrirModal(); }
-    gistGuardarConfig()                  { this.gist.guardarConfig(); }
-    _gistGuardarCredencialesModal()      { this.gist._guardarCredencialesModal(); }
     async gistSubir()                    { await this.gist.subir(); }
     async _gistDescargar()               { return this.gist._descargar(); }
     async gistBajar(esAutomatico = false){ await this.gist.bajar(esAutomatico); }
