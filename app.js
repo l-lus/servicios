@@ -261,10 +261,10 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a PerfilService ────────────────────────────
-    guardarPerfiles()                   { this.perfil.guardar(); }
-    crearPerfilInline()                 { this.perfil.crearInline(); }
+    guardarPerfiles() { this.perfil.guardar(); }
+    crearPerfilInline() { this.perfil.crearInline(); }
 
-    cargarDatosPerfilActivo()  { this.storage.cargarDatosPerfilActivo(); }
+    cargarDatosPerfilActivo() { this.storage.cargarDatosPerfilActivo(); }
     guardarDatosPerfilActivo() { this.storage.guardarDatosPerfilActivo(); }
 
     // ========================================
@@ -272,9 +272,9 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a CalculadorService ───────────────────────
-    activarModoCalculadora(silencioso = false)   { this.calculador.activarModo(silencioso); }
+    activarModoCalculadora(silencioso = false) { this.calculador.activarModo(silencioso); }
     desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
-    actualizarCalculadora()                      { this.calculador.actualizar(); }
+    actualizarCalculadora() { this.calculador.actualizar(); }
 
     validarMonto(monto, permitirNegativos = false) {
         // Validar que sea un número
@@ -641,38 +641,25 @@ class GestionServicios {
             }
         });
 
-        // Gist modal: toggle visibilidad token
-        document.getElementById('btn-gist-toggle-token').addEventListener('click', () => {
-            const i = document.getElementById('gist-token');
-            i.type = i.type === 'password' ? 'text' : 'password';
-        });
-
-        // Gist modal: subir / bajar
-        document.getElementById('gist-btn-subir').addEventListener('click', () => this.gistSubir());
-        document.getElementById('gist-btn-bajar').addEventListener('click', () => this.gistBajar());
-
-        // Gist modal: ciclar autosync / merge
-        document.getElementById('gist-autosync-btn').addEventListener('click', () => this.gist.ciclarAutoSync());
-        document.getElementById('gist-merge-btn').addEventListener('click', () => this.gist.ciclarMerge());
-
-        // Gist modal: guardar / cerrar
-        document.getElementById('btn-gist-guardar').addEventListener('click', () => this.gist.guardarConfig());
-        document.getElementById('btn-gist-cerrar').addEventListener('click', () => {
+        //gist
+        document.getElementById('btn-gist-ir')?.addEventListener('click', () => this.gist.irAlGist());
+        document.getElementById('gist-token-eye')?.addEventListener('click', () => this.gist.toggleToken());
+        document.getElementById('gist-autosync-toggle')?.addEventListener('click', () => this.gist.toggleAuto());
+        document.getElementById('btn-gist-subir')?.addEventListener('click', () => this.gist.subir());
+        document.getElementById('btn-gist-bajar')?.addEventListener('click', () => this.gist.bajar());
+        document.getElementById('btn-gist-guardar')?.addEventListener('click', () => this.gist.guardarConfig());
+        document.getElementById('btn-gist-cerrar')?.addEventListener('click', () => {
             this.cerrarModal('modal-gist');
             this.toggleMenuAjustes();
         });
-
-        // Modal gist-merge: combinar / reemplazar / cancelar
-        document.getElementById('btn-gist-merge-combinar').addEventListener('click', () => this.gistMergeAplicar('merge'));
-        document.getElementById('btn-gist-merge-reemplazar').addEventListener('click', () => this.gistMergeAplicar('replace'));
-        document.getElementById('btn-gist-merge-cancelar').addEventListener('click', () => this.cerrarModal('modal-gist-merge'));
-
-        // Modal agregar-servicio: botón agregar categoría
+        document.getElementById('btn-gist-crear-token')?.addEventListener('click', () => {
+            window.open('https://github.com/settings/tokens/new?description=Servicios+sync&scopes=gist', '_blank');
+        });
+        document.getElementById('gist-novedades-ok')?.addEventListener('click', () => this.gist.aplicarNovedades());
+        document.getElementById('gist-novedades-ignorar-btn')?.addEventListener('click', () => this.cerrarModal('modal-gist-novedades'));
         document.getElementById('btn-agregar-cat-servicio').addEventListener('click', () => {
             this.abrirModalNuevaCategoria('servicio-categoria');
         });
-
-        // Modal editar-servicio: botón agregar categoría
         document.getElementById('btn-agregar-cat-editar-servicio').addEventListener('click', () => {
             this.abrirModalNuevaCategoria('editar-servicio-categoria');
         });
@@ -869,10 +856,10 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a EstadisticasService ─────────────────────
-    actualizarResumenMes()              { this.estadisticas.actualizarResumenMes(); }
-    cambiarTipoEstadistica()            { this.estadisticas.cambiarTipoEstadistica(); }
+    actualizarResumenMes() { this.estadisticas.actualizarResumenMes(); }
+    cambiarTipoEstadistica() { this.estadisticas.cambiarTipoEstadistica(); }
 
-    calcularPeriodo()                            { this.calculador.calcularPeriodo(); }
+    calcularPeriodo() { this.calculador.calcularPeriodo(); }
 
     toggleServicios() {
         // Si estamos en expanded y hay timer activo (clic rápido después de abrir botones)
@@ -1650,14 +1637,14 @@ class GestionServicios {
 
     // ── Categorías ──────────────────────────────────────────────
     // ── Delegación a CategoriaService ────────────────────────
-    _getCategorias()                        { return this.categoria.getCategorias(); }
-    _saveCategorias(cats)                   { this.categoria.saveCategorias(cats); }
-    _poblarSelectCategorias(id, val)        { this.categoria.poblarSelect(id, val); }
-    abrirModalNuevaCategoria(targetSelectId){ this.categoria.abrirModal(targetSelectId); }
-    cerrarModalCategorias()                 { this.categoria.cerrarModal(); }
-    _renderCategorias()                     { this.categoria.renderLista(); }
-    eliminarCategoria(nombre)               { this.categoria.eliminar(nombre); }
-    guardarNuevaCategoria()                 { this.categoria.guardarNueva(); }
+    _getCategorias() { return this.categoria.getCategorias(); }
+    _saveCategorias(cats) { this.categoria.saveCategorias(cats); }
+    _poblarSelectCategorias(id, val) { this.categoria.poblarSelect(id, val); }
+    abrirModalNuevaCategoria(targetSelectId) { this.categoria.abrirModal(targetSelectId); }
+    cerrarModalCategorias() { this.categoria.cerrarModal(); }
+    _renderCategorias() { this.categoria.renderLista(); }
+    eliminarCategoria(nombre) { this.categoria.eliminar(nombre); }
+    guardarNuevaCategoria() { this.categoria.guardarNueva(); }
 
     guardarServicio(e) {
         e.preventDefault();
@@ -2189,10 +2176,10 @@ class GestionServicios {
     // SISTEMA UNDO/REDO
     // ========================================
 
-    guardarEstado()            { this.historial_mgr.guardarEstado(); }
-    inicializarHistorial()     { this.historial_mgr.inicializarHistorial(); }
-    deshacer()                 { this.historial_mgr.deshacer(); }
-    rehacer()                  { this.historial_mgr.rehacer(); }
+    guardarEstado() { this.historial_mgr.guardarEstado(); }
+    inicializarHistorial() { this.historial_mgr.inicializarHistorial(); }
+    deshacer() { this.historial_mgr.deshacer(); }
+    rehacer() { this.historial_mgr.rehacer(); }
     actualizarBotonesHistorial() { this.historial_mgr.actualizarBotones(); }
 
     // ========================================
@@ -2204,14 +2191,14 @@ class GestionServicios {
     // Se conserva por compatibilidad pero NO debe llamarse directamente.
     // TODO: eliminar en la próxima limpieza de código.
 
-    guardarDatos()                 { this.storage.guardarDatos(); }
-    exportarDatos()                { this.storage.exportarDatos(); }
-    importarDatos(modo)            { this.storage.importarDatos(modo); }
+    guardarDatos() { this.storage.guardarDatos(); }
+    exportarDatos() { this.storage.exportarDatos(); }
+    importarDatos(modo) { this.storage.importarDatos(modo); }
 
     _generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto) {
         return this.storage.generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto);
     }
-    _mergeServicios(serviciosRemoto)     { return this.storage._mergeServicios(serviciosRemoto); }
+    _mergeServicios(serviciosRemoto) { return this.storage._mergeServicios(serviciosRemoto); }
 
     mostrarOpcionesImportacion() {
         this._toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
@@ -2281,33 +2268,33 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a UIManager ────────────────────────────────
-    ingresosHabilitado()                { return this.ui.ingresosHabilitado(); }
-    abrirModal(modalId)                 { this.ui.abrirModal(modalId); }
-    cerrarModal(modalId)                { this.ui.cerrarModal(modalId); }
-    cerrarTodosLosModales()             { this.ui.cerrarTodosLosModales(); }
-    toggleMenuAjustes()                 { this.ui.toggleMenuAjustes(); }
-    cerrarMenuAjustes()                 { this.ui.cerrarMenuAjustes(); }
-    cerrarMenuAgregar()                 { this.ui.cerrarMenuAgregar(); }
-    async cargarCotizacionDolar()       { await this.ui.cargarCotizacionDolar(); }
+    ingresosHabilitado() { return this.ui.ingresosHabilitado(); }
+    abrirModal(modalId) { this.ui.abrirModal(modalId); }
+    cerrarModal(modalId) { this.ui.cerrarModal(modalId); }
+    cerrarTodosLosModales() { this.ui.cerrarTodosLosModales(); }
+    toggleMenuAjustes() { this.ui.toggleMenuAjustes(); }
+    cerrarMenuAjustes() { this.ui.cerrarMenuAjustes(); }
+    cerrarMenuAgregar() { this.ui.cerrarMenuAgregar(); }
+    async cargarCotizacionDolar() { await this.ui.cargarCotizacionDolar(); }
 
     // ========================================
     // MODALES Y MENÚS
     // ========================================
 
     // ── Delegación a UtilsService ─────────────────────────────
-    _parseDate(str)                     { return this.utils.parseDate(str); }
-    _postGuardado()                     { this.utils.postGuardado(); }
-    _limpiarBusqueda()                  { this.utils.limpiarBusqueda(); }
-    _idsFormFactura(esEditar)           { return this.utils.idsFormFactura(esEditar); }
-    _toggleSubMenuAjustes(oId, pId)     { this.utils.toggleSubMenuAjustes(oId, pId); }
-    generarId()                         { return this.utils.generarId(); }
-    obtenerFechaLocal()                 { return this.utils.obtenerFechaLocal(); }
-    formatearMoneda(monto, moneda)      { return this.utils.formatearMoneda(monto, moneda); }
-    toggleMoneda(hiddenId, btnId)       { this.utils.toggleMoneda(hiddenId, btnId); }
-    setMonedaBtn(hiddenId, btnId, mon)  { this.utils.setMonedaBtn(hiddenId, btnId, mon); }
-    formatearFecha(fecha)               { return this.utils.formatearFecha(fecha); }
-    escaparHTML(texto)                  { return this.utils.escaparHTML(texto); }
-    escaparAtributoHTML(texto)          { return this.utils.escaparAtributoHTML(texto); }
+    _parseDate(str) { return this.utils.parseDate(str); }
+    _postGuardado() { this.utils.postGuardado(); }
+    _limpiarBusqueda() { this.utils.limpiarBusqueda(); }
+    _idsFormFactura(esEditar) { return this.utils.idsFormFactura(esEditar); }
+    _toggleSubMenuAjustes(oId, pId) { this.utils.toggleSubMenuAjustes(oId, pId); }
+    generarId() { return this.utils.generarId(); }
+    obtenerFechaLocal() { return this.utils.obtenerFechaLocal(); }
+    formatearMoneda(monto, moneda) { return this.utils.formatearMoneda(monto, moneda); }
+    toggleMoneda(hiddenId, btnId) { this.utils.toggleMoneda(hiddenId, btnId); }
+    setMonedaBtn(hiddenId, btnId, mon) { this.utils.setMonedaBtn(hiddenId, btnId, mon); }
+    formatearFecha(fecha) { return this.utils.formatearFecha(fecha); }
+    escaparHTML(texto) { return this.utils.escaparHTML(texto); }
+    escaparAtributoHTML(texto) { return this.utils.escaparAtributoHTML(texto); }
 
     // ========================================
     // GESTIÓN DE INGRESOS
@@ -2593,13 +2580,16 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a GistService ──────────────────────────────
-    async gistCalcularHash(texto)        { return this.gist.calcularHash(texto); }
-    async gistSubir()                    { await this.gist.subir(); }
-    async _gistDescargar()               { return this.gist._descargar(); }
-    async gistBajar(esAutomatico = false){ await this.gist.bajar(esAutomatico); }
-    _mergeCategorias(catsNuevas)         { return this.gist.mergeCategorias(catsNuevas); }
-    gistMergeAplicar(modo, esAuto)       { this.gist.mergeAplicar(modo, esAuto); }
-    async gistAutoSyncInit()             { await this.gist.autoSyncInit(); }
+    async gistCalcularHash(texto) { return this.gist.calcularHash(texto); }
+    async gistSubir() { await this.gist.subir(); }
+    async _gistDescargar() { return this.gist._descargar(); }
+    async gistBajar(esAutomatico = false) { await this.gist.bajar(esAutomatico); }
+    _mergeCategorias(catsNuevas) { return this.gist.mergeCategorias(catsNuevas); }
+    gistMergeAplicar(modo, esAuto) { this.gist.mergeAplicar(modo, esAuto); }
+    async gistAutoSyncInit() {
+        // Debounce de 3s al arrancar: da tiempo a que la UI cargue antes de verificar novedades
+        setTimeout(() => this.gist.autoSyncInit(), 3000);
+    }
 
 
 
@@ -2608,12 +2598,12 @@ class GestionServicios {
     // ========================================
 
     // ── Delegación a ContextMenuService ──────────────────────
-    _ctxInit()                  { this.ctx.init(); }
-    _ctxAbrir(e, servicioId)    { this.ctx.abrir(e, servicioId); }
-    _ctxCerrar()                { this.ctx.cerrar(); }
+    _ctxInit() { this.ctx.init(); }
+    _ctxAbrir(e, servicioId) { this.ctx.abrir(e, servicioId); }
+    _ctxCerrar() { this.ctx.cerrar(); }
     _ctxSeleccionar(servicioId) { this.ctx.seleccionar(servicioId); }
-    _ctxCopiarMonto()           { this.ctx.copiarMonto(); }
-    _ctxPagarFactura()          { this.ctx.pagarFactura(); }
+    _ctxCopiarMonto() { this.ctx.copiarMonto(); }
+    _ctxPagarFactura() { this.ctx.pagarFactura(); }
 
     mostrarToast(mensaje, tipo = 'success') { this.ui.mostrarToast(mensaje, tipo); }
 }
@@ -2895,7 +2885,7 @@ class EstadisticasService {
     }
 
     // ── Getters ───────────────────────────────────────────────
-    get servicios()  { return this.app.servicios; }
+    get servicios() { return this.app.servicios; }
 
     // ── Resumen mensual ───────────────────────────────────────
     actualizarResumenMes() {
@@ -2970,10 +2960,10 @@ class EstadisticasService {
                 if (!factura.pagada) {
                     const venc = this.app.utils.parseDate(factura.fecha); venc.setHours(0, 0, 0, 0);
                     const dias = Math.ceil((venc - hoy) / 86400000);
-                    if (dias < 0  && prioridad > 1) { prioridad = 1; colorBorde = 'borde-vencido'; }
+                    if (dias < 0 && prioridad > 1) { prioridad = 1; colorBorde = 'borde-vencido'; }
                     else if (dias <= 2 && prioridad > 1) { prioridad = 1; colorBorde = 'borde-urgente'; }
                     else if (dias <= 5 && prioridad > 2) { prioridad = 2; colorBorde = 'borde-proximo'; }
-                    else if (prioridad > 3)              { prioridad = 3; colorBorde = 'borde-lejano'; }
+                    else if (prioridad > 3) { prioridad = 3; colorBorde = 'borde-lejano'; }
                 }
             });
         });
@@ -3003,7 +2993,7 @@ class EstadisticasService {
     }
 
     mostrarPendienteEnResumen() { this.app.mostrandoPagadoMes = false; this._renderResumen('pendiente'); }
-    mostrarPagadoEnResumen()    { this.app.mostrandoPagadoMes = true;  this._renderResumen('pagado'); }
+    mostrarPagadoEnResumen() { this.app.mostrandoPagadoMes = true; this._renderResumen('pagado'); }
 
     _renderResumen(tipo) {
         const esPendiente = tipo === 'pendiente';
@@ -3099,7 +3089,7 @@ class EstadisticasService {
                 <span class="info-resumen-monto">${fmt(factura.monto, factura.moneda || 'ars')}</span>
             </div>`;
         let html = '';
-        if (vencenEsteMes.length > 0)  html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Vencen este mes</div>${vencenEsteMes.map(renderFila).join('')}</div>`;
+        if (vencenEsteMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Vencen este mes</div>${vencenEsteMes.map(renderFila).join('')}</div>`;
         if (pagadasOtroMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes).join('')}</div>`;
         if (!html) html = '<div class="text-center-muted">Sin movimientos este mes</div>';
         document.getElementById('modal-info-resumen-body').innerHTML = html;
@@ -3293,15 +3283,15 @@ class EstadisticasService {
     }
 
     cambiarTipoEstadistica() {
-        const mensualContainer    = document.getElementById('estadisticas-mensual-container');
+        const mensualContainer = document.getElementById('estadisticas-mensual-container');
         const individualContainer = document.getElementById('estadisticas-individual-container');
         if (this.app.tipoEstadisticaActual === 'mensual') {
-            mensualContainer.classList.add('visible');    mensualContainer.classList.remove('hidden');
-            individualContainer.classList.add('hidden');  individualContainer.classList.remove('visible');
+            mensualContainer.classList.add('visible'); mensualContainer.classList.remove('hidden');
+            individualContainer.classList.add('hidden'); individualContainer.classList.remove('visible');
             this.actualizarEstadisticas();
         } else {
-            mensualContainer.classList.add('hidden');      mensualContainer.classList.remove('visible');
-            individualContainer.classList.add('visible');  individualContainer.classList.remove('hidden');
+            mensualContainer.classList.add('hidden'); mensualContainer.classList.remove('visible');
+            individualContainer.classList.add('visible'); individualContainer.classList.remove('hidden');
             this.app.calcularPeriodo();
         }
     }
@@ -3340,8 +3330,8 @@ class EstadisticasService {
         const inputDesde = document.getElementById('calculador-desde');
         const inputHasta = document.getElementById('calculador-hasta');
         selectServicio.addEventListener('change', () => this.app.calcularPeriodo());
-        inputDesde.addEventListener('change',     () => this.app.calcularPeriodo());
-        inputHasta.addEventListener('change',     () => this.app.calcularPeriodo());
+        inputDesde.addEventListener('change', () => this.app.calcularPeriodo());
+        inputHasta.addEventListener('change', () => this.app.calcularPeriodo());
         document.getElementById('btn-calculador-desde-hoy').addEventListener('click', () => {
             inputDesde.value = inputDesde.value ? '' : this.app.utils.obtenerFechaLocal();
             this.app.calcularPeriodo();
@@ -3354,7 +3344,7 @@ class EstadisticasService {
 
     // ── Opciones de mes ───────────────────────────────────────
     generarOpcionesMeses(mesSeleccionado, añoSeleccionado) {
-        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const mesesConFacturas = new Set();
         this.servicios.filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID).forEach(servicio => {
             servicio.facturas.forEach(factura => {
@@ -3472,7 +3462,7 @@ class UIManager {
 
     // ── Menú ajustes ──────────────────────────────────────────
     toggleMenuAjustes() {
-        const menu    = document.getElementById('menu-ajustes');
+        const menu = document.getElementById('menu-ajustes');
         const overlay = document.getElementById('menu-overlay');
         menu.classList.toggle('active');
         overlay.classList.toggle('active');
@@ -3480,20 +3470,20 @@ class UIManager {
     }
 
     cerrarMenuAjustes() {
-        const menu    = document.getElementById('menu-ajustes');
+        const menu = document.getElementById('menu-ajustes');
         const overlay = document.getElementById('menu-overlay');
         menu.classList.remove('active');
         overlay.classList.remove('active');
         ['opciones-importacion', 'opciones-borrar', 'opciones-dolar',
-         'menu-importar', 'menu-limpiar', 'menu-dolar'].forEach(id => {
-            document.getElementById(id)?.classList.remove('open');
-        });
+            'menu-importar', 'menu-limpiar', 'menu-dolar'].forEach(id => {
+                document.getElementById(id)?.classList.remove('open');
+            });
         document.body.classList.remove('modal-open');
     }
 
     // ── Menú agregar ──────────────────────────────────────────
     toggleMenuAgregar() {
-        const menu    = document.getElementById('menu-agregar');
+        const menu = document.getElementById('menu-agregar');
         const overlay = document.getElementById('menu-agregar-overlay');
         menu.classList.toggle('active');
         overlay.classList.toggle('active');
@@ -3506,7 +3496,7 @@ class UIManager {
     }
 
     cerrarMenuAgregar() {
-        const menu    = document.getElementById('menu-agregar');
+        const menu = document.getElementById('menu-agregar');
         const overlay = document.getElementById('menu-agregar-overlay');
         menu.classList.remove('active');
         overlay.classList.remove('active');
@@ -3547,16 +3537,16 @@ class UIManager {
             if (!res.ok) throw new Error('Error al obtener cotización');
             const data = await res.json();
             const oficial = data.find(d => d.casa === 'oficial');
-            const mep     = data.find(d => d.casa === 'bolsa');
+            const mep = data.find(d => d.casa === 'bolsa');
             const fmt = v => v != null
                 ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 : '-';
             const elOficial = document.getElementById('dolar-oficial');
-            const elMep     = document.getElementById('dolar-mep');
-            const elHora    = document.getElementById('dolar-hora');
+            const elMep = document.getElementById('dolar-mep');
+            const elHora = document.getElementById('dolar-hora');
             if (elOficial) elOficial.textContent = oficial ? fmt(oficial.venta) : '-';
-            if (elMep)     elMep.textContent     = mep     ? fmt(mep.venta)     : '-';
-            if (elHora)    elHora.textContent    = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            if (elMep) elMep.textContent = mep ? fmt(mep.venta) : '-';
+            if (elHora) elHora.textContent = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
         } catch {
             const elHora = document.getElementById('dolar-hora');
             if (elHora) elHora.textContent = 'sin conexión';
@@ -3596,14 +3586,14 @@ class UtilsService {
 
     mesActualInfo() {
         const ahora = new Date();
-        const mes   = ahora.getMonth();
-        const anio  = ahora.getFullYear();
+        const mes = ahora.getMonth();
+        const anio = ahora.getFullYear();
         return {
             mes, anio,
-            mesSiguiente: mes === 11 ? 0      : mes + 1,
+            mesSiguiente: mes === 11 ? 0 : mes + 1,
             anioSiguiente: mes === 11 ? anio + 1 : anio,
-            mesPasado:    mes === 0  ? 11     : mes - 1,
-            anioPasado:   mes === 0  ? anio - 1 : anio,
+            mesPasado: mes === 0 ? 11 : mes - 1,
+            anioPasado: mes === 0 ? anio - 1 : anio,
         };
     }
 
@@ -3663,8 +3653,8 @@ class UtilsService {
 
     descargarBlob(contenido, nombreArchivo, tipo = 'text/plain;charset=utf-8') {
         const blob = new Blob([contenido], { type: tipo });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
         a.href = url; a.download = nombreArchivo;
         document.body.appendChild(a); a.click();
         document.body.removeChild(a); URL.revokeObjectURL(url);
@@ -3673,16 +3663,16 @@ class UtilsService {
     idsFormFactura(esEditar) {
         const p = esEditar ? 'editar-factura' : 'factura';
         return {
-            monto:       `${p}-monto`,
-            tipo:        `${p}-tipo`,
-            fecha:       `${p}-fecha`,
-            moneda:      `${p}-moneda`,
-            fechaPago:   `${p}-fecha-pago`,
-            conCredito:  `${p}-con-credito`,
-            servicio:    `${p}-servicio`,
-            btnPagada:   esEditar ? 'btn-editar-toggle-pagada'   : 'btn-toggle-pagada',
-            btnCredito:  esEditar ? 'btn-editar-toggle-credito'  : 'btn-toggle-credito',
-            btnMoneda:   esEditar ? 'btn-editar-factura-moneda'  : 'btn-factura-moneda',
+            monto: `${p}-monto`,
+            tipo: `${p}-tipo`,
+            fecha: `${p}-fecha`,
+            moneda: `${p}-moneda`,
+            fechaPago: `${p}-fecha-pago`,
+            conCredito: `${p}-con-credito`,
+            servicio: `${p}-servicio`,
+            btnPagada: esEditar ? 'btn-editar-toggle-pagada' : 'btn-toggle-pagada',
+            btnCredito: esEditar ? 'btn-editar-toggle-credito' : 'btn-toggle-credito',
+            btnMoneda: esEditar ? 'btn-editar-factura-moneda' : 'btn-factura-moneda',
             btnNegativo: esEditar ? 'btn-editar-toggle-negativo' : 'btn-toggle-negativo',
         };
     }
@@ -3690,8 +3680,8 @@ class UtilsService {
     toggleSubMenuAjustes(opcionesId, padreId) {
         const subMenus = [
             ['opciones-importacion', 'menu-importar'],
-            ['opciones-borrar',      'menu-limpiar'],
-            ['opciones-dolar',       'menu-dolar'],
+            ['opciones-borrar', 'menu-limpiar'],
+            ['opciones-dolar', 'menu-dolar'],
         ];
         const abriendo = !document.getElementById(opcionesId).classList.contains('open');
         subMenus.forEach(([oId, pId]) => {
@@ -3706,7 +3696,7 @@ class UtilsService {
 
     setMonedaBtn(hiddenId, btnId, moneda) {
         const hidden = document.getElementById(hiddenId);
-        const btn    = document.getElementById(btnId);
+        const btn = document.getElementById(btnId);
         if (!hidden || !btn) return;
         const m = (moneda || 'ars').toLowerCase();
         hidden.value = m;
@@ -3737,7 +3727,7 @@ class UtilsService {
 
     toggleMoneda(hiddenId, btnId) {
         const hidden = document.getElementById(hiddenId);
-        const btn    = document.getElementById(btnId);
+        const btn = document.getElementById(btnId);
         if (!hidden || !btn) return;
         const nuevo = hidden.value === 'ars' ? 'usd' : 'ars';
         hidden.value = nuevo;
@@ -3756,9 +3746,9 @@ class PerfilService {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get perfiles()      { return this.app.perfiles; }
-    set perfiles(v)     { this.app.perfiles = v; }
-    get perfilActivo()  { return this.app.perfilActivo; }
+    get perfiles() { return this.app.perfiles; }
+    set perfiles(v) { this.app.perfiles = v; }
+    get perfilActivo() { return this.app.perfilActivo; }
     set perfilActivo(v) { this.app.perfilActivo = v; }
 
     // ── Persistencia ──────────────────────────────────────────
@@ -3813,13 +3803,13 @@ class PerfilService {
             inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
         }
         lista.innerHTML = perfilesArray.map(perfil => {
-            const esActivo  = perfil.id === this.perfilActivo;
+            const esActivo = perfil.id === this.perfilActivo;
             const esDefault = perfil.id === 'default';
             let cantidadServicios = 0;
             try {
                 const datos = localStorage.getItem(`gestion_servicios_datos_${perfil.id}`);
                 if (datos) cantidadServicios = JSON.parse(datos).length;
-            } catch (e) {}
+            } catch (e) { }
             return `
     <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
          data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
@@ -3844,7 +3834,7 @@ class PerfilService {
     }
 
     crearInline() {
-        const input  = document.getElementById('perfil-nuevo-nombre');
+        const input = document.getElementById('perfil-nuevo-nombre');
         const nombre = input.value.trim();
         if (!nombre) { this.app.ui.mostrarToast('Ingresá un nombre', 'error'); return; }
         if (Object.values(this.perfiles).some(p => p.nombre.toLowerCase() === nombre.toLowerCase())) {
@@ -3931,11 +3921,11 @@ class CalculadorService {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get servicios()   { return this.app.servicios; }
-    get modoActivo()  { return this.app.modoCalculadora; }
+    get servicios() { return this.app.servicios; }
+    get modoActivo() { return this.app.modoCalculadora; }
     set modoActivo(v) { this.app.modoCalculadora = v; }
-    get tipo()        { return this.app.modoCalculadoraTipo; }
-    set tipo(v)       { this.app.modoCalculadoraTipo = v; }
+    get tipo() { return this.app.modoCalculadoraTipo; }
+    set tipo(v) { this.app.modoCalculadoraTipo = v; }
     get seleccionados() { return this.app.serviciosSeleccionados; }
 
     // ── Modo calculadora flotante ─────────────────────────────
@@ -4003,7 +3993,7 @@ class CalculadorService {
                     if (factura.pagada) return;
                     const { mesPasado, anioPasado } = this.app.utils.mesActualInfo();
                     const esSiguiente = mesF === mesSiguiente && anioF === anioSiguiente;
-                    const esPasado    = mesF === mesPasado    && anioF === anioPasado;
+                    const esPasado = mesF === mesPasado && anioF === anioPasado;
                     if (!esMesActual && !esSiguiente && !esPasado) return;
                 } else if (this.tipo === 'pagados') {
                     if (!factura.pagada) return;
@@ -4021,16 +4011,16 @@ class CalculadorService {
         document.getElementById('calculadora-total').textContent = this.app.utils.formatearMoneda(totalARS, 'ars');
         const elUSD = document.getElementById('calculadora-total-usd');
         if (totalUSD > 0) { elUSD.textContent = this.app.utils.formatearMoneda(totalUSD, 'usd'); elUSD.classList.add('visible'); }
-        else              { elUSD.classList.remove('visible'); }
+        else { elUSD.classList.remove('visible'); }
         document.getElementById('calculadora-contador').textContent =
             `${contadorFacturas} ${contadorFacturas === 1 ? 'factura' : 'facturas'}`;
     }
 
     // ── Calculador de período ─────────────────────────────────
     calcularPeriodo() {
-        const selectServicio      = document.getElementById('calculador-servicio');
-        const inputDesde          = document.getElementById('calculador-desde');
-        const inputHasta          = document.getElementById('calculador-hasta');
+        const selectServicio = document.getElementById('calculador-servicio');
+        const inputDesde = document.getElementById('calculador-desde');
+        const inputHasta = document.getElementById('calculador-hasta');
         const resultadosContainer = document.getElementById('calculador-resultados');
         if (!selectServicio || !inputDesde || !inputHasta || !resultadosContainer) return;
 
@@ -4050,7 +4040,7 @@ class CalculadorService {
                 totalRegistros = facturasFiltradas.length;
                 facturasFiltradas.forEach(f => {
                     if ((f.moneda || 'ars') === 'usd') { _usdTotal += f.monto; _usdCount++; }
-                    else                               { _arsTotal += f.monto; _arsCount++; }
+                    else { _arsTotal += f.monto; _arsCount++; }
                 });
                 let facturasParaVariacion = esServicioIngresos
                     ? facturasFiltradas.filter(f => f.tipo !== 'complementario')
@@ -4059,9 +4049,9 @@ class CalculadorService {
                     const total = facturas.length;
                     if (total < 2) return total === 1 ? 'N/A' : null;
                     let promPrim, promUlt;
-                    if      (total <= 3) { promPrim = facturas[0].monto; promUlt = facturas[total - 1].monto; }
+                    if (total <= 3) { promPrim = facturas[0].monto; promUlt = facturas[total - 1].monto; }
                     else if (total <= 8) { const m = Math.floor(total / 2); promPrim = facturas.slice(0, m).reduce((s, f) => s + f.monto, 0) / m; promUlt = facturas.slice(-m).reduce((s, f) => s + f.monto, 0) / m; }
-                    else                { const g = Math.min(6, Math.max(3, Math.floor(total * 0.3))); promPrim = facturas.slice(0, g).reduce((s, f) => s + f.monto, 0) / g; promUlt = facturas.slice(-g).reduce((s, f) => s + f.monto, 0) / g; }
+                    else { const g = Math.min(6, Math.max(3, Math.floor(total * 0.3))); promPrim = facturas.slice(0, g).reduce((s, f) => s + f.monto, 0) / g; promUlt = facturas.slice(-g).reduce((s, f) => s + f.monto, 0) / g; }
                     if (promPrim !== 0) { const v = ((promUlt - promPrim) / Math.abs(promPrim)) * 100; return `${v > 0 ? '+' : ''}${v.toFixed(1)}%`; }
                     return promUlt > 0 ? '+∞' : '0%';
                 };
@@ -4069,10 +4059,10 @@ class CalculadorService {
                 const facturasVarUSD = facturasParaVariacion.filter(f => (f.moneda || 'ars') === 'usd');
                 const varARS = calcularVariacion(facturasVarARS);
                 const varUSD = calcularVariacion(facturasVarUSD);
-                if      (varARS !== null)                                                  { variacionTexto = varARS; }
-                else if (facturasVarARS.length === 0 && facturasVarUSD.length > 0)        { variacionTexto = null; }
+                if (varARS !== null) { variacionTexto = varARS; }
+                else if (facturasVarARS.length === 0 && facturasVarUSD.length > 0) { variacionTexto = null; }
                 else if (facturasParaVariacion.length === 0 && esServicioIngresos && totalRegistros > 0) { variacionTexto = 'Solo extras'; }
-                else if (facturasVarARS.length === 1)                                     { variacionTexto = 'N/A'; }
+                else if (facturasVarARS.length === 1) { variacionTexto = 'N/A'; }
                 variacionUSDTexto = varUSD;
             }
         }
@@ -4087,7 +4077,7 @@ class CalculadorService {
         const _promUSD = _usdCount > 0 ? _usdTotal / _usdCount : 0;
         const _promHTML = _hayARS ? fmt(_promARS, 'ars') : _hayUSD ? fmt(_promUSD, 'usd') : fmt(0, 'ars');
         const _promUSDItem = _hayUSD ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Promedio USD</span><span class="calculador-resultado-valor">${fmt(_promUSD, 'usd')}</span></div>` : '';
-        const _varUSDItem  = variacionUSDTexto != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación USD</span><span class="calculador-resultado-valor">${variacionUSDTexto}</span></div>` : '';
+        const _varUSDItem = variacionUSDTexto != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación USD</span><span class="calculador-resultado-valor">${variacionUSDTexto}</span></div>` : '';
         const generarResultadosHTML = (registros, variacion) => `
     <div class="calculador-resultado-item"><span class="calculador-resultado-label">Facturas</span><span class="calculador-resultado-valor">${registros}</span></div>
     <div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total</span><span class="calculador-resultado-valor">${_montoHTML}</span></div>
@@ -4130,7 +4120,7 @@ class CalculadorService {
             mesSeleccionado = hoy.getMonth(); añoSeleccionado = hoy.getFullYear();
         }
         const categoriaActiva = this.app._estadisticaCategoriaActiva || null;
-        const nombreMes      = new Date(añoSeleccionado, mesSeleccionado, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+        const nombreMes = new Date(añoSeleccionado, mesSeleccionado, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
         const nombreMesCorto = new Date(añoSeleccionado, mesSeleccionado, 1).toLocaleDateString('es-AR', { month: 'long' });
         const facturasMes = [], facturasPagadasMes = [], ingresos = [];
         this.servicios.forEach(servicio => {
@@ -4159,7 +4149,7 @@ class CalculadorService {
         const sumar = (lista, pagada) => lista.filter(({ factura: f }) => pagada ? f.pagada : !f.pagada).reduce((acc, { factura: f }) => { if ((f.moneda || 'ars') === 'usd') acc.usd += f.monto; else acc.ars += f.monto; return acc; }, { ars: 0, usd: 0 });
         const totalVencenARS = facturasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') !== 'usd' && f.monto > 0 ? a + f.monto : a, 0);
         const totalVencenUSD = facturasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') === 'usd' && f.monto > 0 ? a + f.monto : a, 0);
-        const pagadasMes    = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), true);
+        const pagadasMes = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), true);
         const pendientesMes = sumar(facturasMes.filter(({ factura: f }) => !f.conCredito), false);
         const totalPagadasOtroMesARS = facturasPagadasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') !== 'usd' ? a + f.monto : a, 0);
         const totalPagadasOtroMesUSD = facturasPagadasMes.reduce((a, { factura: f }) => !f.conCredito && (f.moneda || 'ars') === 'usd' ? a + f.monto : a, 0);
@@ -4180,8 +4170,8 @@ class CalculadorService {
             txt += `\n${sep}\n`;
             if (totalVencenARS > 0) txt += linea('  Total del mes (ARS):', fmt(totalVencenARS, 'ars')) + '\n';
             if (totalVencenUSD > 0) txt += linea('  Total del mes (USD):', fmt(totalVencenUSD, 'usd')) + '\n';
-            if (pagadasMes.ars   > 0) txt += linea('  Pagado (ARS):', fmt(pagadasMes.ars, 'ars')) + '\n';
-            if (pagadasMes.usd   > 0) txt += linea('  Pagado (USD):', fmt(pagadasMes.usd, 'usd')) + '\n';
+            if (pagadasMes.ars > 0) txt += linea('  Pagado (ARS):', fmt(pagadasMes.ars, 'ars')) + '\n';
+            if (pagadasMes.usd > 0) txt += linea('  Pagado (USD):', fmt(pagadasMes.usd, 'usd')) + '\n';
             if (pendientesMes.ars > 0) txt += linea('  Pendiente (ARS):', fmt(pendientesMes.ars, 'ars')) + '\n';
             if (pendientesMes.usd > 0) txt += linea('  Pendiente (USD):', fmt(pendientesMes.usd, 'usd')) + '\n';
         }
@@ -4212,8 +4202,8 @@ class CalculadorService {
 
     _generarReporteIndividual() {
         const servicioId = document.getElementById('calculador-servicio')?.value;
-        const desde      = document.getElementById('calculador-desde')?.value;
-        const hasta      = document.getElementById('calculador-hasta')?.value;
+        const desde = document.getElementById('calculador-desde')?.value;
+        const hasta = document.getElementById('calculador-hasta')?.value;
         if (!servicioId) { this.app.ui.mostrarToast('Seleccioná un servicio primero', 'info'); return; }
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
@@ -4227,7 +4217,7 @@ class CalculadorService {
         facturas.forEach(f => {
             const m = f.moneda || 'ars';
             if (m === 'usd') { totalUSD += f.monto; if (f.pagada) pagadasUSD += f.monto; else pendientesUSD += f.monto; }
-            else             { totalARS += f.monto; if (f.pagada) pagadasARS += f.monto; else pendientesARS += f.monto; }
+            else { totalARS += f.monto; if (f.pagada) pagadasARS += f.monto; else pendientesARS += f.monto; }
         });
         const arsF = facturas.filter(f => (f.moneda || 'ars') === 'ars').length;
         const usdF = facturas.filter(f => (f.moneda || 'ars') === 'usd').length;
@@ -4243,22 +4233,22 @@ class CalculadorService {
             facturas.forEach((f, i) => {
                 const moneda = f.moneda || 'ars';
                 let estadoTxt;
-                if      (f.conCredito) { estadoTxt = 'Con crédito'; }
-                else if (f.pagada)     { const mp = f.fechaPago ? this.app.utils.parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : ''; estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`; }
-                else                   { const venc = this.app.utils.parseDate(f.fecha); venc.setHours(0, 0, 0, 0); estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente'; }
+                if (f.conCredito) { estadoTxt = 'Con crédito'; }
+                else if (f.pagada) { const mp = f.fechaPago ? this.app.utils.parseDate(f.fechaPago).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : ''; estadoTxt = `Pagada${mp ? ` (${mp})` : ''}`; }
+                else { const venc = this.app.utils.parseDate(f.fecha); venc.setHours(0, 0, 0, 0); estadoTxt = venc < hoy ? 'Vencida (pendiente)' : 'Pendiente'; }
                 txt += `\n  #${String(i + 1).padStart(2, '0')}  ${fmtFecha(f.fecha)}\n${linea('  Monto:', fmt(f.monto, moneda))}\n${linea('  Estado:', estadoTxt)}\n`;
                 if (f.pagada && f.fechaPago) txt += linea('  Fecha de pago:', fmtFecha(f.fechaPago)) + '\n';
                 if (f.tipo && f.tipo !== 'mensual') txt += linea('  Tipo:', f.tipo) + '\n';
             });
             txt += `\n${sep}\n  RESUMEN\n${sep}\n`;
-            if (totalARS !== 0)    txt += linea('  Total ARS:',    fmt(totalARS,    'ars')) + '\n';
-            if (totalUSD !== 0)    txt += linea('  Total USD:',    fmt(totalUSD,    'usd')) + '\n';
-            if (promARS  !== 0)    txt += linea('  Promedio ARS:', fmt(promARS,     'ars')) + '\n';
-            if (promUSD  !== 0)    txt += linea('  Promedio USD:', fmt(promUSD,     'usd')) + '\n';
-            if (pagadasARS   > 0)  txt += linea('  Pagado ARS:',   fmt(pagadasARS,  'ars')) + '\n';
-            if (pagadasUSD   > 0)  txt += linea('  Pagado USD:',   fmt(pagadasUSD,  'usd')) + '\n';
-            if (pendientesARS > 0) txt += linea('  Pendiente ARS:',fmt(pendientesARS,'ars')) + '\n';
-            if (pendientesUSD > 0) txt += linea('  Pendiente USD:',fmt(pendientesUSD,'usd')) + '\n';
+            if (totalARS !== 0) txt += linea('  Total ARS:', fmt(totalARS, 'ars')) + '\n';
+            if (totalUSD !== 0) txt += linea('  Total USD:', fmt(totalUSD, 'usd')) + '\n';
+            if (promARS !== 0) txt += linea('  Promedio ARS:', fmt(promARS, 'ars')) + '\n';
+            if (promUSD !== 0) txt += linea('  Promedio USD:', fmt(promUSD, 'usd')) + '\n';
+            if (pagadasARS > 0) txt += linea('  Pagado ARS:', fmt(pagadasARS, 'ars')) + '\n';
+            if (pagadasUSD > 0) txt += linea('  Pagado USD:', fmt(pagadasUSD, 'usd')) + '\n';
+            if (pendientesARS > 0) txt += linea('  Pendiente ARS:', fmt(pendientesARS, 'ars')) + '\n';
+            if (pendientesUSD > 0) txt += linea('  Pendiente USD:', fmt(pendientesUSD, 'usd')) + '\n';
         }
         txt += `\n${sep2}\n  Fin del reporte\n${sep2}\n`;
         this.app.utils.descargarBlob(txt, `reporte_${servicio.nombre.replace(/\s+/g, '_')}_${desde || 'inicio'}_${hasta || 'hoy'}.txt`);
@@ -4267,27 +4257,22 @@ class CalculadorService {
 }
 
 // ============================================================
-// GIST SERVICE — sincronización con GitHub Gist
+// GIST SERVICE — sincronización con GitHub Gist (Adaptado)
 // ============================================================
 class GistService {
     constructor(app) {
         this.app = app;
+        this.DEBOUNCE_MS = 3000;
+        this._debounceTimer = null;
+        this._subiendo = false;
     }
 
-    // ── Getters de conveniencia ───────────────────────────────
-    get servicios()      { return this.app.servicios; }
-    set servicios(v)     { this.app.servicios = v; }
-    get perfilActivo()   { return this.app.perfilActivo; }
-    get perfiles()       { return this.app.perfiles; }
+    get servicios() { return this.app.servicios; }
+    set servicios(v) { this.app.servicios = v; }
+    get perfilActivo() { return this.app.perfilActivo; }
 
-    // ── Token y perfil ────────────────────────────────────────
-    getToken() {
-        return localStorage.getItem('gist_token') || '';
-    }
-
-    getPerfil() {
-        return this.app.perfiles[this.perfilActivo] || {};
-    }
+    getToken() { return localStorage.getItem('gist_token') || ''; }
+    getPerfil() { return this.app.perfiles[this.perfilActivo] || {}; }
 
     setPerfil(campos) {
         if (!this.app.perfiles[this.perfilActivo]) return;
@@ -4295,306 +4280,291 @@ class GistService {
         this.app.guardarPerfiles();
     }
 
-    esIdValido(id) {
-        return /^[a-f0-9]{20,40}$/i.test(id || '');
-    }
-
-    // ── Rate limiting por hora ────────────────────────────────
-    _claveHoraActual() {
-        const ahora = new Date();
-        return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ${String(ahora.getHours()).padStart(2, '0')}`;
-    }
-
-    superaLimite(tipo, limite) {
-        const perfil = this.getPerfil();
-        const claveHora = this._claveHoraActual();
-        if (perfil[`gistSyncFecha_${tipo}`] !== claveHora) return false;
-        return (perfil[`gistSyncCount_${tipo}`] ?? 0) >= limite;
-    }
-
-    marcarSync(tipo) {
-        const perfil = this.getPerfil();
-        const claveHora = this._claveHoraActual();
-        const count = perfil[`gistSyncFecha_${tipo}`] === claveHora
-            ? (perfil[`gistSyncCount_${tipo}`] ?? 0) : 0;
-        this.setPerfil({
-            [`gistSyncFecha_${tipo}`]: claveHora,
-            [`gistSyncCount_${tipo}`]: count + 1
-        });
-    }
-
-    // ── Rango horario ─────────────────────────────────────────
-    dentroDelRango() {
-        const perfil = this.getPerfil();
-        const desde = perfil.gistRangoDesde || '00:00';
-        const hasta = perfil.gistRangoHasta || '23:59';
-        const ahora = new Date();
-        const hhmm = ahora.getHours().toString().padStart(2, '0') + ':' + ahora.getMinutes().toString().padStart(2, '0');
-        return desde <= hasta
-            ? hhmm >= desde && hhmm <= hasta   // rango normal
-            : hhmm >= desde || hhmm <= hasta;  // cruza medianoche
-    }
-
-    getMergeBehavior() {
-        return this.getPerfil().gistMergeBehavior || 'merge';
-    }
-
-    // ── Hash de integridad ────────────────────────────────────
-    async calcularHash(texto) {
-        const data = new TextEncoder().encode(texto);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        return Array.from(new Uint8Array(hashBuffer))
-            .map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    esIdValido(id) { return /^[a-f0-9]{20,40}$/i.test(id || ''); }
 
     // ── UI ────────────────────────────────────────────────────
-    actualizarBotones() {
-        const btnRespaldar = document.getElementById('btn-hist-respaldar');
-        const btnRestaurar = document.getElementById('btn-hist-restaurar');
-        if (!btnRespaldar || !btnRestaurar) return;
-        const tieneGist = this.esIdValido(this.getPerfil().gistId);
-        if (tieneGist) {
-            btnRespaldar.title = 'Subir a Gist';
-            btnRespaldar.onclick = () => this.app.gistSubir();
-            btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
-            btnRestaurar.title = 'Bajar de Gist';
-            btnRestaurar.onclick = () => this.app.gistBajar();
-            btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
-        } else {
-            btnRespaldar.title = 'Respaldar';
-            btnRespaldar.onclick = () => this.app.exportarDatos();
-            btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
-            btnRestaurar.title = 'Restaurar';
-            btnRestaurar.onclick = () => this.app.importarDatos('reemplazar');
-            btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
-        }
+    toggleToken() {
+        const inp = document.getElementById('gist-token');
+        if (!inp) return;
+        inp.type = inp.type === 'password' ? 'text' : 'password';
     }
 
-    ciclarAutoSync() {
-        const estados = ['Sin automatizar', 'Restaurar al iniciar', 'Respaldo automático'];
-        const actual = this.app._gistAutoSyncTemp ?? (this.getPerfil().gistAutoSync ?? 0);
-        this.app._gistAutoSyncTemp = (actual + 1) % 3;
-        document.getElementById('gist-autosync-btn').textContent = estados[this.app._gistAutoSyncTemp];
-        document.getElementById('gist-rango-container').classList.toggle('visible', this.app._gistAutoSyncTemp > 0);
-    }
-
-    ciclarMerge() {
-        const opciones = ['merge', 'replace'];
-        const etiquetas = ['Combinar (no reemplaza existentes)', 'Reemplazar todo con datos del Gist'];
-        const actual = this.app._gistMergeBehaviorTemp ?? this.getMergeBehavior();
-        const siguiente = actual === 'merge' ? 'replace' : 'merge';
-        this.app._gistMergeBehaviorTemp = siguiente;
-        document.getElementById('gist-merge-btn').textContent = etiquetas[opciones.indexOf(siguiente)];
+    toggleAuto() {
+        const toggle = document.getElementById('gist-autosync-toggle');
+        if (toggle) toggle.classList.toggle('on');
     }
 
     abrirModal() {
         const perfil = this.getPerfil();
-        const token = this.getToken();
-        const autoSync = perfil.gistAutoSync ?? 0;
-        const merge = perfil.gistMergeBehavior || 'merge';
-        const estados = ['Sin automatizar', 'Restaurar al iniciar', 'Respaldo automático'];
-        const etiquetasMerge = {
-            merge: 'Combinar (no reemplaza existentes)',
-            replace: 'Reemplazar todo con datos del Gist'
-        };
-        this.app._gistAutoSyncTemp = autoSync;
-        this.app._gistMergeBehaviorTemp = merge;
-        document.getElementById('gist-token').value = token;
-        document.getElementById('gist-id').value = perfil.gistId || '';
-        document.getElementById('gist-autosync-btn').textContent = estados[autoSync];
-        document.getElementById('gist-rango-container').classList.toggle('visible', autoSync > 0);
-        document.getElementById('gist-rango-desde').value = perfil.gistRangoDesde || '00:00';
-        document.getElementById('gist-rango-hasta').value = perfil.gistRangoHasta || '23:59';
-        document.getElementById('gist-merge-btn').textContent = etiquetasMerge[merge];
-        const elSync = document.getElementById('gist-ultima-sync');
+        document.getElementById('gist-token').value = this.getToken();
+
+        const elId = document.getElementById('gist-id');
+        elId.value = perfil.gistId || '';
+
+        const toggle = document.getElementById('gist-autosync-toggle');
+        if (toggle) toggle.classList.toggle('on', !!perfil.gistAuto);
+
+        const elSync = document.getElementById('gist-sync-status');
         if (perfil.gistLastSync) {
-            elSync.textContent = `Última sincronización: ${perfil.gistLastSync}`;
-            elSync.classList.add('visible');
+            const d = new Date(perfil.gistLastSync);
+            elSync.textContent = `Última sincronización: ${d.toLocaleDateString('es-AR')} ${d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
         } else {
-            elSync.classList.remove('visible');
+            elSync.textContent = '';
         }
+
+        // Controlar estado inicial del botón de redirección externa
+        const btnIr = document.getElementById('btn-gist-ir');
+        if (btnIr) btnIr.disabled = !this.esIdValido(perfil.gistId);
+
+        // Listener en vivo para el input de Gist ID
+        elId.oninput = (e) => {
+            if (btnIr) btnIr.disabled = !this.esIdValido(e.target.value.trim());
+        };
+
         this.app.ui.abrirModal('modal-gist');
     }
 
     guardarConfig() {
-        const token  = document.getElementById('gist-token').value.trim();
+        const token = document.getElementById('gist-token').value.trim();
         const gistId = document.getElementById('gist-id').value.trim();
-        const autoSync = this.app._gistAutoSyncTemp ?? 0;
-        const merge    = this.app._gistMergeBehaviorTemp ?? 'merge';
-        const desde    = document.getElementById('gist-rango-desde').value;
-        const hasta    = document.getElementById('gist-rango-hasta').value;
-        if (token) { localStorage.setItem('gist_token', token); }
-        else       { localStorage.removeItem('gist_token'); }
-        this.setPerfil({
-            gistId: gistId || '',
-            gistAutoSync: autoSync,
-            gistRangoDesde: desde || '00:00',
-            gistRangoHasta: hasta || '23:59',
-            gistMergeBehavior: merge,
-        });
-        this.app.ui.mostrarToast('Configuración guardada', 'success');
-        this.app.ui.cerrarModal('modal-gist');
+        const auto = document.getElementById('gist-autosync-toggle').classList.contains('on');
+
+        if (gistId && !this.esIdValido(gistId)) {
+            this.app.mostrarToast('El Gist ID tiene un formato inválido', 'error');
+            return;
+        }
+
+        if (token) localStorage.setItem('gist_token', token);
+        else localStorage.removeItem('gist_token');
+
+        this.setPerfil({ gistId, gistAuto: auto });
+
+        this.app.mostrarToast(auto ? 'Sincronización automática activada' : 'Configuración guardada', 'success');
+        this.app.cerrarModal('modal-gist');
         this.actualizarBotones();
     }
 
-    _guardarCredencialesModal() {
-        const inputToken = document.getElementById('gist-token');
-        const inputId    = document.getElementById('gist-id');
-        if (inputToken?.value.trim()) localStorage.setItem('gist_token', inputToken.value.trim());
-        if (inputId?.value.trim())    this.setPerfil({ gistId: inputId.value.trim() });
+    actualizarBotones() {
+        // Mantiene la compatibilidad con el fallback de exportar local en tu UI
+        const btnRespaldar = document.getElementById('btn-hist-respaldar');
+        const btnRestaurar = document.getElementById('btn-hist-restaurar');
+        const tieneGist = this.esIdValido(this.getPerfil().gistId);
+
+        if (!btnRespaldar || !btnRestaurar) return;
+        if (tieneGist) {
+            btnRespaldar.onclick = () => this.subir();
+            btnRestaurar.onclick = () => this.bajar();
+            btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
+            btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
+        } else {
+            btnRespaldar.onclick = () => this.app.exportarDatos();
+            btnRestaurar.onclick = () => this.app.mostrarOpcionesImportacion();
+            btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
+            btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
+        }
+    }
+
+    // Abrir el Gist actual en una pestaña nueva
+    irAlGist() {
+        const id = document.getElementById('gist-id').value.trim();
+        if (this.esIdValido(id)) {
+            window.open(`https://gist.github.com/${id}`, '_blank');
+        }
+    }
+
+    // ── Spinner en el botón de ajustes ──────────────────────
+    _spinStart() {
+        document.getElementById('btn-ajustes')?.classList.add('icon-btn-spinning');
+    }
+    _spinStop() {
+        document.getElementById('btn-ajustes')?.classList.remove('icon-btn-spinning');
+    }
+
+    _setBusy(busy) {
+        this._subiendo = busy;
+        const btnSubir = document.getElementById('btn-gist-subir');
+        const btnBajar = document.getElementById('btn-gist-bajar');
+        if (btnSubir) btnSubir.disabled = busy;
+        if (btnBajar) btnBajar.disabled = busy;
+        if (busy) this._spinStart(); else this._spinStop();
     }
 
     // ── Subida ────────────────────────────────────────────────
-    async subir() {
+    async _ejecutarSubida(silencioso = false) {
         const token = this.getToken();
-        if (!token) { this.app.ui.mostrarToast('Falta el token', 'error'); return; }
-        this._guardarCredencialesModal();
-        const inputId = document.getElementById('gist-id');
+        const perfil = this.getPerfil();
+        if (!token) { if (!silencioso) this.app.mostrarToast('Falta el token', 'error'); return; }
+
+        this._setBusy(true);
+        if (!silencioso) this.app.mostrarToast('Subiendo...', 'info');
+
         const categorias = this.app.categoria.getCategorias();
-        const datos = JSON.stringify({ servicios: this.servicios, categorias }, null, 2);
-        const hash = await this.calcularHash(datos);
-        const contenido = JSON.stringify({ hash, servicios: this.servicios, categorias }, null, 2);
-        const nombreArchivo = `deltaF_${this.perfilActivo}.json`;
-        const btnSubir = document.getElementById('gist-btn-subir');
-        if (btnSubir) btnSubir.disabled = true;
+        const payload = JSON.stringify({ servicios: this.servicios, categorias }, null, 2);
+        const filename = `deltaF_${this.perfilActivo}.json`;
+
+        const url = this.esIdValido(perfil.gistId) ? `https://api.github.com/gists/${perfil.gistId}` : 'https://api.github.com/gists';
+        const method = this.esIdValido(perfil.gistId) ? 'PATCH' : 'POST';
+
         try {
-            this.app.ui.mostrarToast('Subiendo...', 'info');
-            const perfilActual = this.getPerfil();
-            const url    = this.esIdValido(perfilActual.gistId)
-                ? `https://api.github.com/gists/${perfilActual.gistId}`
-                : 'https://api.github.com/gists';
-            const method = this.esIdValido(perfilActual.gistId) ? 'PATCH' : 'POST';
             const res = await fetch(url, {
                 method,
-                headers: { 'Authorization': `Bearer ${this.getToken()}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    description: `DeltaF backup — ${this.perfiles[this.perfilActivo]?.nombre || this.perfilActivo}`,
+                    description: `DeltaF backup — ${perfil.nombre || this.perfilActivo}`,
                     public: false,
-                    files: { [nombreArchivo]: { content: contenido } }
+                    files: { [filename]: { content: payload } }
                 })
             });
+
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
-            const ahora = new Date().toLocaleString('es-AR');
-            this.setPerfil({ gistId: json.id, gistLastSync: ahora });
-            this.marcarSync('subir');
-            if (inputId) inputId.value = json.id;
-            const elSync = document.getElementById('gist-ultima-sync');
-            if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
-            this.app.ui.mostrarToast('Subida exitosa ✓', 'success');
+            const data = await res.json();
+
+            this.setPerfil({ gistId: data.id, gistLastSync: new Date().toISOString() });
+
+            const elId = document.getElementById('gist-id');
+            if (elId) elId.value = data.id;
+
+            if (!silencioso) this.app.mostrarToast('Subida exitosa ✓', 'success');
         } catch (err) {
             console.error(err);
-            this.app.ui.mostrarToast('Error al subir', 'error');
+            if (!silencioso) this.app.mostrarToast(`Error al subir: ${err.message}`, 'error');
         } finally {
-            if (btnSubir) btnSubir.disabled = false;
+            this._setBusy(false);
         }
     }
 
-    // ── Descarga (sin aplicar) ────────────────────────────────
-    async _descargar() {
-        const token  = this.getToken();
+    subir() { this._ejecutarSubida(false); }
+
+    subirAuto() {
         const perfil = this.getPerfil();
-        if (!token) throw new Error('Falta el token');
-        if (!this.esIdValido(perfil.gistId)) throw new Error('Gist ID inválido');
-        const res = await fetch(`https://api.github.com/gists/${perfil.gistId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        if (!perfil.gistAuto || !this.getToken()) return;
+        clearTimeout(this._debounceTimer);
+        this._debounceTimer = setTimeout(() => {
+            if (!this._subiendo) this._ejecutarSubida(true);
+        }, this.DEBOUNCE_MS);
+    }
+
+    // ── Descarga y Novedades ──────────────────────────────────
+    async bajar() {
+        const token = this.getToken();
+        const perfil = this.getPerfil();
+        if (!this.esIdValido(perfil.gistId)) { this.app.mostrarToast('Gist ID inválido', 'error'); return; }
+
+        this._setBusy(true);
+        this.app.mostrarToast('Bajando...', 'info');
+
+        try {
+            const data = await this._fetchGist(perfil.gistId, token);
+            if (!data) throw new Error('Formato inválido');
+
+            // Hacemos un merge simulado para contar diferencias
+            const deepClone = JSON.parse(JSON.stringify(this.servicios));
+            const diff = this.app.storage._mergeServicios.call({ INGRESOS_ID: this.app.SERVICIO_INGRESOS_ID, servicios: deepClone }, data.servicios);
+            const diffCats = this.app.gist.mergeCategorias(data.categorias, true); // modo simulado si lo pasamos, sino contamos
+
+            if (!diff.serviciosAgregados && !diff.facturasAgregadas && !diff.facturasActualizadas && !diff.ingresosAgregados && !diffCats) {
+                this.setPerfil({ gistLastSync: new Date().toISOString() });
+                this.app.mostrarToast('Sin cambios', 'info');
+                return;
+            }
+
+            // Aplicar de verdad
+            this.app._gistDatosPendientes = data;
+            this.aplicarNovedades(); // Opcional: mostrar modal confirmación si querés, pero el botón "Bajar" fuerza la descarga
+
+        } catch (err) {
+            this.app.mostrarToast(`Error al bajar: ${err.message}`, 'error');
+        } finally {
+            this._setBusy(false);
+        }
+    }
+
+    async autoSyncInit() {
+        const perfil = this.getPerfil();
+        if (!perfil.gistAuto || !this.getToken() || !this.esIdValido(perfil.gistId)) return;
+
+        this._spinStart();
+        try {
+            const data = await this._fetchGist(perfil.gistId, this.getToken());
+            if (!data) return;
+
+            // Simular merge para ver qué es nuevo
+            const deepClone = JSON.parse(JSON.stringify(this.servicios));
+            const tempCtx = { INGRESOS_ID: this.app.SERVICIO_INGRESOS_ID, servicios: deepClone };
+            const diff = this.app.storage._mergeServicios.call(tempCtx, data.servicios);
+
+            // Calculamos diferencias de categorias manualmente para la UI
+            const actuales = this.app.categoria.getCategorias();
+            const nuevasCats = (data.categorias || []).filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase())).length;
+
+            if (diff.serviciosAgregados || diff.facturasAgregadas || diff.facturasActualizadas || diff.ingresosAgregados || nuevasCats) {
+
+                // Mostrar chips de resumen
+                const detalle = document.getElementById('gist-novedades-detalle');
+                if (detalle) {
+                    const chips = [];
+                    if (diff.serviciosAgregados) chips.push(`<div class="gist-novedades-chip"><span>Servicios</span><span class="gist-novedades-chip-count">+${diff.serviciosAgregados}</span></div>`);
+                    if (diff.facturasAgregadas) chips.push(`<div class="gist-novedades-chip"><span>Facturas nuevas</span><span class="gist-novedades-chip-count">+${diff.facturasAgregadas}</span></div>`);
+                    if (diff.facturasActualizadas) chips.push(`<div class="gist-novedades-chip"><span>Actualizadas</span><span class="gist-novedades-chip-count">${diff.facturasActualizadas}</span></div>`);
+                    if (diff.ingresosAgregados) chips.push(`<div class="gist-novedades-chip"><span>Ingresos</span><span class="gist-novedades-chip-count">+${diff.ingresosAgregados}</span></div>`);
+                    if (nuevasCats) chips.push(`<div class="gist-novedades-chip"><span>Categorías</span><span class="gist-novedades-chip-count">+${nuevasCats}</span></div>`);
+                    detalle.innerHTML = chips.join('');
+                }
+
+                this.app._gistDatosPendientes = data;
+                setTimeout(() => this.app.abrirModal('modal-gist-novedades'), 600);
+            }
+        } catch (e) {
+            console.error("AutoSync error:", e);
+        } finally {
+            this._spinStop();
+        }
+    }
+
+    async _fetchGist(gistId, token) {
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        const nombreArchivo = `deltaF_${this.perfilActivo}.json`;
-        const archivoObj = json.files[nombreArchivo];
-        if (!archivoObj) throw new Error('Archivo no encontrado en el Gist');
-        let parsed;
-        try { parsed = JSON.parse(archivoObj.content); } catch { throw new Error('JSON inválido'); }
-        const datosStr = JSON.stringify({ servicios: parsed.servicios, categorias: parsed.categorias || [] }, null, 2);
-        const hashEsperado = await this.calcularHash(datosStr);
-        if (hashEsperado !== parsed.hash) throw new Error('Hash no coincide — datos corruptos');
-        if (!Array.isArray(parsed.servicios)) throw new Error('Estructura inválida');
+
+        const filename = `deltaF_${this.perfilActivo}.json`;
+        const fileObj = json.files[filename];
+        if (!fileObj) throw new Error('Archivo no encontrado');
+
+        let content = fileObj.content;
+        if (fileObj.truncated) {
+            const r2 = await fetch(fileObj.raw_url);
+            content = await r2.text();
+        }
+
+        const parsed = JSON.parse(content);
         return { servicios: parsed.servicios, categorias: parsed.categorias || [] };
     }
 
-    // ── Bajada ────────────────────────────────────────────────
-    async bajar(esAutomatico = false) {
-        this._guardarCredencialesModal();
-        const btnBajar = document.getElementById('gist-btn-bajar');
-        if (btnBajar) btnBajar.disabled = true;
-        try {
-            this.app.ui.mostrarToast('Bajando...', 'info');
-            const { servicios: serviciosGist, categorias: categoriasGist } = await this._descargar();
-            this.app._gistDatosPendientes = { servicios: serviciosGist, categorias: categoriasGist };
-            if (esAutomatico) {
-                this.mergeAplicar(this.getMergeBehavior(), true);
-            } else {
-                const resumen = document.getElementById('gist-merge-resumen');
-                if (resumen) {
-                    resumen.innerHTML = this.app._generarResumenComparacion(serviciosGist, 'Gist', categoriasGist);
-                }
-                this.app.ui.abrirModal('modal-gist-merge');
-            }
-        } catch (err) {
-            console.error(err);
-            this.app.ui.mostrarToast(`Error al bajar: ${err.message}`, 'error');
-        } finally {
-            if (btnBajar) btnBajar.disabled = false;
-        }
+    aplicarNovedades() {
+        const data = this.app._gistDatosPendientes;
+        if (!data) return;
+
+        const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this.app.storage._mergeServicios(data.servicios);
+        const categoriasAgregadas = this.app.categoria.getCategorias().length;
+        this.mergeCategorias(data.categorias); // Mutación real
+
+        this.app.utils.postGuardado();
+        this.setPerfil({ gistLastSync: new Date().toISOString() });
+        this.app._gistDatosPendientes = null;
+
+        this.app.cerrarModal('modal-gist-novedades');
+        this.app.mostrarToast('Datos combinados correctamente', 'success');
     }
 
-    // ── Merge ─────────────────────────────────────────────────
-    mergeCategorias(catsNuevas) {
+    mergeCategorias(catsNuevas, simulado = false) {
         if (!Array.isArray(catsNuevas) || catsNuevas.length === 0) return 0;
         const actuales = this.app.categoria.getCategorias();
         const nuevas = catsNuevas.filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
-        if (nuevas.length > 0) this.app.categoria.saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
+        if (!simulado && nuevas.length > 0) {
+            this.app.categoria.saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
+        }
         return nuevas.length;
-    }
-
-    mergeAplicar(modo, esAutomatico = false) {
-        const { servicios: serviciosGist, categorias: categoriasGist } = this.app._gistDatosPendientes || {};
-        if (!serviciosGist) return;
-        let toastMsg;
-        if (modo === 'replace') {
-            this.servicios = serviciosGist;
-            this.app.categoria.saveCategorias(categoriasGist.length > 0 ? categoriasGist : this.app.categoria.getCategorias());
-            toastMsg = 'Datos reemplazados ✓';
-        } else {
-            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this.app._mergeServicios(serviciosGist);
-            const categoriasAgregadas = this.mergeCategorias(categoriasGist);
-            if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
-                this.app._gistDatosPendientes = null;
-                this.app.ui.cerrarModal('modal-gist-merge');
-                this.app.ui.mostrarToast('No hay datos nuevos para agregar', 'info');
-                return;
-            }
-            const partes = [];
-            if (serviciosAgregados  > 0) partes.push(this.app.utils.plural(serviciosAgregados,  'servicio',       'servicios'));
-            if (facturasAgregadas   > 0) partes.push(this.app.utils.plural(facturasAgregadas,   'factura nueva',  'facturas nuevas'));
-            if (facturasActualizadas > 0) partes.push(this.app.utils.plural(facturasActualizadas,'actualizada',    'actualizadas'));
-            if (ingresosAgregados   > 0) partes.push(this.app.utils.plural(ingresosAgregados,   'ingreso nuevo',  'ingresos nuevos'));
-            if (categoriasAgregadas > 0) partes.push(this.app.utils.plural(categoriasAgregadas, 'categoría',      'categorías'));
-            toastMsg = `Importado: ${partes.join(', ')}`;
-        }
-        this.app.utils.postGuardado();
-        const ahora = new Date().toLocaleString('es-AR');
-        this.setPerfil({ gistLastSync: ahora });
-        this.marcarSync('bajar');
-        const elSync = document.getElementById('gist-ultima-sync');
-        if (elSync) { elSync.textContent = `Última sincronización: ${ahora}`; elSync.classList.add('visible'); }
-        this.app._gistDatosPendientes = null;
-        this.app.ui.cerrarModal('modal-gist-merge');
-        this.app.ui.mostrarToast(toastMsg, 'success');
-    }
-
-    // ── Auto-sync al iniciar ──────────────────────────────────
-    async autoSyncInit() {
-        const perfil   = this.getPerfil();
-        const token    = this.getToken();
-        const autoSync = perfil.gistAutoSync ?? 0;
-        if (!token || !this.esIdValido(perfil.gistId)) return;
-        if (autoSync === 1 && this.dentroDelRango() && !this.superaLimite('bajar', 2)) {
-            setTimeout(() => this.app.gistBajar(true), 2000);
-        } else if (autoSync === 2 && this.dentroDelRango() && !this.superaLimite('subir', 1)) {
-            setTimeout(() => this.app.gistSubir(), 2000);
-        }
     }
 }
 
@@ -4607,11 +4577,11 @@ class HistorialManager {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get historial()       { return this.app.historial; }
-    set historial(v)      { this.app.historial = v; }
-    get historialIndex()  { return this.app.historialIndex; }
+    get historial() { return this.app.historial; }
+    set historial(v) { this.app.historial = v; }
+    get historialIndex() { return this.app.historialIndex; }
     set historialIndex(v) { this.app.historialIndex = v; }
-    get maxHistorial()    { return this.app.maxHistorial; }
+    get maxHistorial() { return this.app.maxHistorial; }
 
     // ── Inicializar ───────────────────────────────────────────
     inicializarHistorial() {
@@ -4619,7 +4589,7 @@ class HistorialManager {
         this.historialIndex = -1;
         if (this.app.servicios && this.app.servicios.length >= 0) {
             this.historial.push({
-                servicios:  JSON.parse(JSON.stringify(this.app.servicios)),
+                servicios: JSON.parse(JSON.stringify(this.app.servicios)),
                 categorias: JSON.parse(JSON.stringify(this.app.categoria.getCategorias()))
             });
             this.historialIndex = 0;
@@ -4630,7 +4600,7 @@ class HistorialManager {
     // ── Guardar estado ────────────────────────────────────────
     guardarEstado() {
         const nuevoEstado = {
-            servicios:  JSON.parse(JSON.stringify(this.app.servicios)),
+            servicios: JSON.parse(JSON.stringify(this.app.servicios)),
             categorias: JSON.parse(JSON.stringify(this.app.categoria.getCategorias()))
         };
 
@@ -4691,11 +4661,11 @@ class StorageService {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get servicios()       { return this.app.servicios; }
-    set servicios(v)      { this.app.servicios = v; }
-    get perfilActivo()    { return this.app.perfilActivo; }
-    get STORAGE_KEY()     { return this.app.STORAGE_KEY; }
-    get INGRESOS_ID()     { return this.app.SERVICIO_INGRESOS_ID; }
+    get servicios() { return this.app.servicios; }
+    set servicios(v) { this.app.servicios = v; }
+    get perfilActivo() { return this.app.perfilActivo; }
+    get STORAGE_KEY() { return this.app.STORAGE_KEY; }
+    get INGRESOS_ID() { return this.app.SERVICIO_INGRESOS_ID; }
 
     // ── Carga / guardado por perfil ───────────────────────────
     cargarDatosPerfilActivo() {
@@ -4720,6 +4690,8 @@ class StorageService {
         try {
             const key = `gestion_servicios_datos_${this.perfilActivo}`;
             localStorage.setItem(key, JSON.stringify(this.servicios));
+            // NUEVO: Auto-subida a Gist (si está habilitada)
+            if (this.app.gist) this.app.gist.subirAuto();
         } catch (error) {
             console.error('Error al guardar datos del perfil:', error);
             this.app.ui.mostrarToast('Error al guardar datos', 'error');
@@ -4887,7 +4859,7 @@ class StorageService {
             if (!servicioLocal) {
                 this.servicios.push(servicioRemoto);
                 esIngresos ? ingresosAgregados += servicioRemoto.facturas.length
-                           : (serviciosAgregados++, facturasAgregadas += servicioRemoto.facturas.length);
+                    : (serviciosAgregados++, facturasAgregadas += servicioRemoto.facturas.length);
             } else {
                 servicioRemoto.facturas.forEach(f => {
                     const idx = servicioLocal.facturas.findIndex(fl => fl.id === f.id);
@@ -5005,7 +4977,7 @@ class CustomSelect {
         this.labelEl = wrapper.querySelector('.csd-label');
         this.dropdown = wrapper.querySelector('.custom-select-dropdown');
         this._boundClose = this._onOutsideClick.bind(this);
-        this._boundEsc   = this._onEsc.bind(this);
+        this._boundEsc = this._onEsc.bind(this);
         this._boundScroll = this._onScroll.bind(this);
         this.trigger.addEventListener('pointerdown', e => {
             e.preventDefault();
@@ -5061,7 +5033,7 @@ class CustomSelect {
     _absorbNextEvents() {
         const absorb = e => { e.stopPropagation(); e.preventDefault(); };
         const opts = { capture: true, once: true, passive: false };
-        
+
         // Solo absorbemos el 'click', quitamos el 'pointerup' para no bloquear el siguiente toque.
         document.addEventListener('click', absorb, opts);
 
@@ -5089,15 +5061,15 @@ class CustomSelect {
         }
         this.wrapper.classList.add('open');
         document.addEventListener('pointerdown', this._boundClose, true);
-        document.addEventListener('keydown',     this._boundEsc,   true);
-        window.addEventListener('scroll',        this._boundScroll, { capture: true, passive: true });
+        document.addEventListener('keydown', this._boundEsc, true);
+        window.addEventListener('scroll', this._boundScroll, { capture: true, passive: true });
     }
 
     close() {
         this.wrapper.classList.remove('open');
         document.removeEventListener('pointerdown', this._boundClose, true);
-        document.removeEventListener('keydown',     this._boundEsc,   true);
-        window.removeEventListener('scroll',        this._boundScroll, { capture: true, passive: true });
+        document.removeEventListener('keydown', this._boundEsc, true);
+        window.removeEventListener('scroll', this._boundScroll, { capture: true, passive: true });
     }
 
     _onScroll(e) {

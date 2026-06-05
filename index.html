@@ -240,6 +240,15 @@
             <polyline points="22 4 12 14.01 9 11.01" class="icon-line" stroke="currentColor" stroke-width="2"
                 fill="none" stroke-linecap="round" stroke-linejoin="round"></polyline>
         </symbol>
+        <symbol id="icon-external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+        </symbol>
+        <symbol id="icon-add" viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+        </symbol>
     </svg>
 
     <!-- Header -->
@@ -656,75 +665,105 @@
     <div class="modal" id="modal-gist">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>GitHub Gist</h3>
+                <h3>
+                    <svg class="icon">
+                        <use href="#icon-cloud-sync" />
+                    </svg>
+                    GitHub Gist
+                </h3>
             </div>
-            <div class="modal-body d-flex flex-column gap-3">
+            <div class="modal-body modal-body-pb">
+
                 <div class="form-group">
-                    <label for="gist-token">Personal Access Token</label>
-                    <div class="gist-token-row">
-                        <input type="password" id="gist-token" placeholder="..." maxlength="200" autocomplete="off"
-                            class="flex-1">
-                        <button type="button" class="icon-btn flex-shrink-0" id="btn-gist-toggle-token" title="Mostrar/ocultar token">
-                            <svg class="icon">
-                                <use href="#icon-lock" />
-                            </svg>
+                    <label>Personal Access Token</label>
+                    <div class="gist-input-row">
+                        <input type="password" id="gist-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+                        <button class="icon-btn" id="gist-token-eye" title="Mostrar/ocultar" type="button">
+                            <svg class="icon"><use href="#icon-eye" id="gist-eye-icon" /></svg>
+                        </button>
+                        <button class="icon-btn" id="btn-gist-crear-token" title="Crear token en GitHub" type="button">
+                            <svg class="icon"><use href="#icon-add" /></svg>
                         </button>
                     </div>
                 </div>
+
                 <div class="form-group">
-                    <label for="gist-id">Gist ID</label>
-                    <input type="text" id="gist-id" placeholder="se crea automáticamente si esta vacío" maxlength="100"
-                        autocomplete="off">
+                    <label>Gist ID</label>
+                    <div class="gist-input-row">
+                        <input type="text" id="gist-id" placeholder="Dejar vacío para crear uno nuevo" autocomplete="off" spellcheck="false">
+                        <button class="icon-btn" id="btn-gist-ir" title="Abrir Gist en GitHub" type="button" disabled>
+                            <svg class="icon"><use href="#icon-external-link" /></svg>
+                        </button>
+                    </div>
+                    <span class="text-muted small d-block mt-1 px-1">ID único del repositorio privado</span>
                 </div>
-                <!-- Acciones manuales -->
-                <div class="d-grid grid-cols-2 gap-2">
-                    <button type="button" id="gist-btn-subir">
+
+                <p class="ajustes-section-label mt-3">Acciones</p>
+                <div class="gist-actions-row">
+                    <button class="btn-gist-action" id="btn-gist-subir">
                         <svg class="icon">
-                            <use href="#icon-upload" />
+                            <use href="#icon-cloud-upload" />
                         </svg> Subir
                     </button>
-                    <button type="button" id="gist-btn-bajar">
+                    <button class="btn-gist-action" id="btn-gist-bajar">
                         <svg class="icon">
-                            <use href="#icon-download" />
+                            <use href="#icon-cloud-download" />
                         </svg> Bajar
                     </button>
                 </div>
-                <!-- Toggle modo auto-sync -->
-                <div class="form-group">
-                    <label>Automatización</label>
-                    <button type="button" id="gist-autosync-btn">
-                        Sin automatizar
-                    </button>
-                </div>
-                <!-- Rango horario (se muestra solo en modo 1 y 2) -->
-                <div id="gist-rango-container" class="flex-column gap-2 gist-rango-oculto">
-                    <label class="d-block mb-1">Rango horario</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="time" id="gist-rango-desde" class="flex-1">
-                        <span class="rango-sep">a</span>
-                        <input type="time" id="gist-rango-hasta" class="flex-1">
+
+                <label class="gist-autosync-row mt-3" id="gist-autosync-label">
+                    <span class="gist-autosync-text">
+                        <span class="gist-autosync-title">Sincronización Inteligente</span>
+                        <span class="gist-privacy-note d-block mt-1">Sube automáticamente al guardar y comprueba cambios
+                            al iniciar.</span>
+                    </span>
+                    <div class="toggle-switch" id="gist-autosync-toggle">
+                        <div class="toggle-thumb"></div>
                     </div>
-                    <!-- Comportamiento al bajar automáticamente -->
-                    <label class="d-block mt-1">Al bajar automáticamente</label>
-                    <button type="button" id="gist-merge-btn">
-                        Combinar (no reemplaza existentes)
-                    </button>
-                </div>
-                <!-- Última sync y contadores -->
-                <div id="gist-ultima-sync" class="text-sm text-muted gist-ultima-oculto"></div>
-                <!-- Guardar / Volver -->
-                <div class="d-grid grid-cols-2 gap-2">
-                    <button type="button" id="btn-gist-guardar">
-                        <svg class="icon">
-                            <use href="#icon-save" />
-                        </svg> Guardar
-                    </button>
-                    <button type="button" id="btn-gist-cerrar">
-                        <svg class="icon">
-                            <use href="#icon-cancel" />
-                        </svg> Cerrar
-                    </button>
-                </div>
+                </label>
+
+                <p id="gist-sync-status" class="gist-sync-status mt-2"></p>
+
+            </div>
+            <div class="modal-footer d-grid grid-cols-2 gap-2 mt-3">
+                <button type="button" id="btn-gist-guardar">
+                    <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> Guardar
+                </button>
+                <button type="button" class="btn-secondary" id="btn-gist-cerrar">
+                    <svg class="icon">
+                        <use href="#icon-cancel" />
+                    </svg> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-gist-novedades">
+        <div class="modal-content modal-content-md">
+            <div class="modal-header">
+                <h3>
+                    <svg class="icon">
+                        <use href="#icon-cloud-download" />
+                    </svg>
+                    Datos nuevos en Gist
+                </h3>
+            </div>
+            <div class="modal-body">
+                <p class="gist-novedades-desc text-muted mb-3">Se encontraron registros en la nube que no están en este
+                    dispositivo:</p>
+                <div id="gist-novedades-detalle" class="gist-novedades-detalle d-flex flex-column gap-2 mb-3"></div>
+                <p class="gist-novedades-pregunta font-weight-bold">¿Querés combinarlos con tus datos locales?</p>
+            </div>
+            <div class="modal-footer d-grid grid-cols-2 gap-2 mt-2">
+                <button type="button" id="gist-novedades-ok">
+                    <svg class="icon">
+                        <use href="#icon-cloud-download" />
+                    </svg> Combinar
+                </button>
+                <button type="button" class="btn-secondary" id="gist-novedades-ignorar-btn">Ignorar</button>
             </div>
         </div>
     </div>
@@ -783,8 +822,8 @@
                         <select id="servicio-categoria" class="flex-1">
                             <option value="">Sin categoría</option>
                         </select>
-                        <button type="button" class="icon-btn" title="Agregar categoría"
-                            id="btn-agregar-cat-servicio" class="flex-shrink-0">
+                        <button type="button" class="icon-btn" title="Agregar categoría" id="btn-agregar-cat-servicio"
+                            class="flex-shrink-0">
                             <svg class="icon">
                                 <use href="#icon-plus" />
                             </svg>
@@ -971,8 +1010,7 @@
                     <label for="factura-fecha-pago">Fecha de pago</label>
                     <div class="d-flex align-items-center gap-2">
                         <input type="date" id="factura-fecha-pago" disabled class="flex-1">
-                        <button type="button" id="btn-toggle-credito" class="icon-btn"
-                            title="Contado / Crédito">
+                        <button type="button" id="btn-toggle-credito" class="icon-btn" title="Contado / Crédito">
                             <svg class="icon">
                                 <use href="#icon-cash" />
                             </svg>
@@ -1054,8 +1092,7 @@
                     <label for="editar-factura-fecha-pago">Fecha de pago</label>
                     <div class="d-flex align-items-center gap-2">
                         <input type="date" id="editar-factura-fecha-pago" disabled class="flex-1">
-                        <button type="button" id="btn-editar-toggle-credito" class="icon-btn"
-                            title="Contado / crédito">
+                        <button type="button" id="btn-editar-toggle-credito" class="icon-btn" title="Contado / crédito">
                             <svg class="icon">
                                 <use href="#icon-cash" />
                             </svg>
@@ -1096,8 +1133,8 @@
                     <h3 id="modal-facturas-titulo"></h3>
                     <span id="modal-facturas-categoria" class="badge-categoria mt-1 d-inline-block"></span>
                 </div>
-                <button class="icon-btn transparent" id="btn-editar-servicio-desde-modal"
-                    title="Editar servicio" class="ml-auto">
+                <button class="icon-btn transparent" id="btn-editar-servicio-desde-modal" title="Editar servicio"
+                    class="ml-auto">
                     <svg class="icon">
                         <use href="#icon-edit" />
                     </svg>
@@ -1190,8 +1227,7 @@
                             <use href="#icon-save" />
                         </svg> Guardar
                     </button>
-                    <button type="button" class="btn-secondary w-100" id="modal-ingreso-close"><svg
-                            class="icon">
+                    <button type="button" class="btn-secondary w-100" id="modal-ingreso-close"><svg class="icon">
                             <use href="#icon-cancel" />
                         </svg> Cerrar
                     </button>
@@ -1264,21 +1300,21 @@
                 <h2>Perfiles</h2>
             </div>
             <div class="modal-body d-flex flex-column gap-3">
-                    <div id="perfiles-lista" class="d-flex flex-column gap-2"></div>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="text" id="perfil-nuevo-nombre" maxlength="20" placeholder="Nombre del perfil..."
-                            class="flex-1">
-                        <button class="icon-btn" id="btn-crear-perfil-inline" title="Agregar perfil">
-                            <svg class="icon">
-                                <use href="#icon-plus" />
-                            </svg>
-                        </button>
-                    </div>
-                    <button type="button" id="btn-cerrar-modal-perfiles">
+                <div id="perfiles-lista" class="d-flex flex-column gap-2"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="text" id="perfil-nuevo-nombre" maxlength="20" placeholder="Nombre del perfil..."
+                        class="flex-1">
+                    <button class="icon-btn" id="btn-crear-perfil-inline" title="Agregar perfil">
                         <svg class="icon">
-                            <use href="#icon-cancel" />
-                        </svg> Cerrar
+                            <use href="#icon-plus" />
+                        </svg>
                     </button>
+                </div>
+                <button type="button" id="btn-cerrar-modal-perfiles">
+                    <svg class="icon">
+                        <use href="#icon-cancel" />
+                    </svg> Cerrar
+                </button>
             </div>
         </div>
     </div>
@@ -1457,33 +1493,33 @@
 
     <!-- Menú contextual servicios -->
     <div class="ctx-menu" id="ctx-menu-servicio">
-            <button class="ctx-menu-item" id="ctx-seleccionar">
-                <svg class="icon icon-line" viewBox="0 0 24 24">
-                    <path d="M9 11l3 3L22 4" />
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                </svg>
-                Seleccionar
-            </button>
-            <div class="ctx-menu-separator"></div>
-            <button class="ctx-menu-item" id="ctx-copiar-monto">
-                <svg class="icon icon-line" viewBox="0 0 24 24">
-                    <rect x="9" y="9" width="13" height="13" rx="2" />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-                Copiar monto
-            </button>
-            <div class="ctx-menu-separator"></div>
-            <button class="ctx-menu-item" id="ctx-pagar-factura">
-                <svg class="icon icon-line" viewBox="0 0 24 24">
-                    <path d="M20 12V22H4V12" />
-                    <path d="M22 7H2v5h20V7z" />
-                    <path d="M12 22V7" />
-                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-                </svg>
-                Pagar factura del mes
-            </button>
-        </div>
+        <button class="ctx-menu-item" id="ctx-seleccionar">
+            <svg class="icon icon-line" viewBox="0 0 24 24">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            Seleccionar
+        </button>
+        <div class="ctx-menu-separator"></div>
+        <button class="ctx-menu-item" id="ctx-copiar-monto">
+            <svg class="icon icon-line" viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            Copiar monto
+        </button>
+        <div class="ctx-menu-separator"></div>
+        <button class="ctx-menu-item" id="ctx-pagar-factura">
+            <svg class="icon icon-line" viewBox="0 0 24 24">
+                <path d="M20 12V22H4V12" />
+                <path d="M22 7H2v5h20V7z" />
+                <path d="M12 22V7" />
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+            </svg>
+            Pagar factura del mes
+        </button>
+    </div>
 
 </body>
 
