@@ -107,6 +107,8 @@ class GestionServicios {
         this._estadisticaCategoriaActiva = null;
 
         // Servicios auxiliares
+        this.ctx = new ContextMenuService(this);
+        this.categoria = new CategoriaService(this);
         this.estadisticas = new EstadisticasService(this);
         this.ui = new UIManager(this);
         this.utils = new UtilsService(this);
@@ -1647,107 +1649,15 @@ class GestionServicios {
     }
 
     // ── Categorías ──────────────────────────────────────────────
-    _getCategorias() {
-        return JSON.parse(localStorage.getItem('categorias-servicios') || '[]');
-    }
-
-    _saveCategorias(cats) {
-        localStorage.setItem('categorias-servicios', JSON.stringify(cats));
-    }
-
-    _poblarSelectCategorias(selectId, valorSeleccionado = '') {
-        const sel = document.getElementById(selectId);
-        if (!sel) return;
-        const cats = this._getCategorias();
-        // Mantener primera opción "Sin categoría"
-        sel.innerHTML = `<option value="">Sin categoría</option>`;
-        cats.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            opt.textContent = c;
-            if (c === valorSeleccionado) opt.selected = true;
-            sel.appendChild(opt);
-        });
-    }
-
-    abrirModalNuevaCategoria(targetSelectId) {
-        this._categoriaTargetSelect = targetSelectId;
-        // Recordar qué modal de servicio estaba abierto para reabrirlo al volver
-        this._modalServicioOrigen = document.querySelector('.modal.active')?.id || null;
-        if (this._modalServicioOrigen) this.cerrarModal(this._modalServicioOrigen);
-        document.getElementById('nueva-categoria-nombre').value = '';
-        this._renderCategorias();
-        this.abrirModal('modal-nueva-categoria');
-    }
-
-    cerrarModalCategorias() {
-        this.cerrarModal('modal-nueva-categoria');
-        if (this._modalServicioOrigen) {
-            this.abrirModal(this._modalServicioOrigen);
-            this._modalServicioOrigen = null;
-        }
-    }
-
-    _renderCategorias() {
-        const lista = document.getElementById('categorias-lista');
-        if (!lista) return;
-        const cats = this._getCategorias();
-        if (cats.length === 0) {
-            lista.innerHTML = `<span class="sin-categorias-text">Sin categorías definidas</span>`;
-            return;
-        }
-        lista.innerHTML = cats.map(c => `
-                    <span class="categoria-tag">
-                        <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${this.escaparAtributoHTML(c)}" title="Eliminar">
-                            <svg class="icon">
-                        <use href="#icon-cancel" />
-                    </svg>
-                        </button>
-                        ${this.escaparHTML(c)}
-                    </span>
-                `).join('');
-    }
-
-    eliminarCategoria(nombre) {
-        let cats = this._getCategorias().filter(c => c !== nombre);
-        this._saveCategorias(cats);
-        // Si algún servicio usaba esta categoría, limpiarla
-        this.servicios.forEach(s => { if (s.categoria === nombre) s.categoria = ''; });
-        this.guardarDatos();
-        this.guardarEstado();
-        this._poblarSelectCategorias('servicio-categoria');
-        this._poblarSelectCategorias('editar-servicio-categoria');
-        this._renderCategorias();
-        this.renderServicios();
-        this.mostrarToast('Categoría eliminada', 'success');
-    }
-
-    guardarNuevaCategoria() {
-        const nombre = document.getElementById('nueva-categoria-nombre').value.trim();
-        if (!nombre) {
-            this.mostrarToast('El nombre es requerido', 'error');
-            return;
-        }
-        const cats = this._getCategorias();
-        if (cats.some(c => c.toLowerCase() === nombre.toLowerCase())) {
-            this.mostrarToast('Esa categoría ya existe', 'error');
-            return;
-        }
-        cats.push(nombre);
-        cats.sort((a, b) => a.localeCompare(b));
-        this._saveCategorias(cats);
-        document.getElementById('nueva-categoria-nombre').value = '';
-        this._poblarSelectCategorias('servicio-categoria',
-            this._categoriaTargetSelect === 'servicio-categoria' ? nombre : '');
-        this._poblarSelectCategorias('editar-servicio-categoria',
-            this._categoriaTargetSelect === 'editar-servicio-categoria' ? nombre : '');
-        const sel = document.getElementById(this._categoriaTargetSelect);
-        if (sel) sel.value = nombre;
-        this.guardarEstado();
-        this._renderCategorias();
-        this.mostrarToast('Categoría agregada', 'success');
-    }
-    // ────────────────────────────────────────────────────────────
+    // ── Delegación a CategoriaService ────────────────────────
+    _getCategorias()                        { return this.categoria.getCategorias(); }
+    _saveCategorias(cats)                   { this.categoria.saveCategorias(cats); }
+    _poblarSelectCategorias(id, val)        { this.categoria.poblarSelect(id, val); }
+    abrirModalNuevaCategoria(targetSelectId){ this.categoria.abrirModal(targetSelectId); }
+    cerrarModalCategorias()                 { this.categoria.cerrarModal(); }
+    _renderCategorias()                     { this.categoria.renderLista(); }
+    eliminarCategoria(nombre)               { this.categoria.eliminar(nombre); }
+    guardarNuevaCategoria()                 { this.categoria.guardarNueva(); }
 
     guardarServicio(e) {
         e.preventDefault();
@@ -2697,86 +2607,94 @@ class GestionServicios {
     // MENÚ CONTEXTUAL SERVICIOS
     // ========================================
 
-    _ctxInit() {
+    // ── Delegación a ContextMenuService ──────────────────────
+    _ctxInit()                  { this.ctx.init(); }
+    _ctxAbrir(e, servicioId)    { this.ctx.abrir(e, servicioId); }
+    _ctxCerrar()                { this.ctx.cerrar(); }
+    _ctxSeleccionar(servicioId) { this.ctx.seleccionar(servicioId); }
+    _ctxCopiarMonto()           { this.ctx.copiarMonto(); }
+    _ctxPagarFactura()          { this.ctx.pagarFactura(); }
+
+    mostrarToast(mensaje, tipo = 'success') { this.ui.mostrarToast(mensaje, tipo); }
+}
+
+// ============================================================
+// CONTEXT MENU SERVICE — menú contextual de servicios
+// ============================================================
+class ContextMenuService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    init() {
         const menu = document.getElementById('ctx-menu-servicio');
 
         document.addEventListener('pointerdown', (e) => {
-            if (!menu.contains(e.target)) this._ctxCerrar();
+            if (!menu.contains(e.target)) this.cerrar();
         }, true);
 
-        document.addEventListener('scroll', () => this._ctxCerrar(), true);
+        document.addEventListener('scroll', () => this.cerrar(), true);
 
         document.getElementById('ctx-seleccionar').addEventListener('click', () => {
-            const id = this._ctxServicioId;
-            this._ctxCerrar();
-            if (this.modoCalculadora) {
-                this.desactivarModoCalculadora(true);
+            const id = this.app._ctxServicioId;
+            this.cerrar();
+            if (this.app.modoCalculadora) {
+                this.app.calculador.desactivarModo(true);
             } else {
-                this._ctxSeleccionar(id);
+                this.seleccionar(id);
             }
         });
 
         document.getElementById('ctx-copiar-monto').addEventListener('click', () => {
-            this._ctxCopiarMonto();
-            this._ctxCerrar();
+            this.copiarMonto();
+            this.cerrar();
         });
 
         document.getElementById('ctx-pagar-factura').addEventListener('click', () => {
-            this._ctxPagarFactura();
-            this._ctxCerrar();
+            this.pagarFactura();
+            this.cerrar();
         });
     }
 
-    _ctxAbrir(e, servicioId) {
+    abrir(e, servicioId) {
         e.preventDefault();
-        // Si el long press de grupos acaba de disparar, este contextmenu es residual — ignorarlo
-        if (this._lpFired) {
-            this._lpFired = false;
-            return;
-        }
-        this._ctxServicioId = servicioId;
+        if (this.app._lpFired) { this.app._lpFired = false; return; }
+        this.app._ctxServicioId = servicioId;
 
-        const estaSeleccionado = this.serviciosSeleccionados.has(servicioId);
+        const estaSeleccionado = this.app.serviciosSeleccionados.has(servicioId);
 
-        // Texto de seleccionar
         const btnSeleccionar = document.getElementById('ctx-seleccionar');
         btnSeleccionar.childNodes[btnSeleccionar.childNodes.length - 1].textContent =
-            this.modoCalculadora ? ' Cancelar selección' : ' Seleccionar';
+            this.app.modoCalculadora ? ' Cancelar selección' : ' Seleccionar';
 
-        // Texto de copiar monto
         const btnCopiar = document.getElementById('ctx-copiar-monto');
         btnCopiar.childNodes[btnCopiar.childNodes.length - 1].textContent =
-            (estaSeleccionado && this.serviciosSeleccionados.size > 1) ? ' Copiar total' : ' Copiar monto';
+            (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) ? ' Copiar total' : ' Copiar monto';
 
-        // Pagar: si está seleccionado, paga todas las seleccionadas; sino solo esta
-        // Habilitado si hay al menos una factura del mes pagable en el scope
         const btnPagar = document.getElementById('ctx-pagar-factura');
         const btnPagarText = btnPagar.childNodes[btnPagar.childNodes.length - 1];
-        if (estaSeleccionado && this.serviciosSeleccionados.size > 1) {
-            const hayPagables = [...this.serviciosSeleccionados].some(id => {
-                const f = this.obtenerUltimaFactura(id);
+        if (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) {
+            const hayPagables = [...this.app.serviciosSeleccionados].some(id => {
+                const f = this.app.obtenerUltimaFactura(id);
                 return f && !f.pagada && !f.conCredito;
             });
             btnPagar.disabled = !hayPagables;
-            btnPagarText.textContent = ` Pagar ${this.serviciosSeleccionados.size} seleccionados`;
+            btnPagarText.textContent = ` Pagar ${this.app.serviciosSeleccionados.size} seleccionados`;
         } else {
-            const factura = this.obtenerUltimaFactura(servicioId);
+            const factura = this.app.obtenerUltimaFactura(servicioId);
             btnPagar.disabled = !factura || factura.pagada || !!factura.conCredito;
             btnPagarText.textContent = ' Pagar factura del mes';
         }
 
         const menu = document.getElementById('ctx-menu-servicio');
         const margen = 8;
-        let x = e.clientX;
-        let y = e.clientY;
+        let x = e.clientX, y = e.clientY;
 
         menu.style.setProperty('--ctx-x', '0px');
         menu.style.setProperty('--ctx-y', '0px');
         menu.classList.add('active');
 
-        const mw = menu.offsetWidth;
-        const mh = menu.offsetHeight;
-
+        const mw = menu.offsetWidth, mh = menu.offsetHeight;
         if (x + mw + margen > window.innerWidth) x = window.innerWidth - mw - margen;
         if (y + mh + margen > window.innerHeight) y = window.innerHeight - mh - margen;
 
@@ -2784,76 +2702,69 @@ class GestionServicios {
         menu.style.setProperty('--ctx-y', `${y}px`);
     }
 
-    _ctxCerrar() {
+    cerrar() {
         document.getElementById('ctx-menu-servicio').classList.remove('active');
-        this._ctxServicioId = null;
+        this.app._ctxServicioId = null;
     }
 
-    _ctxSeleccionar(servicioId) {
-        if (!this.modoCalculadora) {
-            this.activarModoCalculadora(true);
-            this.serviciosSeleccionados.add(servicioId);
-            this.actualizarCalculadora();
-            this.renderServicios();
+    seleccionar(servicioId) {
+        if (!this.app.modoCalculadora) {
+            this.app.calculador.activarModo(true);
+            this.app.serviciosSeleccionados.add(servicioId);
+            this.app.calculador.actualizar();
+            this.app.renderServicios();
             return;
         }
-        if (this.serviciosSeleccionados.has(servicioId)) {
-            this.serviciosSeleccionados.delete(servicioId);
-            if (this.serviciosSeleccionados.size === 0) {
-                this.desactivarModoCalculadora(true);
+        if (this.app.serviciosSeleccionados.has(servicioId)) {
+            this.app.serviciosSeleccionados.delete(servicioId);
+            if (this.app.serviciosSeleccionados.size === 0) {
+                this.app.calculador.desactivarModo(true);
                 return;
             }
         } else {
-            this.serviciosSeleccionados.add(servicioId);
+            this.app.serviciosSeleccionados.add(servicioId);
         }
-        this.actualizarCalculadora();
-        this.renderServicios();
+        this.app.calculador.actualizar();
+        this.app.renderServicios();
     }
 
-    _ctxCopiarMonto() {
-        const estaSeleccionado = this.serviciosSeleccionados.has(this._ctxServicioId);
-        const ids = (estaSeleccionado && this.serviciosSeleccionados.size > 1)
-            ? [...this.serviciosSeleccionados]
-            : [this._ctxServicioId];
+    copiarMonto() {
+        const estaSeleccionado = this.app.serviciosSeleccionados.has(this.app._ctxServicioId);
+        const ids = (estaSeleccionado && this.app.serviciosSeleccionados.size > 1)
+            ? [...this.app.serviciosSeleccionados]
+            : [this.app._ctxServicioId];
 
-        let totalARS = 0;
-        let totalUSD = 0;
-
+        let totalARS = 0, totalUSD = 0;
         ids.forEach(id => {
-            const factura = this.obtenerUltimaFactura(id);
-            if (!factura) return;
-            if ((factura.moneda || 'ars') === 'usd') {
-                totalUSD += factura.monto;
-            } else {
-                totalARS += factura.monto;
-            }
+            const f = this.app.obtenerUltimaFactura(id);
+            if (!f) return;
+            if ((f.moneda || 'ars') === 'usd') totalUSD += f.monto;
+            else totalARS += f.monto;
         });
 
         const partes = [];
-        if (totalARS > 0) partes.push(this.formatearMoneda(totalARS, 'ars'));
-        if (totalUSD > 0) partes.push(this.formatearMoneda(totalUSD, 'usd'));
-        if (partes.length === 0) { this.mostrarToast('Sin factura del mes', 'info'); return; }
+        if (totalARS > 0) partes.push(this.app.utils.formatearMoneda(totalARS, 'ars'));
+        if (totalUSD > 0) partes.push(this.app.utils.formatearMoneda(totalUSD, 'usd'));
+        if (partes.length === 0) { this.app.ui.mostrarToast('Sin factura del mes', 'info'); return; }
 
         const texto = partes.join(' + ');
-        navigator.clipboard?.writeText(texto).then(() => {
-            this.mostrarToast(`Copiado: ${texto}`, 'success');
-        }).catch(() => {
-            this.mostrarToast('No se pudo copiar', 'error');
-        });
+        navigator.clipboard?.writeText(texto)
+            .then(() => this.app.ui.mostrarToast(`Copiado: ${texto}`, 'success'))
+            .catch(() => this.app.ui.mostrarToast('No se pudo copiar', 'error'));
     }
 
-    _ctxPagarFactura() {
-        const estaSeleccionado = this.serviciosSeleccionados.has(this._ctxServicioId);
-        const ids = (estaSeleccionado && this.serviciosSeleccionados.size > 1)
-            ? [...this.serviciosSeleccionados]
-            : [this._ctxServicioId];
+    pagarFactura() {
+        const estaSeleccionado = this.app.serviciosSeleccionados.has(this.app._ctxServicioId);
+        const ids = (estaSeleccionado && this.app.serviciosSeleccionados.size > 1)
+            ? [...this.app.serviciosSeleccionados]
+            : [this.app._ctxServicioId];
 
-        const hoy = this.obtenerFechaLocal();
+        const hoy = this.app.utils.obtenerFechaLocal();
         let pagadas = 0;
 
         ids.forEach(id => {
-            const servicio = this.servicios.find(s => s.id === id);
-            const factura = this.obtenerUltimaFactura(id);
+            const servicio = this.app.servicios.find(s => s.id === id);
+            const factura = this.app.obtenerUltimaFactura(id);
             if (!servicio || !factura || factura.pagada || factura.conCredito) return;
             const idx = servicio.facturas.findIndex(f => f.id === factura.id);
             if (idx === -1) return;
@@ -2862,15 +2773,117 @@ class GestionServicios {
         });
 
         if (pagadas === 0) return;
-
-        this._postGuardado();
-        if (estaSeleccionado && this.serviciosSeleccionados.size > 1) {
-            this.desactivarModoCalculadora(true);
+        this.app.utils.postGuardado();
+        if (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) {
+            this.app.calculador.desactivarModo(true);
         }
-        this.mostrarToast(pagadas === 1 ? 'Factura pagada ✓' : `${pagadas} facturas pagadas ✓`, 'success');
+        this.app.ui.mostrarToast(pagadas === 1 ? 'Factura pagada ✓' : `${pagadas} facturas pagadas ✓`, 'success');
+    }
+}
+
+// ============================================================
+// CATEGORIA SERVICE — CRUD de categorías de servicios
+// ============================================================
+class CategoriaService {
+    constructor(app) {
+        this.app = app;
     }
 
-    mostrarToast(mensaje, tipo = 'success') { this.ui.mostrarToast(mensaje, tipo); }
+    // ── Persistencia ──────────────────────────────────────────
+    getCategorias() {
+        return JSON.parse(localStorage.getItem('categorias-servicios') || '[]');
+    }
+
+    saveCategorias(cats) {
+        localStorage.setItem('categorias-servicios', JSON.stringify(cats));
+    }
+
+    // ── Selects ───────────────────────────────────────────────
+    poblarSelect(selectId, valorSeleccionado = '') {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        const cats = this.getCategorias();
+        sel.innerHTML = `<option value="">Sin categoría</option>`;
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            if (c === valorSeleccionado) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+
+    // ── Modal ─────────────────────────────────────────────────
+    abrirModal(targetSelectId) {
+        this.app._categoriaTargetSelect = targetSelectId;
+        this.app._modalServicioOrigen = document.querySelector('.modal.active')?.id || null;
+        if (this.app._modalServicioOrigen) this.app.cerrarModal(this.app._modalServicioOrigen);
+        document.getElementById('nueva-categoria-nombre').value = '';
+        this.renderLista();
+        this.app.abrirModal('modal-nueva-categoria');
+    }
+
+    cerrarModal() {
+        this.app.cerrarModal('modal-nueva-categoria');
+        if (this.app._modalServicioOrigen) {
+            this.app.abrirModal(this.app._modalServicioOrigen);
+            this.app._modalServicioOrigen = null;
+        }
+    }
+
+    // ── Render lista ──────────────────────────────────────────
+    renderLista() {
+        const lista = document.getElementById('categorias-lista');
+        if (!lista) return;
+        const cats = this.getCategorias();
+        if (cats.length === 0) {
+            lista.innerHTML = `<span class="sin-categorias-text">Sin categorías definidas</span>`;
+            return;
+        }
+        lista.innerHTML = cats.map(c => `
+            <span class="categoria-tag">
+                <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${this.app.escaparAtributoHTML(c)}" title="Eliminar">
+                    <svg class="icon"><use href="#icon-cancel" /></svg>
+                </button>
+                ${this.app.escaparHTML(c)}
+            </span>`).join('');
+    }
+
+    // ── CRUD ──────────────────────────────────────────────────
+    eliminar(nombre) {
+        const cats = this.getCategorias().filter(c => c !== nombre);
+        this.saveCategorias(cats);
+        this.app.servicios.forEach(s => { if (s.categoria === nombre) s.categoria = ''; });
+        this.app.guardarDatos();
+        this.app.guardarEstado();
+        this.poblarSelect('servicio-categoria');
+        this.poblarSelect('editar-servicio-categoria');
+        this.renderLista();
+        this.app.renderServicios();
+        this.app.mostrarToast('Categoría eliminada', 'success');
+    }
+
+    guardarNueva() {
+        const nombre = document.getElementById('nueva-categoria-nombre').value.trim();
+        if (!nombre) { this.app.mostrarToast('El nombre es requerido', 'error'); return; }
+        const cats = this.getCategorias();
+        if (cats.some(c => c.toLowerCase() === nombre.toLowerCase())) {
+            this.app.mostrarToast('Esa categoría ya existe', 'error'); return;
+        }
+        cats.push(nombre);
+        cats.sort((a, b) => a.localeCompare(b));
+        this.saveCategorias(cats);
+        document.getElementById('nueva-categoria-nombre').value = '';
+        this.poblarSelect('servicio-categoria',
+            this.app._categoriaTargetSelect === 'servicio-categoria' ? nombre : '');
+        this.poblarSelect('editar-servicio-categoria',
+            this.app._categoriaTargetSelect === 'editar-servicio-categoria' ? nombre : '');
+        const sel = document.getElementById(this.app._categoriaTargetSelect);
+        if (sel) sel.value = nombre;
+        this.app.guardarEstado();
+        this.renderLista();
+        this.app.mostrarToast('Categoría agregada', 'success');
+    }
 }
 
 // ============================================================
@@ -3250,7 +3263,7 @@ class EstadisticasService {
     _renderTagsCategoriaEstadisticas() {
         const container = document.getElementById('estadisticas-categorias-tags');
         if (!container) return;
-        const cats = this.app._getCategorias();
+        const cats = this.app.categoria.getCategorias();
         const catsUsadas = cats.filter(c => this.servicios.some(s => s.id !== this.app.SERVICIO_INGRESOS_ID && s.categoria === c));
         if (catsUsadas.length === 0) { container.innerHTML = ''; return; }
         const activa = this.app._estadisticaCategoriaActiva || null;
@@ -4437,7 +4450,7 @@ class GistService {
         if (!token) { this.app.ui.mostrarToast('Falta el token', 'error'); return; }
         this._guardarCredencialesModal();
         const inputId = document.getElementById('gist-id');
-        const categorias = this.app._getCategorias();
+        const categorias = this.app.categoria.getCategorias();
         const datos = JSON.stringify({ servicios: this.servicios, categorias }, null, 2);
         const hash = await this.calcularHash(datos);
         const contenido = JSON.stringify({ hash, servicios: this.servicios, categorias }, null, 2);
@@ -4529,9 +4542,9 @@ class GistService {
     // ── Merge ─────────────────────────────────────────────────
     mergeCategorias(catsNuevas) {
         if (!Array.isArray(catsNuevas) || catsNuevas.length === 0) return 0;
-        const actuales = this.app._getCategorias();
+        const actuales = this.app.categoria.getCategorias();
         const nuevas = catsNuevas.filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
-        if (nuevas.length > 0) this.app._saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
+        if (nuevas.length > 0) this.app.categoria.saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
         return nuevas.length;
     }
 
@@ -4541,7 +4554,7 @@ class GistService {
         let toastMsg;
         if (modo === 'replace') {
             this.servicios = serviciosGist;
-            this.app._saveCategorias(categoriasGist.length > 0 ? categoriasGist : this.app._getCategorias());
+            this.app.categoria.saveCategorias(categoriasGist.length > 0 ? categoriasGist : this.app.categoria.getCategorias());
             toastMsg = 'Datos reemplazados ✓';
         } else {
             const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this.app._mergeServicios(serviciosGist);
@@ -4607,7 +4620,7 @@ class HistorialManager {
         if (this.app.servicios && this.app.servicios.length >= 0) {
             this.historial.push({
                 servicios:  JSON.parse(JSON.stringify(this.app.servicios)),
-                categorias: JSON.parse(JSON.stringify(this.app._getCategorias()))
+                categorias: JSON.parse(JSON.stringify(this.app.categoria.getCategorias()))
             });
             this.historialIndex = 0;
         }
@@ -4618,7 +4631,7 @@ class HistorialManager {
     guardarEstado() {
         const nuevoEstado = {
             servicios:  JSON.parse(JSON.stringify(this.app.servicios)),
-            categorias: JSON.parse(JSON.stringify(this.app._getCategorias()))
+            categorias: JSON.parse(JSON.stringify(this.app.categoria.getCategorias()))
         };
 
         // Descartar estados futuros si estamos en medio del historial
@@ -4655,7 +4668,7 @@ class HistorialManager {
 
     _aplicarEstado(estado) {
         this.app.servicios = JSON.parse(JSON.stringify(estado.servicios));
-        this.app._saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
+        this.app.categoria.saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
         this.app.guardarDatos();
         this.app.renderServicios();
         this.app.ui.cerrarTodosLosModales();
@@ -4790,7 +4803,7 @@ class StorageService {
             const datos = {
                 version: '1.0',
                 fecha: new Date().toISOString(),
-                categorias: this.app._getCategorias(),
+                categorias: this.app.categoria.getCategorias(),
                 servicios: this.servicios
             };
             this.app.utils.descargarBlob(
@@ -4912,7 +4925,7 @@ class StorageService {
             this.app.ui.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
         } else {
             this.servicios = datos.servicios;
-            this.app._saveCategorias(cats);
+            this.app.categoria.saveCategorias(cats);
             this.app.utils.postGuardado();
             const cantidad = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).length;
             const facturas = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
@@ -4953,7 +4966,7 @@ class StorageService {
         const totalServRem = serviciosRemoto.filter(s => s.id !== this.INGRESOS_ID).length;
         const totalFactRem = serviciosRemoto.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
         const totalIngRem = sIngRem?.facturas.length || 0;
-        const catsActuales = this.app._getCategorias();
+        const catsActuales = this.app.categoria.getCategorias();
         const catsNuevas = categoriasRemoto.filter(c => !catsActuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
 
         const facturasEnNuevos = soloEnRemoto.reduce((a, s) => a + s.facturas.length, 0);
