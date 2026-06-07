@@ -395,7 +395,7 @@
                 </svg>
                 Cerrar menú
             </button>
-            <div class="menu-version">LUSHIBOSCA 260605</div> <!-- DeltaF -->
+            <div class="menu-version">LUSHIBOSCA 260607</div> <!-- DeltaF -->
         </div>
     </div>
 
@@ -425,7 +425,14 @@
                         <!-- Selector de tipo de estadística -->
                         <div class="estadisticas-selector-container">
                             <label class="calculador-label">Tipo de estadística</label>
-                            <select id="estadisticas-tipo" class="estadisticas-selector">
+                            <div class="custom-select-wrapper" id="estadisticas-tipo-csd">
+                                <div class="custom-select-trigger">
+                                    <span class="csd-label"></span>
+                                    <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                </div>
+                                <div class="custom-select-dropdown"></div>
+                            </div>
+                            <select id="estadisticas-tipo" class="hidden">
                                 <option value="mensual">Mensual</option>
                                 <option value="individual">Individual</option>
                             </select>
@@ -819,9 +826,18 @@
                 <div class="form-group">
                     <label for="servicio-categoria">Categoría</label>
                     <div class="d-flex align-items-center gap-2">
-                        <select id="servicio-categoria" class="flex-1">
-                            <option value="">Sin categoría</option>
-                        </select>
+                        <div class="flex-1 pos-relative">
+                            <div class="custom-select-wrapper" id="servicio-categoria-csd">
+                                <div class="custom-select-trigger">
+                                    <span class="csd-label"></span>
+                                    <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                </div>
+                                <div class="custom-select-dropdown"></div>
+                            </div>
+                            <select id="servicio-categoria" class="hidden flex-1">
+                                <option value="">Sin categoría</option>
+                            </select>
+                        </div>
                         <button type="button" class="icon-btn" title="Agregar categoría" id="btn-agregar-cat-servicio"
                             class="flex-shrink-0">
                             <svg class="icon">
@@ -861,9 +877,18 @@
                 <div class="form-group">
                     <label for="editar-servicio-categoria">Categoría</label>
                     <div class="d-flex align-items-center gap-2">
-                        <select id="editar-servicio-categoria" class="flex-1">
-                            <option value="">Sin categoría</option>
-                        </select>
+                        <div class="flex-1 pos-relative">
+                            <div class="custom-select-wrapper" id="editar-servicio-categoria-csd">
+                                <div class="custom-select-trigger">
+                                    <span class="csd-label"></span>
+                                    <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                </div>
+                                <div class="custom-select-dropdown"></div>
+                            </div>
+                            <select id="editar-servicio-categoria" class="hidden flex-1">
+                                <option value="">Sin categoría</option>
+                            </select>
+                        </div>
                         <button type="button" class="icon-btn" title="Agregar categoría"
                             id="btn-agregar-cat-editar-servicio" class="flex-shrink-0">
                             <svg class="icon">
@@ -907,7 +932,14 @@
             </div>
             <div class="form-group">
                 <label>Ordenar</label>
-                <select id="select-orden">
+                <div class="custom-select-wrapper" id="select-orden-csd">
+                    <div class="custom-select-trigger">
+                        <span class="csd-label"></span>
+                        <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                    </div>
+                    <div class="custom-select-dropdown"></div>
+                </div>
+                <select id="select-orden" class="hidden">
                     <option value="nombre">Nombre (A-Z)</option>
                     <option value="vencimiento">Vencimiento (Más próximo primero)</option>
                     <option value="monto-desc">Monto (Mayor a menor)</option>
@@ -916,7 +948,14 @@
             </div>
             <div class="form-group">
                 <label>Visualizar</label>
-                <select id="select-vista">
+                <div class="custom-select-wrapper" id="select-vista-csd">
+                    <div class="custom-select-trigger">
+                        <span class="csd-label"></span>
+                        <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                    </div>
+                    <div class="custom-select-dropdown"></div>
+                </div>
+                <select id="select-vista" class="hidden">
                     <option value="todo">Servicios</option>
                     <option value="categorias">Servicios / Categorías</option>
                     <option value="estados">Servicios / Estado</option>
@@ -966,13 +1005,27 @@
             <form id="form-factura">
                 <div class="form-group">
                     <label for="factura-servicio">Servicio</label>
-                    <select id="factura-servicio" required>
+                    <div class="custom-select-wrapper" id="factura-servicio-csd">
+                        <div class="custom-select-trigger">
+                            <span class="csd-label"></span>
+                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        </div>
+                        <div class="custom-select-dropdown"></div>
+                    </div>
+                    <select id="factura-servicio" class="hidden" required>
                         <!-- Los servicios se cargarán dinámicamente -->
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="factura-tipo">Tipo de factura</label>
-                    <select id="factura-tipo" required>
+                    <label for="factura-tipo">Tipo</label>
+                    <div class="custom-select-wrapper" id="factura-tipo-csd">
+                        <div class="custom-select-trigger">
+                            <span class="csd-label"></span>
+                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        </div>
+                        <div class="custom-select-dropdown"></div>
+                    </div>
+                    <select id="factura-tipo" class="hidden" required>
                         <option value="mensual">Mensual</option>
                         <option value="bimestral">Bimestral</option>
                         <option value="semestral">Semestral</option>
@@ -996,7 +1049,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="factura-fecha">Fecha de vencimiento</label>
+                    <label for="factura-fecha">Vencimiento</label>
                     <div class="d-flex gap-2">
                         <input type="date" id="factura-fecha" required class="flex-1">
                         <button type="button" class="icon-btn" id="btn-fecha-hoy" title="Fecha de hoy / Limpiar">
@@ -1007,7 +1060,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="factura-fecha-pago">Fecha de pago</label>
+                    <label for="factura-fecha-pago">Pagado</label>
                     <div class="d-flex align-items-center gap-2">
                         <input type="date" id="factura-fecha-pago" disabled class="flex-1">
                         <button type="button" id="btn-toggle-credito" class="icon-btn" title="Contado / Crédito">
@@ -1047,13 +1100,27 @@
             <form id="form-editar-factura">
                 <div class="form-group">
                     <label for="editar-factura-servicio">Servicio</label>
-                    <select id="editar-factura-servicio" required>
+                    <div class="custom-select-wrapper" id="editar-factura-servicio-csd">
+                        <div class="custom-select-trigger">
+                            <span class="csd-label"></span>
+                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        </div>
+                        <div class="custom-select-dropdown"></div>
+                    </div>
+                    <select id="editar-factura-servicio" class="hidden" required>
                         <!-- Los servicios se cargarán dinámicamente -->
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="editar-factura-tipo">Tipo de factura</label>
-                    <select id="editar-factura-tipo" required>
+                    <label for="editar-factura-tipo">Tipo</label>
+                    <div class="custom-select-wrapper" id="editar-factura-tipo-csd">
+                        <div class="custom-select-trigger">
+                            <span class="csd-label"></span>
+                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        </div>
+                        <div class="custom-select-dropdown"></div>
+                    </div>
+                    <select id="editar-factura-tipo" class="hidden" required>
                         <option value="mensual">Mensual</option>
                         <option value="bimestral">Bimestral</option>
                         <option value="semestral">Semestral</option>
@@ -1078,7 +1145,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="editar-factura-fecha">Fecha de vencimiento</label>
+                    <label for="editar-factura-fecha">Vencimiento</label>
                     <div class="d-flex gap-2">
                         <input type="date" id="editar-factura-fecha" required class="flex-1">
                         <button type="button" class="icon-btn" id="btn-editar-fecha-hoy" title="Fecha de hoy / Limpiar">
@@ -1089,7 +1156,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="editar-factura-fecha-pago">Fecha de pago</label>
+                    <label for="editar-factura-fecha-pago">Pagado</label>
                     <div class="d-flex align-items-center gap-2">
                         <input type="date" id="editar-factura-fecha-pago" disabled class="flex-1">
                         <button type="button" id="btn-editar-toggle-credito" class="icon-btn" title="Contado / crédito">
@@ -1204,7 +1271,14 @@
                 </div>
                 <div class="form-group">
                     <label for="ingreso-tipo">Tipo</label>
-                    <select id="ingreso-tipo" required>
+                    <div class="custom-select-wrapper" id="ingreso-tipo-csd">
+                        <div class="custom-select-trigger">
+                            <span class="csd-label"></span>
+                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        </div>
+                        <div class="custom-select-dropdown"></div>
+                    </div>
+                    <select id="ingreso-tipo" class="hidden" required>
                         <option value="regular">Regular</option>
                         <option value="complementario">Complementario</option>
                         <option value="transferencia">Transferencia</option>
@@ -1255,7 +1329,14 @@
                 </div>
                 <div class="form-group">
                     <label for="editar-ingreso-tipo">Tipo</label>
-                    <select id="editar-ingreso-tipo" required>
+                    <div class="custom-select-wrapper" id="editar-ingreso-tipo-csd">
+                        <div class="custom-select-trigger">
+                            <span class="csd-label"></span>
+                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        </div>
+                        <div class="custom-select-dropdown"></div>
+                    </div>
+                    <select id="editar-ingreso-tipo" class="hidden" required>
                         <option value="regular">Regular</option>
                         <option value="complementario">Complementario</option>
                         <option value="transferencia">Transferencia</option>

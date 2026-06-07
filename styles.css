@@ -1314,7 +1314,8 @@ input[type="number"] {
     transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
 }
 
-.custom-select-wrapper.open .custom-select-dropdown {
+.custom-select-wrapper.open .custom-select-dropdown,
+.custom-select-dropdown.csd-open {
     opacity: 1;
     transform: scale(1);
     pointer-events: auto;
@@ -2155,6 +2156,12 @@ input[type="number"] {
     top: auto;
     margin-bottom: 4px;
     margin-top: 0;
+    transform-origin: bottom center;
+}
+
+/* En modo fixed (body), bottom/top vienen de JS — solo ajustar transform-origin */
+.custom-select-dropdown.csd-fixed.dropdown-above {
+    bottom: auto;
     transform-origin: bottom center;
 }
 

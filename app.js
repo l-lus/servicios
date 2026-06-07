@@ -106,7 +106,20 @@ class GestionServicios {
         this.tipoEstadisticaActual = localStorage.getItem('estadisticas-tipo') || 'mensual';
         this._estadisticaCategoriaActiva = null;
 
+        // Estado de modales/flujos de servicios auxiliares
+        this.ingresoActual         = null;
+        this.ingresoDesdeMenu      = false;
+        this.perfilEditando        = null;
+        this._categoriaTargetSelect = null;
+        this._modalServicioOrigen  = null;
+        this._calcTotalARS         = 0;
+        this._calcTotalUSD         = 0;
+        this._gistAutoSyncTemp     = null;
+        this._gistMergeBehaviorTemp = null;
+
         // Servicios auxiliares
+        this.factura = new FacturaService(this);
+        this.ingreso = new IngresoService(this);
         this.ctx = new ContextMenuService(this);
         this.categoria = new CategoriaService(this);
         this.estadisticas = new EstadisticasService(this);
@@ -161,6 +174,20 @@ class GestionServicios {
             this.cambiarTipoEstadistica();
         }
 
+        // Inicializar CustomSelect para estadisticas-tipo
+        const csdEstTipo = document.getElementById('estadisticas-tipo-csd');
+        const selEstTipo = document.getElementById('estadisticas-tipo');
+        if (csdEstTipo && selEstTipo && !csdEstTipo._customSelect) {
+            csdEstTipo._customSelect = new CustomSelect(csdEstTipo, selEstTipo, () => {
+                this.tipoEstadisticaActual = selEstTipo.value;
+                localStorage.setItem('estadisticas-tipo', selEstTipo.value);
+                this.cambiarTipoEstadistica();
+            });
+        }
+
+        // Inicializar CustomSelects estáticos (modales, formularios)
+        this._initCustomSelects();
+
         // Restaurar estado de servicios colapsados
         const serviciosState = localStorage.getItem('servicios-collapse-state') || 'semi-collapsed';
         this.serviciosCollapseState = serviciosState;
@@ -176,6 +203,11 @@ class GestionServicios {
                 else if (this._agrupacionActiva) selectVista.value = 'categorias';
                 else selectVista.value = 'todo';
             }
+            // Refrescar CustomSelects del modal-ordenar
+            const csdOrden = document.getElementById('select-orden-csd');
+            if (csdOrden?._customSelect) csdOrden._customSelect.refresh();
+            const csdVista = document.getElementById('select-vista-csd');
+            if (csdVista?._customSelect) csdVista._customSelect.refresh();
             this.abrirModal('modal-ordenar');
         });
 
@@ -268,6 +300,52 @@ class GestionServicios {
     guardarDatosPerfilActivo() { this.storage.guardarDatosPerfilActivo(); }
 
     // ========================================
+    // CUSTOM SELECTS — inicialización global
+    // ========================================
+
+    _initCustomSelects() {
+        // Helper para inicializar un CSD ligado a un <select> nativo
+        const init = (wrapperId, selectId, onChange) => {
+            const wrapper = document.getElementById(wrapperId);
+            const native  = document.getElementById(selectId);
+            if (wrapper && native && !wrapper._customSelect) {
+                wrapper._customSelect = new CustomSelect(wrapper, native, onChange);
+            }
+        };
+
+        // Modal factura nueva — servicio y tipo
+        init('factura-servicio-csd', 'factura-servicio', null);
+        init('factura-tipo-csd',     'factura-tipo',     null);
+
+        // Modal editar factura — servicio y tipo
+        init('editar-factura-servicio-csd', 'editar-factura-servicio', null);
+        init('editar-factura-tipo-csd',     'editar-factura-tipo',     null);
+
+        // Modal nuevo servicio — categoría
+        init('servicio-categoria-csd', 'servicio-categoria', null);
+
+        // Modal editar servicio — categoría
+        init('editar-servicio-categoria-csd', 'editar-servicio-categoria', null);
+
+        // Modal ordenar — orden y vista
+        init('select-orden-csd', 'select-orden', () => this.aplicarOrden());
+        init('select-vista-csd', 'select-vista', () => {
+            const val = document.getElementById('select-vista').value;
+            this._vistaEstados    = val === 'estados';
+            this._agrupacionActiva = val === 'categorias';
+            localStorage.setItem('cat-agrupacion', this._agrupacionActiva ? 'on' : 'off');
+            localStorage.setItem('vista-estados',  this._vistaEstados ? 'true' : 'false');
+            this.renderServicios();
+        });
+
+        // Modal nuevo ingreso — tipo
+        init('ingreso-tipo-csd', 'ingreso-tipo', null);
+
+        // Modal editar ingreso — tipo
+        init('editar-ingreso-tipo-csd', 'editar-ingreso-tipo', null);
+    }
+
+    // ========================================
     // MENÚ CONTEXTUAL Y CALCULADORA
     // ========================================
 
@@ -276,75 +354,11 @@ class GestionServicios {
     desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
     actualizarCalculadora() { this.calculador.actualizar(); }
 
-    validarMonto(monto, permitirNegativos = false) {
-        // Validar que sea un número
-        if (!monto && monto !== 0 || isNaN(monto)) {
-            this.mostrarToast('El monto debe ser un número válido', 'error');
-            return false;
-        }
+    validarMonto(monto, neg)                     { return this.factura.validarMonto(monto, neg); }
 
-        // Validar que sea positivo (solo si no se permiten negativos)
-        if (!permitirNegativos && monto < 0) {
-            this.mostrarToast('El monto debe ser positivo', 'error');
-            return false;
-        }
+    validarFecha(fecha)                          { return this.factura.validarFecha(fecha); }
 
-        // Validar tamaño máximo
-        if (Math.abs(monto) > 99999999) {
-            this.mostrarToast('El monto es demasiado grande', 'error');
-            return false;
-        }
-
-        return true;
-    }
-
-    validarFecha(fecha) {
-        // Validar que la fecha no esté vacía
-        if (!fecha) {
-            this.mostrarToast('La fecha es requerida', 'error');
-            return false;
-        }
-
-        // FIX: usar 'T00:00:00' para forzar interpretación local (sin el sufijo,
-        // new Date('YYYY-MM-DD') interpreta en UTC y da un día de diferencia en GMT-3)
-        const fechaIngresada = this._parseDate(fecha);
-        const fechaActual = new Date();
-
-        // Calcular la diferencia en años
-        const diferenciaAnios = (fechaIngresada - fechaActual) / (1000 * 60 * 60 * 24 * 365.25);
-
-        // Validar que no sea mayor a 2 años en el futuro
-        if (diferenciaAnios > 2) {
-            this.mostrarToast('La fecha no puede ser mayor a 2 años en el futuro', 'error');
-            return false;
-        }
-
-        return true;
-    }
-
-    validarFechaPago(fechaPago) {
-        // Si no hay fecha de pago, es requerida
-        if (!fechaPago) {
-            this.mostrarToast('La fecha de pago es requerida cuando se marca como pagada', 'error');
-            return false;
-        }
-
-        // Convertir a fecha local (agregar 'T00:00:00' fuerza interpretación local)
-        const fechaPagoDate = this._parseDate(fechaPago);
-        const fechaActual = new Date();
-
-        // Resetear horas para comparar solo las fechas
-        fechaPagoDate.setHours(0, 0, 0, 0);
-        fechaActual.setHours(0, 0, 0, 0);
-
-        // Validar que no sea una fecha futura
-        if (fechaPagoDate > fechaActual) {
-            this.mostrarToast('La fecha de pago no puede ser en el futuro', 'error');
-            return false;
-        }
-
-        return true;
-    }
+    validarFechaPago(fp)                         { return this.factura.validarFechaPago(fp); }
 
     setupEventListeners() {
         // Botones principales
@@ -1283,16 +1297,7 @@ class GestionServicios {
         }
     }
 
-    crearServicioIngresos() {
-        const servicioIngresos = {
-            id: this.SERVICIO_INGRESOS_ID,
-            nombre: 'Ingresos',
-            facturas: [],
-            activo: false  // ← AGREGADO: Deshabilitado por defecto
-        };
-        this.servicios.push(servicioIngresos);
-        this.guardarDatos();
-    }
+    crearServicioIngresos()                      { this.ingreso.crearServicio(); }
 
     aplicarFiltro(servicios) {
         let resultado = servicios;
@@ -1399,57 +1404,7 @@ class GestionServicios {
         this.mostrarToast('Orden aplicado', 'success');
     }
 
-    abrirModalFacturasServicio(servicioId) {
-        const servicio = this.servicios.find(s => s.id === servicioId);
-        if (!servicio) return;
-
-        const modal = document.getElementById('modal-facturas-servicio');
-        const titulo = document.getElementById('modal-facturas-titulo');
-        const listaFacturas = document.getElementById('lista-facturas-modal');
-
-        titulo.textContent = servicio.nombre;
-        const tagCategoria = document.getElementById('modal-facturas-categoria');
-        if (tagCategoria) {
-            if (servicio.categoria) {
-                tagCategoria.textContent = servicio.categoria;
-                tagCategoria.classList.add('visible');
-            } else {
-                tagCategoria.classList.remove('visible');
-            }
-        }
-
-        if (servicio.facturas.length === 0) {
-            listaFacturas.innerHTML = '<p class="mensaje-sin-facturas">No hay facturas registradas</p>';
-        } else {
-            const facturasOrdenadas = [...servicio.facturas].sort((a, b) =>
-                new Date(b.fecha) - new Date(a.fecha)
-            );
-
-            const grupos = this.agruparPorAno(facturasOrdenadas);
-
-            listaFacturas.innerHTML = grupos.map((grupo, index) => {
-                const facturasHTML = grupo.items
-                    .map(f => this.generarHTMLFactura(f, 'editar-factura'))
-                    .join('');
-
-                return this.generarGrupoAno(
-                    grupo.ano,
-                    grupo.items,
-                    facturasHTML,
-                    'factura',
-                    index
-                );
-            }).join('');
-        }
-
-        modal.dataset.servicioId = servicioId;
-        this.abrirModal('modal-facturas-servicio');
-        const anoGuardado = this._anoExpandidoFacturas[servicioId];
-        if (anoGuardado) {
-            this._restaurarAnoExpandido(anoGuardado);
-            this._anoExpandidoFacturas[servicioId] = null;
-        }
-    }
+    abrirModalFacturasServicio(id)               { this.factura.abrirModalLista(id); }
 
     toggleGrupoCat(headerElement) {
         if (this._lpFired) { this._lpFired = false; return; }
@@ -1595,45 +1550,9 @@ class GestionServicios {
     `;
     }
 
-    agruparPorAno(items) {
-        const itemsPorAno = {};
-        items.forEach(item => {
-            const ano = this._parseDate(item.fecha).getFullYear();
-            if (!itemsPorAno[ano]) {
-                itemsPorAno[ano] = [];
-            }
-            itemsPorAno[ano].push(item);
-        });
+    agruparPorAno(items)                         { return this.factura.agruparPorAno(items); }
 
-        return Object.keys(itemsPorAno)
-            .sort((a, b) => b - a)
-            .map(ano => ({
-                ano,
-                items: itemsPorAno[ano],
-                cantidad: itemsPorAno[ano].length
-            }));
-    }
-
-    generarGrupoAno(ano, items, itemHTML, tipoLabel = 'factura', index = 0) {
-        const collapsed = index > 0 ? 'collapsed' : '';
-        const cantidad = items.length;
-        const labelPlural = cantidad !== 1 ? `${tipoLabel}s` : tipoLabel;
-
-        return `
-        <div class="facturas-grupo-ano">
-            <div class="facturas-grupo-header" data-action="toggle-grupo-ano">
-                <div class="facturas-grupo-header-info">
-                    <span class="facturas-grupo-ano-texto">${ano}</span>
-                    <span class="facturas-grupo-contador">${cantidad} ${labelPlural}</span>
-                </div>
-                <svg class="icon facturas-grupo-chevron ${collapsed}"><use href="#icon-chevron-down"/></svg>
-            </div>
-            <div class="facturas-grupo-contenido ${collapsed}">
-                ${itemHTML}
-            </div>
-        </div>
-    `;
-    }
+    generarGrupoAno(ano, its, html, lbl, idx)    { return this.factura.generarGrupoAno(ano, its, html, lbl, idx); }
 
     // ── Categorías ──────────────────────────────────────────────
     // ── Delegación a CategoriaService ────────────────────────
@@ -1744,132 +1663,15 @@ class GestionServicios {
         }
     }
 
-    borrarFacturasServicio() {
-        if (!this.servicioActual) return;
-        const servicio = this.servicios.find(s => s.id === this.servicioActual);
-        if (!servicio) return;
-        const total = servicio.facturas?.length || 0;
-        if (total === 0) { this.mostrarToast('No hay facturas para borrar', 'info'); return; }
-
-        if (confirm(`¿Borrar las ${total} factura${total !== 1 ? 's' : ''} de "${servicio.nombre}"? Esta acción no se puede deshacer.`)) {
-            servicio.facturas = [];
-            this.guardarDatos();
-            this.renderServicios();
-            this.mostrarToast(`${total} factura${total !== 1 ? 's' : ''} eliminada${total !== 1 ? 's' : ''}`, 'success');
-        }
-    }
+    borrarFacturasServicio()                     { this.factura.borrarTodas(); }
 
     // ========================================
     // GESTIÓN DE FACTURAS
     // ========================================
 
-    abrirModalFactura(servicioId, facturaId = null, origen = 'servicio') {
-        this.cerrarModal('modal-facturas-servicio');
-        this.servicioActual = servicioId;
-        this.facturaActual = facturaId;
-        this.origenModalFactura = origen; // Guardar el origen
+    abrirModalFactura(sId, fId, origen)          { this.factura.abrirModal(sId, fId, origen); }
 
-        const esEditar = facturaId !== null;
-        const modalId = esEditar ? 'modal-editar-factura' : 'modal-agregar-factura';
-        const form = document.getElementById(esEditar ? 'form-editar-factura' : 'form-factura');
-        const selectServicio = document.getElementById(esEditar ? 'editar-factura-servicio' : 'factura-servicio');
-        const btnTogglePagada = document.getElementById(esEditar ? 'btn-editar-toggle-pagada' : 'btn-toggle-pagada');
-        const inputFechaPago = document.getElementById(esEditar ? 'editar-factura-fecha-pago' : 'factura-fecha-pago');
-
-        form.reset();
-        inputFechaPago.disabled = true;
-        btnTogglePagada.classList.remove('pagada');
-        // Resetear explícitamente el icono al estado inicial (no pagado)
-        const iconUse = btnTogglePagada.querySelector('use');
-        if (iconUse) {
-            iconUse.setAttribute('href', '#icon-card');
-        }
-
-        // Resetear estado del botón toggle de monto (AGREGAR)
-        if (!esEditar) {
-            this.actualizarEstadoBotonToggle('factura-monto', 'btn-toggle-negativo');
-            this.setMonedaBtn('factura-moneda', 'btn-factura-moneda', 'ars');
-            const btnCreditoAgregar = document.getElementById('btn-toggle-credito');
-            btnCreditoAgregar.classList.remove('btn-credito-visible');
-            document.getElementById('factura-con-credito').value = 'false';
-            this._resetBtnCredito(btnCreditoAgregar);
-        }
-
-        const serviciosOrdenados = [...this.servicios]
-            .filter(s => s.id !== this.SERVICIO_INGRESOS_ID)
-            .sort((a, b) =>
-                a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
-            );
-
-        selectServicio.innerHTML = serviciosOrdenados.map(servicio => {
-            const selected = servicio.id === servicioId ? 'selected' : '';
-            return `<option value="${this.escaparAtributoHTML(servicio.id)}" ${selected}>${this.escaparHTML(servicio.nombre)}</option>`;
-        }).join('');
-
-        if (esEditar) {
-            // MODO EDITAR
-            const servicio = this.servicios.find(s => s.id === servicioId);
-            if (servicio) {
-                const factura = servicio.facturas.find(f => f.id === facturaId);
-                if (factura) {
-                    document.getElementById('editar-factura-monto').value = factura.monto;
-                    // Actualizar estado del botón según el monto cargado (EDITAR)
-                    this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
-
-                    document.getElementById('editar-factura-tipo').value = factura.tipo || 'mensual';
-                    document.getElementById('editar-factura-fecha').value = factura.fecha;
-                    this.setMonedaBtn('editar-factura-moneda', 'btn-editar-factura-moneda', factura.moneda || 'ars');
-                    selectServicio.value = servicioId;
-
-                    const btnCredito = document.getElementById('btn-editar-toggle-credito');
-                    const inputCredito = document.getElementById('editar-factura-con-credito');
-                    if (factura.pagada) {
-                        btnTogglePagada.classList.add('pagada');
-                        inputFechaPago.disabled = false;
-                        if (iconUse) iconUse.setAttribute('href', '#icon-cancel');
-                        inputFechaPago.value = factura.fechaPago || this.obtenerFechaLocal();
-                        if (btnCredito) btnCredito.classList.add('btn-credito-visible');
-                        if (inputCredito) inputCredito.value = factura.conCredito ? 'true' : 'false';
-                        if (factura.conCredito) {
-                            btnCredito.classList.add('pagada');
-                            btnCredito.querySelector('use').setAttribute('href', '#icon-card');
-                        } else {
-                            this._resetBtnCredito(btnCredito);
-                        }
-                    } else {
-                        if (btnCredito) { btnCredito.classList.remove('btn-credito-visible'); }
-                        if (inputCredito) inputCredito.value = 'false';
-                        this._resetBtnCredito(btnCredito);
-                    }
-                }
-            }
-        }
-
-        this.abrirModal(modalId);
-    }
-
-    toggleConCredito(modo = '') {
-        const esEditar = modo === 'editar';
-        const ids = this._idsFormFactura(esEditar);
-        const btn = document.getElementById(ids.btnCredito);
-        const input = document.getElementById(ids.conCredito);
-        const iconUse = btn.querySelector('use');
-        const esCredito = input.value === 'true';
-
-        if (esCredito) {
-            input.value = 'false';
-            iconUse.setAttribute('href', '#icon-cash');
-            btn.classList.remove('pagada');
-            btn.title = 'Pagada al contado';
-            this.mostrarToast('Pagada al contado', 'info');
-        } else {
-            input.value = 'true';
-            iconUse.setAttribute('href', '#icon-card');
-            btn.classList.add('pagada');
-            btn.title = 'Pagada con crédito';
-            this.mostrarToast('Pagada con crédito', 'info');
-        }
-    }
+    toggleConCredito(modo)                       { this.factura.toggleConCredito(modo); }
 
     _resetBtnCredito(btn) {
         if (!btn) return;
@@ -1879,58 +1681,9 @@ class GestionServicios {
         btn.title = 'Contado / crédito';
     }
 
-    toggleEstadoPago(btnId = 'btn-toggle-pagada', inputId = 'factura-fecha-pago') {
-        const btnTogglePagada = document.getElementById(btnId);
-        const inputFechaPago = document.getElementById(inputId);
-        const iconUse = btnTogglePagada.querySelector('use');
-        const estaPagada = btnTogglePagada.classList.contains('pagada');
-        const esEditar = btnId === 'btn-editar-toggle-pagada';
+    toggleEstadoPago(btnId, inputId)             { this.factura.toggleEstadoPago(btnId, inputId); }
 
-        const btnCredito = document.getElementById(esEditar ? 'btn-editar-toggle-credito' : 'btn-toggle-credito');
-        const inputCredito = document.getElementById(esEditar ? 'editar-factura-con-credito' : 'factura-con-credito');
-
-        if (estaPagada) {
-            btnTogglePagada.classList.remove('pagada');
-            inputFechaPago.disabled = true;
-            inputFechaPago.value = '';
-            iconUse.setAttribute('href', '#icon-card');
-            if (btnCredito) { btnCredito.classList.remove('btn-credito-visible'); }
-            if (inputCredito) { inputCredito.value = 'false'; }
-            this._resetBtnCredito(btnCredito);
-            this.mostrarToast('Factura pendiente', 'info');
-        } else {
-            btnTogglePagada.classList.add('pagada');
-            inputFechaPago.disabled = false;
-            inputFechaPago.value = this.obtenerFechaLocal();
-            iconUse.setAttribute('href', '#icon-cancel');
-            if (btnCredito) { btnCredito.classList.add('btn-credito-visible'); }
-            this.mostrarToast('Factura pagada', 'success');
-        }
-    }
-
-    toggleMontoNegativo(inputId) {
-        const input = document.getElementById(inputId);
-
-        if (!input) return;
-
-        const valor = parseFloat(input.value) || 0;
-
-        // Si el valor es 0, no hacer nada
-        if (valor === 0) {
-            this.mostrarToast('Ingresa un monto primero', 'info');
-            return;
-        }
-
-        // Cambiar el signo
-        input.value = -valor;
-
-        // Toast informativo
-        this.mostrarToast(valor > 0 ? 'Saldo a favor' : 'Gasto normal', 'info');
-
-        // Actualizar estado del botón
-        const btnId = inputId === 'factura-monto' ? 'btn-toggle-negativo' : 'btn-editar-toggle-negativo';
-        this.actualizarEstadoBotonToggle(inputId, btnId);
-    }
+    toggleMontoNegativo(inputId)                 { this.factura.toggleMontoNegativo(inputId); }
 
     actualizarEstadoBotonToggle(inputId, btnId) {
         const input = document.getElementById(inputId);
@@ -1949,143 +1702,7 @@ class GestionServicios {
         }
     }
 
-    guardarFactura(e) {
-        e.preventDefault();
-
-        // Detectar si estamos en modo agregar o editar
-        const esEditar = document.getElementById('modal-editar-factura').classList.contains('active');
-        const ids = this._idsFormFactura(esEditar);
-
-        const monto = parseFloat(document.getElementById(ids.monto).value);
-        const tipo = document.getElementById(ids.tipo).value;
-        const fecha = document.getElementById(ids.fecha).value;
-        const moneda = document.getElementById(ids.moneda).value;
-        const btnTogglePagada = document.getElementById(ids.btnPagada);
-        const estaPagada = btnTogglePagada.classList.contains('pagada');
-        const fechaPago = estaPagada ? document.getElementById(ids.fechaPago).value : null;
-        const conCredito = estaPagada ? (document.getElementById(ids.conCredito)?.value === 'true') : false;
-        const servicioSeleccionadoId = document.getElementById(ids.servicio).value;
-
-        // Validar monto (permitir negativos para saldos a favor)
-        if (!this.validarMonto(monto, true)) {
-            return;
-        }
-
-        // Validar fecha
-        if (!this.validarFecha(fecha)) {
-            return;
-        }
-
-        // Validar fecha de pago si la factura está marcada como pagada
-        if (estaPagada && !this.validarFechaPago(fechaPago)) {
-            return;
-        }
-
-        // Validar que no exista otra factura con la misma fecha en el mismo servicio
-        const servicioDestino = this.servicios.find(s => s.id === servicioSeleccionadoId);
-        if (servicioDestino) {
-            const facturaConMismaFecha = servicioDestino.facturas.find(f =>
-                f.fecha === fecha && f.id !== this.facturaActual
-            );
-
-            if (facturaConMismaFecha) {
-                this.mostrarToast('❌ Ya existe una factura con esta fecha de vencimiento para este servicio', 'error');
-                return;
-            }
-        }
-
-        // Verificar si el servicio cambió
-        const servicioAnteriorId = this.servicioActual;
-        const servicioNuevoId = servicioSeleccionadoId;
-        const cambiodeServicio = servicioAnteriorId !== servicioNuevoId;
-
-        let esNueva = !this.facturaActual;
-
-        if (this.facturaActual) {
-            // Editar factura existente
-            const servicioAnterior = this.servicios.find(s => s.id === servicioAnteriorId);
-            if (servicioAnterior) {
-                const factura = servicioAnterior.facturas.find(f => f.id === this.facturaActual);
-                if (factura) {
-                    if (cambiodeServicio) {
-                        // Mover la factura a otro servicio
-                        servicioAnterior.facturas = servicioAnterior.facturas.filter(f => f.id !== this.facturaActual);
-
-                        factura.monto = monto;
-                        factura.tipo = tipo;
-                        factura.fecha = fecha;
-                        factura.pagada = estaPagada;
-                        factura.fechaPago = fechaPago;
-                        factura.moneda = moneda;
-                        factura.conCredito = conCredito;
-
-                        const servicioNuevo = this.servicios.find(s => s.id === servicioNuevoId);
-                        if (servicioNuevo) {
-                            servicioNuevo.facturas.push(factura);
-                        }
-                    } else {
-                        // Actualizar en el mismo servicio
-                        // Verificar si hubo cambios
-                        if (factura.monto === monto &&
-                            factura.tipo === tipo &&
-                            factura.fecha === fecha &&
-                            factura.pagada === estaPagada &&
-                            factura.fechaPago === fechaPago &&
-                            (factura.moneda || 'ars') === moneda &&
-                            (factura.conCredito || false) === conCredito) {
-                            this.mostrarToast('Sin cambios', 'info');
-                            this.cerrarModal('modal-editar-factura');
-                            this.abrirModalFacturasServicio(servicioAnteriorId);
-                            return;
-                        }
-                        factura.monto = monto;
-                        factura.tipo = tipo;
-                        factura.fecha = fecha;
-                        factura.pagada = estaPagada;
-                        factura.fechaPago = fechaPago;
-                        factura.moneda = moneda;
-                        factura.conCredito = conCredito;
-                    }
-                }
-            }
-        } else {
-            // Crear nueva factura
-            const nuevaFactura = {
-                id: this.generarId(),
-                monto: monto,
-                tipo: tipo,
-                fecha: fecha,
-                pagada: estaPagada,
-                fechaPago: fechaPago,
-                moneda: moneda,
-                conCredito: conCredito
-            };
-
-            const servicioDestino = this.servicios.find(s => s.id === servicioNuevoId);
-            if (servicioDestino) {
-                servicioDestino.facturas.push(nuevaFactura);
-            }
-        }
-
-        this.guardarDatos();
-        this.guardarEstado();
-        this.enModoBusqueda = false;
-
-        // Resetear botones antes de cerrar
-        this.actualizarEstadoBotonToggle('factura-monto', 'btn-toggle-negativo');
-        this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
-
-        this.cerrarModal(esEditar ? 'modal-editar-factura' : 'modal-agregar-factura');
-
-        // Re-renderizar todos los servicios para aplicar el ordenamiento
-        this.renderServicios();
-
-        // Siempre reabrir el modal del servicio al GUARDAR (tanto desde menú como desde servicio)
-        const servicioParaAbrir = cambiodeServicio ? servicioNuevoId : servicioAnteriorId;
-        this.abrirModalFacturasServicio(servicioParaAbrir);
-
-        this.mostrarToast(esNueva ? 'Factura agregada' : 'Factura actualizada', 'success');
-    }
+    guardarFactura(e)                            { this.factura.guardar(e); }
 
     editarFactura(facturaId) {
         const servicio = this.servicios.find(s => s.facturas.some(f => f.id === facturaId));
@@ -2107,32 +1724,9 @@ class GestionServicios {
         this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
     }
 
-    establecerFechaHoy(tipo = 'factura', modo = 'agregar') {
-        const campoId = modo === 'editar' ? `editar-${tipo}-fecha` : `${tipo}-fecha`;
-        const inputFecha = document.getElementById(campoId);
+    establecerFechaHoy(tipo, modo)               { this.factura.establecerFechaHoy(tipo, modo); }
 
-        if (inputFecha) {
-            inputFecha.value = inputFecha.value ? '' : this.obtenerFechaLocal();
-        }
-    }
-
-    eliminarFacturaDesdeModal() {
-        if (!this.facturaActual) return;
-
-        const servicio = this.servicios.find(s => s.id === this.servicioActual);
-        if (!servicio) return;
-
-        servicio.facturas = servicio.facturas.filter(f => f.id !== this.facturaActual);
-
-        this.guardarDatos();
-        this.guardarEstado();
-        this.renderServicios();
-        this.enModoBusqueda = false;
-        this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
-
-        this.cerrarModal('modal-editar-factura');
-        this.mostrarToast('Factura eliminada', 'success');
-    }
+    eliminarFacturaDesdeModal()                  { this.factura.eliminar(); }
 
     obtenerUltimaFactura(servicioId) {
         const servicio = this.servicios.find(s => s.id === servicioId);
@@ -2300,168 +1894,13 @@ class GestionServicios {
     // GESTIÓN DE INGRESOS
     // ========================================
 
-    abrirModalIngresosLista(servicioId) {
-        const servicio = this.servicios.find(s => s.id === servicioId);
-        if (!servicio) return;
+    abrirModalIngresosLista(id)                  { this.ingreso.abrirModalLista(id); }
 
-        const lista = document.getElementById('lista-ingresos-modal');
+    abrirModalIngreso(id, desdeMenu)             { this.ingreso.abrirModal(id, desdeMenu); }
 
-        if (servicio.facturas.length === 0) {
-            lista.innerHTML = '<div class="empty-state"><p>No hay ingresos registrados</p></div>';
-        } else {
-            const ingresosOrdenados = [...servicio.facturas].sort((a, b) =>
-                new Date(b.fecha) - new Date(a.fecha)
-            );
+    guardarIngreso(e)                            { this.ingreso.guardar(e); }
 
-            const grupos = this.agruparPorAno(ingresosOrdenados);
-
-            lista.innerHTML = grupos.map((grupo, index) => {
-                const ingresosHTML = grupo.items.map(ingreso => {
-                    const tipoTexto = ingreso.tipo === 'complementario' ? 'Complementario' : ingreso.tipo === 'transferencia' ? 'Transferencia' : 'Regular';
-                    const tipoEmoji = ingreso.tipo === 'complementario' ? '💼' : ingreso.tipo === 'transferencia' ? '🔄' : '💵';
-                    const monedaIngreso = ingreso.moneda || 'ars';
-                    const badgeClass = monedaIngreso === 'usd' ? 'usd' : 'ars';
-
-                    return `
-                         <div class="factura-item" data-id="${ingreso.id}">
-                             <div class="factura-info" data-action="abrir-ingreso" data-ingreso-id="${ingreso.id}">
-                                 <div class="factura-monto">${this.formatearMoneda(ingreso.monto, monedaIngreso)}<span class="moneda-badge ${badgeClass}">${monedaIngreso.toUpperCase()}</span></div>
-                                 <div class="factura-fecha">${tipoEmoji} ${tipoTexto} | Cobrado: ${this.formatearFecha(ingreso.fecha)}</div>
-                             </div>
-                         </div>
-                     `;
-                }).join('');
-
-                return this.generarGrupoAno(grupo.ano, grupo.items, ingresosHTML, 'ingreso', index);
-            }).join('');
-        }
-
-        document.getElementById('modal-ingresos-lista').dataset.servicioId = servicioId;
-        this.abrirModal('modal-ingresos-lista');
-        const anoGuardado = this._anoExpandidoIngresos[servicioId];
-        if (anoGuardado) {
-            this._restaurarAnoExpandido(anoGuardado);
-            this._anoExpandidoIngresos[servicioId] = null;
-        }
-    }
-
-    abrirModalIngreso(ingresoId = null, desdeMenu = false) {
-        if (ingresoId) {
-            const modal = document.getElementById('modal-ingresos-lista');
-            if (modal?.classList.contains('active')) {
-                const sid = modal.dataset.servicioId;
-                const item = document.querySelector(`.factura-item[data-id="${ingresoId}"]`);
-                const grupo = item?.closest('.facturas-grupo-ano');
-                const ano = grupo?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
-                this._anoExpandidoIngresos[sid] = ano;
-            }
-        }
-
-        this.cerrarModal('modal-ingresos-lista');
-        this.ingresoActual = ingresoId;
-        this.ingresoDesdeMenu = desdeMenu;
-
-        if (ingresoId) {
-            const servicio = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-            if (servicio) {
-                const ingreso = servicio.facturas.find(f => f.id === ingresoId);
-                if (ingreso) {
-                    document.getElementById('editar-ingreso-monto').value = ingreso.monto;
-                    document.getElementById('editar-ingreso-tipo').value = ingreso.tipo || 'regular';
-                    document.getElementById('editar-ingreso-fecha').value = ingreso.fecha;
-                    this.setMonedaBtn('editar-ingreso-moneda', 'btn-editar-ingreso-moneda', ingreso.moneda || 'ars');
-                }
-            }
-            this.abrirModal('modal-editar-ingreso');
-        } else {
-            document.getElementById('form-ingreso').reset();
-            this.setMonedaBtn('ingreso-moneda', 'btn-ingreso-moneda', 'ars');
-            this.abrirModal('modal-agregar-ingreso');
-        }
-    }
-
-    guardarIngreso(e) {
-        e.preventDefault();
-
-        // Detectar si estamos en modo agregar o editar
-        const esEditar = document.getElementById('modal-editar-ingreso').classList.contains('active');
-
-        const monto = parseFloat(document.getElementById(esEditar ? 'editar-ingreso-monto' : 'ingreso-monto').value);
-        const tipo = document.getElementById(esEditar ? 'editar-ingreso-tipo' : 'ingreso-tipo').value;
-        const fecha = document.getElementById(esEditar ? 'editar-ingreso-fecha' : 'ingreso-fecha').value;
-        const moneda = document.getElementById(esEditar ? 'editar-ingreso-moneda' : 'ingreso-moneda').value;
-
-        // Validar monto (no permitir negativos en ingresos)
-        if (!this.validarMonto(monto, false)) {
-            return;
-        }
-
-        // Validar fecha
-        if (!this.validarFecha(fecha)) {
-            return;
-        }
-
-        // Obtener o crear servicio de ingresos
-        let servicio = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-        if (!servicio) {
-            this.crearServicioIngresos();
-            servicio = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-        }
-
-        if (this.ingresoActual) {
-            // Editar ingreso existente
-            const ingreso = servicio.facturas.find(f => f.id === this.ingresoActual);
-            if (ingreso) {
-                // Verificar si hubo cambios
-                if (ingreso.monto === monto && ingreso.tipo === tipo && ingreso.fecha === fecha && (ingreso.moneda || 'ars') === moneda) {
-                    this.mostrarToast('Sin cambios', 'info');
-                    this.cerrarModal('modal-editar-ingreso');
-                    this.abrirModalIngresosLista(this.SERVICIO_INGRESOS_ID);
-                    return;
-                }
-                ingreso.monto = monto;
-                ingreso.tipo = tipo;
-                ingreso.fecha = fecha;
-                ingreso.moneda = moneda;
-            }
-        } else {
-            // Crear nuevo ingreso
-            const nuevoIngreso = {
-                id: this.generarId(),
-                monto: monto,
-                tipo: tipo,
-                fecha: fecha,
-                moneda: moneda,
-                pagada: true // Los ingresos siempre están "pagados" (cobrados)
-            };
-            servicio.facturas.push(nuevoIngreso);
-        }
-
-        this.guardarDatos();
-        this.guardarEstado();
-        this.renderServicios();
-        this.cerrarModal(esEditar ? 'modal-editar-ingreso' : 'modal-agregar-ingreso');
-        if (!this.ingresoDesdeMenu) {
-            this.abrirModalIngresosLista(this.SERVICIO_INGRESOS_ID);
-        }
-        this.mostrarToast(this.ingresoActual ? 'Ingreso actualizado' : 'Ingreso agregado', 'success');
-    }
-
-    eliminarIngreso() {
-
-        const servicio = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-        if (servicio) {
-            servicio.facturas = servicio.facturas.filter(f => f.id !== this.ingresoActual);
-            this.guardarDatos();
-            this.guardarEstado();
-            this.renderServicios();
-            this.cerrarModal('modal-editar-ingreso');
-            if (!this.ingresoDesdeMenu) {
-                this.abrirModalIngresosLista(this.SERVICIO_INGRESOS_ID);
-            }
-            this.mostrarToast('Ingreso eliminado', 'success');
-        }
-    }
+    eliminarIngreso()                            { this.ingreso.eliminar(); }
 
     abrirDebugEstadisticas(tipo) {
         const selectMes = document.getElementById('select-mes-estadisticas');
@@ -2606,6 +2045,446 @@ class GestionServicios {
     _ctxPagarFactura() { this.ctx.pagarFactura(); }
 
     mostrarToast(mensaje, tipo = 'success') { this.ui.mostrarToast(mensaje, tipo); }
+}
+
+// ============================================================
+// FACTURA SERVICE — ciclo de vida de facturas
+// ============================================================
+class FacturaService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    get servicios() { return this.app.servicios; }
+
+    // ── Validaciones ──────────────────────────────────────────
+    validarMonto(monto, permitirNegativos = false) {
+        if (!monto && monto !== 0 || isNaN(monto)) {
+            this.app.ui.mostrarToast('El monto debe ser un número válido', 'error'); return false;
+        }
+        if (!permitirNegativos && monto < 0) {
+            this.app.ui.mostrarToast('El monto debe ser positivo', 'error'); return false;
+        }
+        if (Math.abs(monto) > 99999999) {
+            this.app.ui.mostrarToast('El monto es demasiado grande', 'error'); return false;
+        }
+        return true;
+    }
+
+    validarFecha(fecha) {
+        if (!fecha) { this.app.ui.mostrarToast('La fecha es requerida', 'error'); return false; }
+        const fechaIngresada = this.app.utils.parseDate(fecha);
+        const diferenciaAnios = (fechaIngresada - new Date()) / (1000 * 60 * 60 * 24 * 365.25);
+        if (diferenciaAnios > 2) {
+            this.app.ui.mostrarToast('La fecha no puede ser mayor a 2 años en el futuro', 'error'); return false;
+        }
+        return true;
+    }
+
+    validarFechaPago(fechaPago) {
+        if (!fechaPago) {
+            this.app.ui.mostrarToast('La fecha de pago es requerida cuando se marca como pagada', 'error'); return false;
+        }
+        const fp = this.app.utils.parseDate(fechaPago);
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0); fp.setHours(0, 0, 0, 0);
+        if (fp > hoy) {
+            this.app.ui.mostrarToast('La fecha de pago no puede ser en el futuro', 'error'); return false;
+        }
+        return true;
+    }
+
+    // ── Helpers de grupo por año ──────────────────────────────
+    agruparPorAno(items) {
+        const porAno = {};
+        items.forEach(item => {
+            const ano = this.app.utils.parseDate(item.fecha).getFullYear();
+            if (!porAno[ano]) porAno[ano] = [];
+            porAno[ano].push(item);
+        });
+        return Object.keys(porAno).sort((a, b) => b - a)
+            .map(ano => ({ ano, items: porAno[ano], cantidad: porAno[ano].length }));
+    }
+
+    generarGrupoAno(ano, items, itemHTML, tipoLabel = 'factura', index = 0) {
+        const collapsed = index > 0 ? 'collapsed' : '';
+        const cantidad = items.length;
+        const labelPlural = cantidad !== 1 ? `${tipoLabel}s` : tipoLabel;
+        return `
+        <div class="facturas-grupo-ano">
+            <div class="facturas-grupo-header" data-action="toggle-grupo-ano">
+                <div class="facturas-grupo-header-info">
+                    <span class="facturas-grupo-ano-texto">${ano}</span>
+                    <span class="facturas-grupo-contador">${cantidad} ${labelPlural}</span>
+                </div>
+                <svg class="icon facturas-grupo-chevron ${collapsed}"><use href="#icon-chevron-down" /></svg>
+            </div>
+            <div class="facturas-grupo-contenido ${collapsed}">${itemHTML}</div>
+        </div>`;
+    }
+
+    // ── Modal lista facturas ──────────────────────────────────
+    abrirModalLista(servicioId) {
+        const servicio = this.servicios.find(s => s.id === servicioId);
+        if (!servicio) return;
+        const lista     = document.getElementById('lista-facturas-modal');
+        const titulo    = document.getElementById('modal-facturas-titulo');
+        const btnBorrar = document.getElementById('btn-borrar-facturas-servicio');
+        titulo.textContent = servicio.nombre;
+        this.app.servicioActual = servicioId;
+        document.getElementById('modal-facturas-servicio').dataset.servicioId = servicioId;
+        if (btnBorrar) btnBorrar.style.display = servicio.facturas.length > 0 ? '' : 'none';
+        if (servicio.facturas.length === 0) {
+            lista.innerHTML = '<div class="empty-state"><p>No hay facturas registradas</p></div>';
+        } else {
+            const ordenadas = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            const grupos = this.agruparPorAno(ordenadas);
+            lista.innerHTML = grupos.map((grupo, index) => {
+                const html = grupo.items.map(f => this.app.generarHTMLFactura(f, 'editar-factura')).join('');
+                return this.generarGrupoAno(grupo.ano, grupo.items, html, 'factura', index);
+            }).join('');
+        }
+        this.app.abrirModal('modal-facturas-servicio');
+        const anoGuardado = this.app._anoExpandidoFacturas[servicioId];
+        if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoFacturas[servicioId] = null; }
+    }
+
+    borrarTodas() {
+        if (!this.app.servicioActual) return;
+        const servicio = this.servicios.find(s => s.id === this.app.servicioActual);
+        if (!servicio) return;
+        const total = servicio.facturas?.length || 0;
+        if (total === 0) { this.app.ui.mostrarToast('No hay facturas para borrar', 'info'); return; }
+        if (confirm(`¿Borrar las ${total} factura${total !== 1 ? 's' : ''} de "${servicio.nombre}"? Esta acción no se puede deshacer.`)) {
+            servicio.facturas = [];
+            this.app.guardarDatos();
+            this.app.renderServicios();
+            this.app.ui.mostrarToast(`${total} factura${total !== 1 ? 's' : ''} eliminada${total !== 1 ? 's' : ''}`, 'success');
+        }
+    }
+
+    // ── Modal agregar/editar ──────────────────────────────────
+    abrirModal(servicioId, facturaId = null, origen = 'servicio') {
+        this.app.cerrarModal('modal-facturas-servicio');
+        this.app.servicioActual = servicioId;
+        this.app.facturaActual  = facturaId;
+        const ids     = this.app.utils.idsFormFactura(!!facturaId);
+        const servicio = this.servicios.find(s => s.id === servicioId);
+
+        // Opciones de servicio (para ambos modales)
+        const optsServicios = this.servicios
+            .filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID)
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+        const optsHTML = optsServicios.map(s =>
+            `<option value="${s.id}" ${s.id === servicioId ? 'selected' : ''}>${this.app.utils.escaparHTML(s.nombre)}</option>`
+        ).join('');
+
+        if (facturaId) {
+            const factura = servicio?.facturas.find(f => f.id === facturaId);
+            if (!factura) return;
+            document.getElementById(ids.monto).value = Math.abs(factura.monto);
+            document.getElementById(ids.tipo).value  = factura.tipo || 'mensual';
+            document.getElementById(ids.fecha).value = factura.fecha;
+            this.app.utils.setMonedaBtn(ids.moneda, ids.btnMoneda, factura.moneda || 'ars');
+            const btnNeg = document.getElementById(ids.btnNegativo);
+            if (btnNeg) btnNeg.classList.toggle('activo', factura.monto < 0);
+            const btnPagada = document.getElementById(ids.btnPagada);
+            if (factura.pagada || factura.conCredito) {
+                btnPagada.classList.add('pagada');
+                const fpInput = document.getElementById(ids.fechaPago);
+                fpInput.disabled = false; fpInput.value = factura.fechaPago || '';
+                const btnCred = document.getElementById(ids.btnCredito);
+                if (btnCred) btnCred.classList.add('btn-credito-visible');
+                if (factura.conCredito) {
+                    document.getElementById(ids.conCredito).value = 'true';
+                    if (btnCred) { btnCred.classList.add('pagada'); btnCred.querySelector('use')?.setAttribute('href', '#icon-card'); }
+                }
+            } else {
+                btnPagada.classList.remove('pagada');
+                document.getElementById(ids.fechaPago).disabled = true;
+                document.getElementById(ids.fechaPago).value = '';
+            }
+            // Poblar select de servicios en modal editar
+            const selEdit = document.getElementById(ids.servicio);
+            if (selEdit) selEdit.innerHTML = optsHTML;
+            // Refrescar CustomSelects del modal editar-factura
+            const csdSvcEdit = document.getElementById('editar-factura-servicio-csd');
+            if (csdSvcEdit?._customSelect) csdSvcEdit._customSelect.refresh();
+            const csdTipoEdit = document.getElementById('editar-factura-tipo-csd');
+            if (csdTipoEdit?._customSelect) csdTipoEdit._customSelect.refresh();
+            this.app.abrirModal('modal-editar-factura');
+        } else {
+            // Poblar select ANTES de reset para que reset no lo borre
+            const selectSvc = document.getElementById('factura-servicio');
+            if (selectSvc) selectSvc.innerHTML = optsHTML;
+            document.getElementById('form-factura').reset();
+            // Restaurar valores que reset borró
+            if (selectSvc) selectSvc.innerHTML = optsHTML;
+            this.app.utils.setMonedaBtn('factura-moneda', 'btn-factura-moneda', 'ars');
+            document.getElementById('factura-fecha').value = this.app.utils.obtenerFechaLocal();
+            document.getElementById('btn-toggle-pagada').classList.remove('pagada');
+            document.getElementById('factura-fecha-pago').disabled = true;
+            document.getElementById('factura-fecha-pago').value = '';
+            this._resetBtnCredito(document.getElementById('btn-toggle-credito'));
+            // Refrescar CustomSelects del modal nueva factura
+            const csdSvcNueva = document.getElementById('factura-servicio-csd');
+            if (csdSvcNueva?._customSelect) csdSvcNueva._customSelect.refresh();
+            const csdTipoNueva = document.getElementById('factura-tipo-csd');
+            if (csdTipoNueva?._customSelect) csdTipoNueva._customSelect.refresh();
+            if (origen === 'menu') this.app.ui.cerrarMenuAgregar();
+            this.app.abrirModal('modal-agregar-factura');
+        }
+    }
+
+    // ── Toggles ───────────────────────────────────────────────
+    _resetBtnCredito(btn) {
+        if (!btn) return;
+        btn.querySelector('use')?.setAttribute('href', '#icon-cash');
+        btn.classList.remove('pagada'); btn.title = 'Contado / crédito';
+    }
+
+    toggleConCredito(modo = '') {
+        const esEditar = modo === 'editar';
+        const ids   = this.app.utils.idsFormFactura(esEditar);
+        const btn   = document.getElementById(ids.btnCredito);
+        const input = document.getElementById(ids.conCredito);
+        const use   = btn.querySelector('use');
+        const esCredito = input.value === 'true';
+        if (esCredito) {
+            input.value = 'false'; use.setAttribute('href', '#icon-cash');
+            btn.classList.remove('pagada'); btn.title = 'Pagada al contado';
+            this.app.ui.mostrarToast('Pagada al contado', 'info');
+        } else {
+            input.value = 'true'; use.setAttribute('href', '#icon-card');
+            btn.classList.add('pagada'); btn.title = 'Pagada con crédito';
+            this.app.ui.mostrarToast('Pagada con crédito', 'info');
+        }
+    }
+
+    toggleEstadoPago(btnId = 'btn-toggle-pagada', inputId = 'factura-fecha-pago') {
+        const btn        = document.getElementById(btnId);
+        const fpInput    = document.getElementById(inputId);
+        const use        = btn.querySelector('use');
+        const estaPagada = btn.classList.contains('pagada');
+        const esEditar   = btnId === 'btn-editar-toggle-pagada';
+        const btnCred    = document.getElementById(esEditar ? 'btn-editar-toggle-credito'  : 'btn-toggle-credito');
+        const inputCred  = document.getElementById(esEditar ? 'editar-factura-con-credito' : 'factura-con-credito');
+        if (estaPagada) {
+            btn.classList.remove('pagada'); fpInput.disabled = true; fpInput.value = '';
+            use.setAttribute('href', '#icon-card');
+            if (btnCred)   btnCred.classList.remove('btn-credito-visible');
+            if (inputCred) inputCred.value = 'false';
+            this._resetBtnCredito(btnCred);
+            this.app.ui.mostrarToast('Factura pendiente', 'info');
+        } else {
+            btn.classList.add('pagada'); fpInput.disabled = false;
+            fpInput.value = this.app.utils.obtenerFechaLocal();
+            use.setAttribute('href', '#icon-cancel');
+            if (btnCred) btnCred.classList.add('btn-credito-visible');
+            this.app.ui.mostrarToast('Factura pagada', 'success');
+        }
+    }
+
+    toggleMontoNegativo(inputId) {
+        const input = document.getElementById(inputId);
+        const btnId = inputId === 'factura-monto' ? 'btn-toggle-negativo' : 'btn-editar-toggle-negativo';
+        const btn   = document.getElementById(btnId);
+        if (!input || !btn) return;
+        const actual = parseFloat(input.value) || 0;
+        input.value  = Math.abs(actual !== 0 ? -actual : 0);
+        btn.classList.toggle('activo', actual > 0);
+        input.dataset.negativo = actual > 0 ? 'true' : 'false';
+    }
+
+    establecerFechaHoy(tipo = 'factura', modo = 'agregar') {
+        const id    = modo === 'editar' ? `editar-${tipo}-fecha` : `${tipo}-fecha`;
+        const input = document.getElementById(id);
+        if (input) input.value = input.value ? '' : this.app.utils.obtenerFechaLocal();
+    }
+
+    // ── Guardar ───────────────────────────────────────────────
+    guardar(e) {
+        e.preventDefault();
+        const esEditar   = document.getElementById('modal-editar-factura').classList.contains('active');
+        const ids        = this.app.utils.idsFormFactura(esEditar);
+        const montoRaw   = parseFloat(document.getElementById(ids.monto).value);
+        const tipo       = document.getElementById(ids.tipo).value;
+        const fecha      = document.getElementById(ids.fecha).value;
+        const moneda     = document.getElementById(ids.moneda).value;
+        const btnPagada  = document.getElementById(ids.btnPagada);
+        const estaPagada = btnPagada.classList.contains('pagada');
+        const fechaPago  = estaPagada ? document.getElementById(ids.fechaPago).value : null;
+        const conCredito = estaPagada ? (document.getElementById(ids.conCredito)?.value === 'true') : false;
+        const btnNeg     = document.getElementById(ids.btnNegativo);
+        const esNegativo = btnNeg?.classList.contains('activo') || document.getElementById(ids.monto).dataset.negativo === 'true';
+        const monto      = esNegativo ? -Math.abs(montoRaw) : Math.abs(montoRaw);
+        const servicioSelId = document.getElementById(ids.servicio)?.value || this.app.servicioActual;
+
+        if (!this.validarMonto(montoRaw, true)) return;
+        if (!this.validarFecha(fecha)) return;
+        if (estaPagada && !conCredito && !this.validarFechaPago(fechaPago)) return;
+
+        const servicio = this.servicios.find(s => s.id === servicioSelId);
+        if (!servicio) { this.app.ui.mostrarToast('Servicio no encontrado', 'error'); return; }
+
+        if (esEditar) {
+            const factura = servicio.facturas.find(f => f.id === this.app.facturaActual);
+            if (!factura) return;
+            if (factura.monto === monto && factura.tipo === tipo && factura.fecha === fecha &&
+                factura.pagada === estaPagada && factura.fechaPago === fechaPago &&
+                (factura.moneda || 'ars') === moneda) {
+                this.app.ui.mostrarToast('Sin cambios', 'info');
+                this.app.cerrarModal('modal-editar-factura');
+                this.abrirModalLista(servicioSelId); return;
+            }
+            Object.assign(factura, { monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
+        } else {
+            servicio.facturas.push({ id: this.app.utils.generarId(), monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
+        }
+        this.app.utils.postGuardado();
+        this.app.cerrarModal(esEditar ? 'modal-editar-factura' : 'modal-agregar-factura');
+        this.abrirModalLista(servicioSelId);
+        this.app.ui.mostrarToast(esEditar ? 'Factura actualizada' : 'Factura agregada', 'success');
+    }
+
+    // ── Eliminar ──────────────────────────────────────────────
+    eliminar() {
+        if (!this.app.facturaActual) return;
+        const servicio = this.servicios.find(s => s.id === this.app.servicioActual);
+        if (!servicio) return;
+        servicio.facturas = servicio.facturas.filter(f => f.id !== this.app.facturaActual);
+        this.app.guardarDatos();
+        this.app.guardarEstado();
+        this.app.renderServicios();
+        this.app.cerrarModal('modal-editar-factura');
+        this.app.ui.mostrarToast('Factura eliminada', 'success');
+    }
+}
+
+// ============================================================
+// INGRESO SERVICE — ciclo de vida de ingresos
+// ============================================================
+class IngresoService {
+    constructor(app) {
+        this.app = app;
+    }
+
+    get servicios() { return this.app.servicios; }
+
+    crearServicio() {
+        this.servicios.push({ id: this.app.SERVICIO_INGRESOS_ID, nombre: 'Ingresos', facturas: [], activo: false });
+        this.app.guardarDatos();
+    }
+
+    abrirModalLista(servicioId) {
+        const servicio = this.servicios.find(s => s.id === servicioId);
+        if (!servicio) return;
+        const lista = document.getElementById('lista-ingresos-modal');
+        if (servicio.facturas.length === 0) {
+            lista.innerHTML = '<div class="empty-state"><p>No hay ingresos registrados</p></div>';
+        } else {
+            const ordenados = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            const grupos = this.app.factura.agruparPorAno(ordenados);
+            lista.innerHTML = grupos.map((grupo, index) => {
+                const html = grupo.items.map(ingreso => {
+                    const tipo   = ingreso.tipo === 'complementario' ? 'Complementario' : ingreso.tipo === 'transferencia' ? 'Transferencia' : 'Regular';
+                    const emoji  = ingreso.tipo === 'complementario' ? '💼' : ingreso.tipo === 'transferencia' ? '🔄' : '💵';
+                    const moneda = ingreso.moneda || 'ars';
+                    return `
+                    <div class="factura-item" data-id="${ingreso.id}">
+                        <div class="factura-info" data-action="abrir-ingreso" data-ingreso-id="${ingreso.id}">
+                            <div class="factura-monto">${this.app.utils.formatearMoneda(ingreso.monto, moneda)}<span class="moneda-badge ${moneda}">${moneda.toUpperCase()}</span></div>
+                            <div class="factura-fecha">${emoji} ${tipo} | Cobrado: ${this.app.utils.formatearFecha(ingreso.fecha)}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                return this.app.factura.generarGrupoAno(grupo.ano, grupo.items, html, 'ingreso', index);
+            }).join('');
+        }
+        document.getElementById('modal-ingresos-lista').dataset.servicioId = servicioId;
+        this.app.abrirModal('modal-ingresos-lista');
+        const anoGuardado = this.app._anoExpandidoIngresos[servicioId];
+        if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoIngresos[servicioId] = null; }
+    }
+
+    abrirModal(ingresoId = null, desdeMenu = false) {
+        if (ingresoId) {
+            const modal = document.getElementById('modal-ingresos-lista');
+            if (modal?.classList.contains('active')) {
+                const sid  = modal.dataset.servicioId;
+                const item = document.querySelector(`.factura-item[data-id="${ingresoId}"]`);
+                const ano  = item?.closest('.facturas-grupo-ano')?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
+                this.app._anoExpandidoIngresos[sid] = ano;
+            }
+        }
+        this.app.cerrarModal('modal-ingresos-lista');
+        this.app.ingresoActual    = ingresoId;
+        this.app.ingresoDesdeMenu = desdeMenu;
+        if (ingresoId) {
+            const servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+            const ingreso  = servicio?.facturas.find(f => f.id === ingresoId);
+            if (ingreso) {
+                document.getElementById('editar-ingreso-monto').value = ingreso.monto;
+                document.getElementById('editar-ingreso-tipo').value  = ingreso.tipo || 'regular';
+                document.getElementById('editar-ingreso-fecha').value = ingreso.fecha;
+                this.app.utils.setMonedaBtn('editar-ingreso-moneda', 'btn-editar-ingreso-moneda', ingreso.moneda || 'ars');
+                // Refrescar CustomSelect editar-ingreso-tipo
+                const csdEditTipo = document.getElementById('editar-ingreso-tipo-csd');
+                if (csdEditTipo?._customSelect) csdEditTipo._customSelect.refresh();
+            }
+            this.app.abrirModal('modal-editar-ingreso');
+        } else {
+            document.getElementById('form-ingreso').reset();
+            this.app.utils.setMonedaBtn('ingreso-moneda', 'btn-ingreso-moneda', 'ars');
+            // Refrescar CustomSelect ingreso-tipo (reset puede haber alterado la opción visible)
+            const csdTipo = document.getElementById('ingreso-tipo-csd');
+            if (csdTipo?._customSelect) csdTipo._customSelect.refresh();
+            this.app.abrirModal('modal-agregar-ingreso');
+        }
+    }
+
+    guardar(e) {
+        e.preventDefault();
+        const esEditar = document.getElementById('modal-editar-ingreso').classList.contains('active');
+        const monto  = parseFloat(document.getElementById(esEditar ? 'editar-ingreso-monto' : 'ingreso-monto').value);
+        const tipo   = document.getElementById(esEditar ? 'editar-ingreso-tipo'   : 'ingreso-tipo').value;
+        const fecha  = document.getElementById(esEditar ? 'editar-ingreso-fecha'  : 'ingreso-fecha').value;
+        const moneda = document.getElementById(esEditar ? 'editar-ingreso-moneda' : 'ingreso-moneda').value;
+        if (!this.app.factura.validarMonto(monto, false)) return;
+        if (!this.app.factura.validarFecha(fecha)) return;
+        let servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+        if (!servicio) { this.crearServicio(); servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID); }
+        if (this.app.ingresoActual) {
+            const ingreso = servicio.facturas.find(f => f.id === this.app.ingresoActual);
+            if (ingreso) {
+                if (ingreso.monto === monto && ingreso.tipo === tipo && ingreso.fecha === fecha && (ingreso.moneda || 'ars') === moneda) {
+                    this.app.ui.mostrarToast('Sin cambios', 'info');
+                    this.app.cerrarModal('modal-editar-ingreso');
+                    this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID); return;
+                }
+                Object.assign(ingreso, { monto, tipo, fecha, moneda });
+            }
+        } else {
+            servicio.facturas.push({ id: this.app.utils.generarId(), monto, tipo, fecha, moneda, pagada: true });
+        }
+        this.app.guardarDatos();
+        this.app.guardarEstado();
+        this.app.renderServicios();
+        this.app.cerrarModal(esEditar ? 'modal-editar-ingreso' : 'modal-agregar-ingreso');
+        if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID);
+        this.app.ui.mostrarToast(this.app.ingresoActual ? 'Ingreso actualizado' : 'Ingreso agregado', 'success');
+    }
+
+    eliminar() {
+        const servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+        if (!servicio) return;
+        servicio.facturas = servicio.facturas.filter(f => f.id !== this.app.ingresoActual);
+        this.app.guardarDatos();
+        this.app.guardarEstado();
+        this.app.renderServicios();
+        this.app.cerrarModal('modal-editar-ingreso');
+        if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID);
+        this.app.ui.mostrarToast('Ingreso eliminado', 'success');
+    }
 }
 
 // ============================================================
@@ -2801,6 +2680,9 @@ class CategoriaService {
             if (c === valorSeleccionado) opt.selected = true;
             sel.appendChild(opt);
         });
+        // Refrescar CustomSelect si existe
+        const csdWrapper = document.getElementById(selectId + '-csd');
+        if (csdWrapper?._customSelect) csdWrapper._customSelect.refresh();
     }
 
     // ── Modal ─────────────────────────────────────────────────
@@ -2869,7 +2751,12 @@ class CategoriaService {
         this.poblarSelect('editar-servicio-categoria',
             this.app._categoriaTargetSelect === 'editar-servicio-categoria' ? nombre : '');
         const sel = document.getElementById(this.app._categoriaTargetSelect);
-        if (sel) sel.value = nombre;
+        if (sel) {
+            sel.value = nombre;
+            // Refrescar el CSD del selector target (refleja la selección nueva)
+            const csdTarget = document.getElementById(this.app._categoriaTargetSelect + '-csd');
+            if (csdTarget?._customSelect) csdTarget._customSelect.refresh();
+        }
         this.app.guardarEstado();
         this.renderLista();
         this.app.mostrarToast('Categoría agregada', 'success');
@@ -3278,6 +3165,8 @@ class EstadisticasService {
         localStorage.setItem('estadisticas-collapsed', estaColapsado);
         if (!estaColapsado) {
             document.getElementById('estadisticas-tipo').value = this.app.tipoEstadisticaActual;
+            const csdEstTipo = document.getElementById('estadisticas-tipo-csd');
+            if (csdEstTipo?._customSelect) csdEstTipo._customSelect.refresh();
             this.cambiarTipoEstadistica();
         }
     }
@@ -3454,6 +3343,11 @@ class UIManager {
     }
 
     cerrarTodosLosModales() {
+        // Cerrar cualquier CSD en modo fixed que haya quedado en el body
+        document.querySelectorAll('.custom-select-dropdown.csd-fixed').forEach(dd => {
+            if (dd._csdInstance) dd._csdInstance.close();
+            else if (dd.parentElement === document.body) dd.remove();
+        });
         document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
         document.body.classList.remove('modal-open');
         this.app._anoExpandidoFacturas = {};
@@ -4979,6 +4873,9 @@ class CustomSelect {
         this._boundClose = this._onOutsideClick.bind(this);
         this._boundEsc = this._onEsc.bind(this);
         this._boundScroll = this._onScroll.bind(this);
+        this._boundResize = this._onResize.bind(this);
+        // ¿Está dentro de un contenedor con overflow recortado (modal, sidebar…)?
+        this._useFixed = !!wrapper.closest('.modal, .modal-content, .menu-ajustes');
         this.trigger.addEventListener('pointerdown', e => {
             e.preventDefault();
             e.stopPropagation();
@@ -4994,22 +4891,15 @@ class CustomSelect {
         ).join('');
         this.dropdown.querySelectorAll('.custom-select-option').forEach(el => {
             el.addEventListener('pointerdown', e => {
-                // No cancelar el evento — permite que el scroll nativo funcione
                 e.stopPropagation();
                 const startY = e.clientY;
                 let moved = false;
-
-                const onMove = mv => {
-                    if (Math.abs(mv.clientY - startY) > 6) moved = true;
-                };
+                const onMove = mv => { if (Math.abs(mv.clientY - startY) > 6) moved = true; };
                 const onUp = up => {
                     el.removeEventListener('pointermove', onMove);
                     el.removeEventListener('pointerup', onUp);
                     el.removeEventListener('pointercancel', onUp);
-                    if (!moved) {
-                        up.stopPropagation();
-                        this.select(el.dataset.value);
-                    }
+                    if (!moved) { up.stopPropagation(); this.select(el.dataset.value); }
                 };
                 el.addEventListener('pointermove', onMove);
                 el.addEventListener('pointerup', onUp);
@@ -5028,65 +4918,132 @@ class CustomSelect {
         if (this.onChange) this.onChange();
     }
 
-    // Absorbe el click que el browser despacha tras el pointerdown
-    // en móvil, evitando que caigan sobre elementos que quedaron debajo del dropdown
     _absorbNextEvents() {
         const absorb = e => { e.stopPropagation(); e.preventDefault(); };
         const opts = { capture: true, once: true, passive: false };
-
-        // Solo absorbemos el 'click', quitamos el 'pointerup' para no bloquear el siguiente toque.
         document.addEventListener('click', absorb, opts);
-
-        // Timeout de seguridad: Si pasados 300ms el navegador no disparó ningún clic fantasma,
-        // retiramos la trampa para que no atrape el próximo clic real del usuario.
-        setTimeout(() => {
-            document.removeEventListener('click', absorb, opts);
-        }, 300);
+        setTimeout(() => { document.removeEventListener('click', absorb, opts); }, 300);
     }
 
     toggle() {
         this.wrapper.classList.contains('open') ? this.close() : this.open();
     }
 
-    open() {
-        const rect = this.wrapper.getBoundingClientRect();
+    // Posiciona el dropdown en coordenadas fijas (viewport) cuando el wrapper
+    // está dentro de un contenedor con overflow recortado.
+    _positionFixed() {
+        const rect = this.trigger.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        if (spaceBelow < 260 && spaceAbove > spaceBelow) {
-            this.dropdown.classList.add('dropdown-above');
-            this.dropdown.classList.remove('dropdown-below');
+        const above = spaceBelow < 260 && spaceAbove > spaceBelow;
+        const dd = this.dropdown;
+        dd.style.position = 'fixed';
+        dd.style.left     = rect.left + 'px';
+        dd.style.width    = rect.width + 'px';
+        dd.style.right    = 'auto';
+        dd.style.zIndex   = '9999';
+        if (above) {
+            dd.style.top    = 'auto';
+            dd.style.bottom = (window.innerHeight - rect.top) + 'px';
+            dd.classList.add('dropdown-above');
+            dd.classList.remove('dropdown-below');
         } else {
-            this.dropdown.classList.add('dropdown-below');
-            this.dropdown.classList.remove('dropdown-above');
+            dd.style.top    = rect.bottom + 'px';
+            dd.style.bottom = 'auto';
+            dd.classList.add('dropdown-below');
+            dd.classList.remove('dropdown-above');
+        }
+    }
+
+    _clearFixed() {
+        const dd = this.dropdown;
+        dd.style.position = '';
+        dd.style.left     = '';
+        dd.style.width    = '';
+        dd.style.right    = '';
+        dd.style.top      = '';
+        dd.style.bottom   = '';
+        dd.style.zIndex   = '';
+    }
+
+    open() {
+        if (this._useFixed) {
+            // Mover el dropdown al body para escapar del overflow del modal
+            document.body.appendChild(this.dropdown);
+            this.dropdown._csdInstance = this; // referencia para cleanup externo
+            this._positionFixed();
+            this.dropdown.classList.add('csd-fixed');
+            // Forzar reflow antes de añadir la clase de animación
+            void this.dropdown.offsetWidth;
+            this.dropdown.classList.add('csd-open');
+        } else {
+            const rect = this.wrapper.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+                this.dropdown.classList.add('dropdown-above');
+                this.dropdown.classList.remove('dropdown-below');
+            } else {
+                this.dropdown.classList.add('dropdown-below');
+                this.dropdown.classList.remove('dropdown-above');
+            }
         }
         this.wrapper.classList.add('open');
         document.addEventListener('pointerdown', this._boundClose, true);
         document.addEventListener('keydown', this._boundEsc, true);
         window.addEventListener('scroll', this._boundScroll, { capture: true, passive: true });
+        if (this._useFixed) {
+            window.addEventListener('resize', this._boundResize, { passive: true });
+        }
     }
 
     close() {
+        if (this._useFixed && this.dropdown.parentElement === document.body) {
+            this.dropdown.classList.remove('csd-open');
+            // Devolver el dropdown a su lugar original en el wrapper tras la transición
+            const delay = 150;
+            setTimeout(() => {
+                if (this.dropdown.parentElement === document.body) {
+                    this._clearFixed();
+                    this.dropdown.classList.remove('csd-fixed');
+                    this.wrapper.appendChild(this.dropdown);
+                }
+            }, delay);
+        }
         this.wrapper.classList.remove('open');
         document.removeEventListener('pointerdown', this._boundClose, true);
         document.removeEventListener('keydown', this._boundEsc, true);
         window.removeEventListener('scroll', this._boundScroll, { capture: true, passive: true });
+        window.removeEventListener('resize', this._boundResize);
     }
 
     _onScroll(e) {
-        // Ignorar scroll dentro del propio dropdown; cerrar solo si el scroll es externo
-        if (this.wrapper.contains(e.target)) return;
-        this.close();
-    }
-
-    _onEsc(e) {
-        if (e.key === 'Escape') {
-            e.stopPropagation();
+        if (this._useFixed) {
+            // En modo fixed: reposicionar si el scroll es dentro del modal,
+            // cerrar si es externo
+            if (this.dropdown.contains(e.target)) return;
+            if (this.wrapper.closest('.modal-content, .menu-ajustes')?.contains(e.target)) {
+                this._positionFixed();
+            } else {
+                this.close();
+            }
+        } else {
+            if (this.wrapper.contains(e.target)) return;
             this.close();
         }
     }
 
+    _onResize() {
+        if (this._useFixed) this._positionFixed();
+    }
+
+    _onEsc(e) {
+        if (e.key === 'Escape') { e.stopPropagation(); this.close(); }
+    }
+
     _onOutsideClick(e) {
-        if (!this.wrapper.contains(e.target)) {
+        // En modo fixed, el dropdown está en body — hay que chequear ambos
+        if (!this.wrapper.contains(e.target) && !this.dropdown.contains(e.target)) {
             e.preventDefault();
             this.close();
         }
