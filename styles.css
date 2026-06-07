@@ -577,7 +577,8 @@ input[type="number"] {
 }
 
 /* Modal facturas (layout flex interno) */
-.modal-facturas-content {
+.modal-facturas-content,
+.modal-form-content {
     display: flex;
     flex-direction: column;
     max-height: 90vh;
@@ -604,6 +605,15 @@ input[type="number"] {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+}
+
+/* Zona scrolleable de modales de formulario con header/footer sticky */
+.modal-form-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    padding: 1rem 0;
+    margin: 0;
 }
 
 /* ============================================================
@@ -1900,6 +1910,10 @@ input[type="number"] {
 /* --- Grid --- */
 .grid-cols-2 {
     grid-template-columns: 1fr 1fr;
+}
+
+.grid-cols-3 {
+    grid-template-columns: 1fr 1fr 1fr;
 }
 
 /* --- Dimensiones --- */

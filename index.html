@@ -647,19 +647,17 @@
 
     <!-- Modal Info Resumen Mes -->
     <div class="modal" id="modal-info-resumen">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header d-flex justify-content-between align-items-center">
                 <h3>Composición mes actual</h3>
                 <button class="icon-btn transparent" id="btn-cerrar-modal-info-resumen">
-                    <svg class="icon">
-                        <use href="#icon-cancel" />
-                    </svg>
+                    <svg class="icon"><use href="#icon-cancel" /></svg>
                 </button>
             </div>
-            <div id="modal-info-resumen-body" class="d-flex flex-column gap-3">
+            <div id="modal-info-resumen-body" class="modal-form-body custom-scroll d-flex flex-column gap-3">
             </div>
-            <div class="form-actions form-actions-mt">
-                <button id="btn-cerrar-modal-info-resumen-footer">
+            <div class="modal-facturas-footer">
+                <button id="btn-cerrar-modal-info-resumen-footer" class="w-100">
                     <svg class="icon">
                         <use href="#icon-cancel" />
                     </svg> Cerrar
@@ -702,7 +700,6 @@
                             <svg class="icon"><use href="#icon-external-link" /></svg>
                         </button>
                     </div>
-                    <span class="text-muted small d-block mt-1 px-1">ID único del repositorio privado</span>
                 </div>
 
                 <p class="ajustes-section-label mt-3">Acciones</p>
@@ -813,11 +810,11 @@
 
     <!-- Modal Agregar Servicio -->
     <div class="modal" id="modal-agregar-servicio">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3>Nuevo Servicio</h3>
             </div>
-            <form id="form-servicio">
+            <form id="form-servicio" class="modal-form-body custom-scroll">
                 <div class="form-group">
                     <label for="servicio-nombre">Nombre del servicio</label>
                     <input type="text" id="servicio-nombre" required placeholder="Ej: Internet, Luz, Agua"
@@ -838,37 +835,30 @@
                                 <option value="">Sin categoría</option>
                             </select>
                         </div>
-                        <button type="button" class="icon-btn" title="Agregar categoría" id="btn-agregar-cat-servicio"
-                            class="flex-shrink-0">
-                            <svg class="icon">
-                                <use href="#icon-plus" />
-                            </svg>
+                        <button type="button" class="icon-btn" title="Agregar categoría" id="btn-agregar-cat-servicio">
+                            <svg class="icon"><use href="#icon-plus" /></svg>
                         </button>
                     </div>
                 </div>
-                <div class="form-actions d-grid grid-cols-2">
-                    <button type="submit">
-                        <svg class="icon">
-                            <use href="#icon-save" />
-                        </svg>Guardar
-                    </button>
-                    <button type="button" class="button" id="modal-servicio-close">
-                        <svg class="icon">
-                            <use href="#icon-cancel" />
-                        </svg> Cerrar
-                    </button>
-                </div>
             </form>
+            <div class="modal-facturas-footer d-grid grid-cols-2 gap-2">
+                <button type="submit" form="form-servicio">
+                    <svg class="icon"><use href="#icon-save" /></svg> Guardar
+                </button>
+                <button type="button" class="btn-secondary" id="modal-servicio-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Modal Editar Servicio -->
     <div class="modal" id="modal-editar-servicio">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3>Editar Servicio</h3>
             </div>
-            <form id="form-editar-servicio">
+            <form id="form-editar-servicio" class="modal-form-body custom-scroll">
                 <div class="form-group">
                     <label for="editar-servicio-nombre">Nombre del servicio</label>
                     <input type="text" id="editar-servicio-nombre" required placeholder="Ej: Internet, Luz, Agua"
@@ -889,38 +879,30 @@
                                 <option value="">Sin categoría</option>
                             </select>
                         </div>
-                        <button type="button" class="icon-btn" title="Agregar categoría"
-                            id="btn-agregar-cat-editar-servicio" class="flex-shrink-0">
-                            <svg class="icon">
-                                <use href="#icon-plus" />
-                            </svg>
+                        <button type="button" class="icon-btn" title="Agregar categoría" id="btn-agregar-cat-editar-servicio">
+                            <svg class="icon"><use href="#icon-plus" /></svg>
                         </button>
                     </div>
                 </div>
                 <div class="form-group">
                     <button type="button" class="button w-100" id="btn-borrar-facturas-servicio">
-                        <svg class="icon">
-                            <use href="#icon-trash" />
-                        </svg> Borrar todas las facturas
-                    </button>
-                </div>
-                <div class="form-actions d-grid grid-cols-2">
-                    <button type="submit">
-                        <svg class="icon">
-                            <use href="#icon-save" />
-                        </svg>Guardar
-                    </button>
-                    <button type="button" id="btn-eliminar-servicio">Eliminar
-                    </button>
-                </div>
-                <div class="form-actions2">
-                    <button type="button" class="button" id="modal-editar-servicio-close">
-                        <svg class="icon">
-                            <use href="#icon-undo" />
-                        </svg> Volver
+                        <svg class="icon"><use href="#icon-trash" /></svg> Borrar todas las facturas
                     </button>
                 </div>
             </form>
+            <div class="modal-facturas-footer d-grid grid-cols-2 gap-2">
+                <button type="submit" form="form-editar-servicio">
+                    <svg class="icon"><use href="#icon-save" /></svg> Guardar
+                </button>
+                <button type="button" id="btn-eliminar-servicio">
+                    <svg class="icon"><use href="#icon-broom" /></svg> Eliminar
+                </button>
+            </div>
+            <div class="modal-facturas-footer">
+                <button type="button" class="btn-secondary w-100" id="modal-editar-servicio-close">
+                    <svg class="icon"><use href="#icon-undo" /></svg> Volver
+                </button>
+            </div>
         </div>
     </div>
 
@@ -998,11 +980,11 @@
 
     <!-- Modal Agregar Factura -->
     <div class="modal" id="modal-agregar-factura">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3>Nueva Factura</h3>
             </div>
-            <form id="form-factura">
+            <form id="form-factura" class="modal-form-body custom-scroll">
                 <div class="form-group">
                     <label for="factura-servicio">Servicio</label>
                     <div class="custom-select-wrapper" id="factura-servicio-csd">
@@ -1035,15 +1017,12 @@
                 <div class="form-group">
                     <label for="factura-monto">Monto</label>
                     <div class="d-flex align-items-stretch gap-2">
-                        <button type="button" class="icon-btn" id="btn-factura-moneda"
-                            title="Cambiar moneda">ARS</button>
+                        <button type="button" class="icon-btn" id="btn-factura-moneda" title="Cambiar moneda">ARS</button>
                         <input type="hidden" id="factura-moneda" value="ars">
                         <input type="number" id="factura-monto" required placeholder="0,00" step="0.01" class="flex-1">
-                        <button type="button" class="icon-btn btn-signo" id="btn-toggle-negativo"
-                            title="Cambiar a saldo a favor">
+                        <button type="button" class="icon-btn btn-signo" id="btn-toggle-negativo" title="Cambiar a saldo a favor">
                             <svg class="icon">
-                                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18"
-                                    font-weight="bold" fill="currentColor">±</text>
+                                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">±</text>
                             </svg>
                         </button>
                     </div>
@@ -1053,9 +1032,7 @@
                     <div class="d-flex gap-2">
                         <input type="date" id="factura-fecha" required class="flex-1">
                         <button type="button" class="icon-btn" id="btn-fecha-hoy" title="Fecha de hoy / Limpiar">
-                            <svg class="icon">
-                                <use href="#icon-calendar" />
-                            </svg>
+                            <svg class="icon"><use href="#icon-calendar" /></svg>
                         </button>
                     </div>
                 </div>
@@ -1064,40 +1041,33 @@
                     <div class="d-flex align-items-center gap-2">
                         <input type="date" id="factura-fecha-pago" disabled class="flex-1">
                         <button type="button" id="btn-toggle-credito" class="icon-btn" title="Contado / Crédito">
-                            <svg class="icon">
-                                <use href="#icon-cash" />
-                            </svg>
+                            <svg class="icon"><use href="#icon-cash" /></svg>
                         </button>
-                        <button type="button" id="btn-toggle-pagada" class="icon-btn"
-                            title="Marcar como pagada/no pagada">
-                            <svg class="icon">
-                                <use href="#icon-card" />
-                            </svg>
+                        <button type="button" id="btn-toggle-pagada" class="icon-btn" title="Marcar como pagada/no pagada">
+                            <svg class="icon"><use href="#icon-card" /></svg>
                         </button>
                     </div>
                 </div>
                 <input type="hidden" id="factura-con-credito" value="false">
-                <div class="form-actions">
-                    <button type="submit"><svg class="icon">
-                            <use href="#icon-save" />
-                        </svg> Guardar</button>
-                    <button type="button" class="btn-secondary w-100" id="modal-factura-close"><svg class="icon">
-                            <use href="#icon-cancel" />
-                        </svg>
-                        Cerrar
-                    </button>
-                </div>
             </form>
+            <div class="modal-facturas-footer d-grid grid-cols-2 gap-2">
+                <button type="submit" form="form-factura">
+                    <svg class="icon"><use href="#icon-save" /></svg> Guardar
+                </button>
+                <button type="button" class="btn-secondary" id="modal-factura-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Modal Editar Factura -->
     <div class="modal" id="modal-editar-factura">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3>Editar Factura</h3>
             </div>
-            <form id="form-editar-factura">
+            <form id="form-editar-factura" class="modal-form-body custom-scroll">
                 <div class="form-group">
                     <label for="editar-factura-servicio">Servicio</label>
                     <div class="custom-select-wrapper" id="editar-factura-servicio-csd">
@@ -1130,16 +1100,12 @@
                 <div class="form-group">
                     <label for="editar-factura-monto">Monto</label>
                     <div class="d-flex align-items-stretch gap-2">
-                        <button type="button" class="icon-btn" id="btn-editar-factura-moneda"
-                            title="Cambiar moneda">ARS</button>
+                        <button type="button" class="icon-btn" id="btn-editar-factura-moneda" title="Cambiar moneda">ARS</button>
                         <input type="hidden" id="editar-factura-moneda" value="ars">
-                        <input type="number" id="editar-factura-monto" required placeholder="0,00" step="0.01"
-                            class="flex-1">
-                        <button type="button" class="icon-btn btn-signo" id="btn-editar-toggle-negativo"
-                            title="Cambiar a saldo a favor">
+                        <input type="number" id="editar-factura-monto" required placeholder="0,00" step="0.01" class="flex-1">
+                        <button type="button" class="icon-btn btn-signo" id="btn-editar-toggle-negativo" title="Cambiar a saldo a favor">
                             <svg class="icon">
-                                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18"
-                                    font-weight="bold" fill="currentColor">±</text>
+                                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">±</text>
                             </svg>
                         </button>
                     </div>
@@ -1149,9 +1115,7 @@
                     <div class="d-flex gap-2">
                         <input type="date" id="editar-factura-fecha" required class="flex-1">
                         <button type="button" class="icon-btn" id="btn-editar-fecha-hoy" title="Fecha de hoy / Limpiar">
-                            <svg class="icon">
-                                <use href="#icon-calendar" />
-                            </svg>
+                            <svg class="icon"><use href="#icon-calendar" /></svg>
                         </button>
                     </div>
                 </div>
@@ -1160,35 +1124,28 @@
                     <div class="d-flex align-items-center gap-2">
                         <input type="date" id="editar-factura-fecha-pago" disabled class="flex-1">
                         <button type="button" id="btn-editar-toggle-credito" class="icon-btn" title="Contado / crédito">
-                            <svg class="icon">
-                                <use href="#icon-cash" />
-                            </svg>
+                            <svg class="icon"><use href="#icon-cash" /></svg>
                         </button>
-                        <button type="button" id="btn-editar-toggle-pagada" class="icon-btn"
-                            title="Marcar como pagada/no pagada">
-                            <svg class="icon">
-                                <use href="#icon-card" />
-                            </svg>
+                        <button type="button" id="btn-editar-toggle-pagada" class="icon-btn" title="Marcar como pagada/no pagada">
+                            <svg class="icon"><use href="#icon-card" /></svg>
                         </button>
                     </div>
                 </div>
                 <input type="hidden" id="editar-factura-con-credito" value="false">
-                <div class="form-actions d-grid grid-cols-2 gap-2">
-                    <button type="submit"><svg class="icon">
-                            <use href="#icon-save" />
-                        </svg> Guardar</button>
-                    <button type="button" id="btn-eliminar-factura-modal"><svg class="icon">
-                            <use href="#icon-broom" />
-                        </svg> Eliminar</button>
-                </div>
-                <div class="form-actions2">
-                    <button type="button" class="btn-secondary" id="modal-factura-close-en-grid"><svg class="icon">
-                            <use href="#icon-undo" />
-                        </svg>
-                        Volver
-                    </button>
-                </div>
             </form>
+            <div class="modal-facturas-footer d-grid grid-cols-2 gap-2">
+                <button type="submit" form="form-editar-factura">
+                    <svg class="icon"><use href="#icon-save" /></svg> Guardar
+                </button>
+                <button type="button" id="btn-eliminar-factura-modal">
+                    <svg class="icon"><use href="#icon-broom" /></svg> Eliminar
+                </button>
+            </div>
+            <div class="modal-facturas-footer">
+                <button type="button" class="btn-secondary w-100" id="modal-factura-close-en-grid">
+                    <svg class="icon"><use href="#icon-undo" /></svg> Volver
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1254,19 +1211,17 @@
 
     <!-- Modal Agregar Ingreso -->
     <div class="modal" id="modal-agregar-ingreso">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3>Nuevo Ingreso</h3>
             </div>
-            <form id="form-ingreso">
+            <form id="form-ingreso" class="modal-form-body custom-scroll">
                 <div class="form-group">
                     <label for="ingreso-monto">Monto</label>
                     <div class="d-flex align-items-stretch gap-2">
-                        <button type="button" class="icon-btn" id="btn-ingreso-moneda"
-                            title="Cambiar moneda">ARS</button>
+                        <button type="button" class="icon-btn" id="btn-ingreso-moneda" title="Cambiar moneda">ARS</button>
                         <input type="hidden" id="ingreso-moneda" value="ars">
-                        <input type="number" id="ingreso-monto" required placeholder="0,00" step="0.01" min="0"
-                            class="flex-1">
+                        <input type="number" id="ingreso-monto" required placeholder="0,00" step="0.01" min="0" class="flex-1">
                     </div>
                 </div>
                 <div class="form-group">
@@ -1288,43 +1243,36 @@
                     <label for="ingreso-fecha">Fecha de cobro</label>
                     <div class="d-flex gap-2">
                         <input type="date" id="ingreso-fecha" required class="flex-1">
-                        <button type="button" class="icon-btn" id="btn-ingreso-fecha-hoy"
-                            title="Fecha de hoy / Limpiar">
-                            <svg class="icon">
-                                <use href="#icon-calendar" />
-                            </svg>
+                        <button type="button" class="icon-btn" id="btn-ingreso-fecha-hoy" title="Fecha de hoy / Limpiar">
+                            <svg class="icon"><use href="#icon-calendar" /></svg>
                         </button>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <button type="submit"><svg class="icon">
-                            <use href="#icon-save" />
-                        </svg> Guardar
-                    </button>
-                    <button type="button" class="btn-secondary w-100" id="modal-ingreso-close"><svg class="icon">
-                            <use href="#icon-cancel" />
-                        </svg> Cerrar
-                    </button>
-                </div>
             </form>
+            <div class="modal-facturas-footer d-grid grid-cols-2 gap-2">
+                <button type="submit" form="form-ingreso">
+                    <svg class="icon"><use href="#icon-save" /></svg> Guardar
+                </button>
+                <button type="button" class="btn-secondary" id="modal-ingreso-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Modal Editar Ingreso -->
     <div class="modal" id="modal-editar-ingreso">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3>Editar Ingreso</h3>
             </div>
-            <form id="form-editar-ingreso">
+            <form id="form-editar-ingreso" class="modal-form-body custom-scroll">
                 <div class="form-group">
                     <label for="editar-ingreso-monto">Monto</label>
                     <div class="d-flex align-items-stretch gap-2">
-                        <button type="button" class="icon-btn" id="btn-editar-ingreso-moneda"
-                            title="Cambiar moneda">ARS</button>
+                        <button type="button" class="icon-btn" id="btn-editar-ingreso-moneda" title="Cambiar moneda">ARS</button>
                         <input type="hidden" id="editar-ingreso-moneda" value="ars">
-                        <input type="number" id="editar-ingreso-monto" required placeholder="0,00" step="0.01" min="0"
-                            class="flex-1">
+                        <input type="number" id="editar-ingreso-monto" required placeholder="0,00" step="0.01" min="0" class="flex-1">
                     </div>
                 </div>
                 <div class="form-group">
@@ -1346,31 +1294,25 @@
                     <label for="editar-ingreso-fecha">Fecha de cobro</label>
                     <div class="d-flex gap-2">
                         <input type="date" id="editar-ingreso-fecha" required class="flex-1">
-                        <button type="button" class="icon-btn" id="btn-editar-ingreso-fecha-hoy"
-                            title="Fecha de hoy / Limpiar">
-                            <svg class="icon">
-                                <use href="#icon-calendar" />
-                            </svg>
+                        <button type="button" class="icon-btn" id="btn-editar-ingreso-fecha-hoy" title="Fecha de hoy / Limpiar">
+                            <svg class="icon"><use href="#icon-calendar" /></svg>
                         </button>
                     </div>
                 </div>
-                <div class="form-actions d-grid grid-cols-2 gap-2">
-                    <button type="submit"><svg class="icon">
-                            <use href="#icon-save" />
-                        </svg> Guardar</button>
-                    <button type="button" id="btn-eliminar-ingreso"><svg class="icon">
-                            <use href="#icon-broom" />
-                        </svg> Eliminar
-                    </button>
-                </div>
-                <div class="form-actions2">
-                    <button type="button" class="btn-secondary" id="modal-ingreso-volver">
-                        <svg class="icon">
-                            <use href="#icon-undo" />
-                        </svg> Volver
-                    </button>
-                </div>
             </form>
+            <div class="modal-facturas-footer d-grid grid-cols-2 gap-2">
+                <button type="submit" form="form-editar-ingreso">
+                    <svg class="icon"><use href="#icon-save" /></svg> Guardar
+                </button>
+                <button type="button" id="btn-eliminar-ingreso">
+                    <svg class="icon"><use href="#icon-broom" /></svg> Eliminar
+                </button>
+            </div>
+            <div class="modal-facturas-footer">
+                <button type="button" class="btn-secondary w-100" id="modal-ingreso-volver">
+                    <svg class="icon"><use href="#icon-undo" /></svg> Volver
+                </button>
+            </div>
         </div>
     </div>
 

@@ -491,7 +491,7 @@ class GestionServicios {
             }, { passive: true });
             modal.addEventListener('click', (e) => {
                 if (e.target === modal && _downOnOverlay) {
-                    this.cerrarTodosLosModales();
+                    this.volverDesdeModalActivo();
                 }
             });
         });
@@ -564,7 +564,7 @@ class GestionServicios {
 
                 if (this.modoCalculadora) { this.desactivarModoCalculadora(); return; }
                 if (hayModalAbierto || hayMenuAbierto) {
-                    this.cerrarTodosLosModales();
+                    this.volverDesdeModalActivo();
                     this.cerrarMenuAjustes();
                     return;
                 }
@@ -1871,6 +1871,29 @@ class GestionServicios {
     cerrarMenuAgregar() { this.ui.cerrarMenuAgregar(); }
     async cargarCotizacionDolar() { await this.ui.cargarCotizacionDolar(); }
 
+    // Mapa de modales hijo → id del botón "volver" que se debe simular al cerrar con ESC/overlay.
+    // Modales que no aparecen aquí no tienen padre → cerrarTodosLosModales normalmente.
+    _MODAL_VOLVER_BTN = {
+        'modal-editar-factura':  'modal-factura-close-en-grid',
+        'modal-agregar-factura': 'modal-factura-close',
+        'modal-editar-servicio': 'modal-editar-servicio-close',
+        'modal-agregar-ingreso': 'modal-ingreso-close',
+        'modal-editar-ingreso':  'modal-ingreso-volver',
+    };
+
+    volverDesdeModalActivo() {
+        const modalActivo = document.querySelector('.modal.active');
+        if (!modalActivo) { this.cerrarTodosLosModales(); return; }
+        const btnId = this._MODAL_VOLVER_BTN[modalActivo.id];
+        if (btnId !== undefined) {
+            // Modal con padre definido → simular clic en su botón volver
+            const btn = document.getElementById(btnId);
+            if (btn) { btn.click(); return; }
+        }
+        // Modal sin padre (raíz) o botón no encontrado → cerrar todo
+        this.cerrarTodosLosModales();
+    }
+
     // ========================================
     // MODALES Y MENÚS
     // ========================================
@@ -2181,6 +2204,7 @@ class FacturaService {
         if (facturaId) {
             const factura = servicio?.facturas.find(f => f.id === facturaId);
             if (!factura) return;
+            this.app.origenModalFactura = origen;
             document.getElementById(ids.monto).value = Math.abs(factura.monto);
             document.getElementById(ids.tipo).value  = factura.tipo || 'mensual';
             document.getElementById(ids.fecha).value = factura.fecha;
@@ -2230,6 +2254,7 @@ class FacturaService {
             if (csdSvcNueva?._customSelect) csdSvcNueva._customSelect.refresh();
             const csdTipoNueva = document.getElementById('factura-tipo-csd');
             if (csdTipoNueva?._customSelect) csdTipoNueva._customSelect.refresh();
+            this.app.origenModalFactura = origen;
             if (origen === 'menu') this.app.ui.cerrarMenuAgregar();
             this.app.abrirModal('modal-agregar-factura');
         }
