@@ -700,6 +700,7 @@
                             <svg class="icon"><use href="#icon-external-link" /></svg>
                         </button>
                     </div>
+                    <span class="text-muted small d-block mt-1 px-1">ID único del repositorio privado</span>
                 </div>
 
                 <p class="ajustes-section-label mt-3">Acciones</p>
@@ -1499,14 +1500,16 @@
     </div>
 
     <div id="modal-debug-estadisticas" class="modal">
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
+        <div class="modal-content modal-form-content">
+            <div class="modal-facturas-header">
                 <h3 id="modal-debug-titulo">Detalle</h3>
             </div>
-            <div id="modal-debug-lista" class="d-flex flex-column gap-2 mb-3 max-h-60vh">
-                <div class="form-actions">
-                    <button id="btn-cerrar-modal-debug">Cerrar</button>
-                </div>
+            <div id="modal-debug-lista" class="modal-form-body custom-scroll d-flex flex-column gap-2">
+            </div>
+            <div class="modal-facturas-footer">
+                <button id="btn-cerrar-modal-debug" class="w-100">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
+                </button>
             </div>
         </div>
     </div>

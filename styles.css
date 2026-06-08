@@ -260,7 +260,8 @@ select:disabled {
     transform: scale(0.98);
 }
 
-.icon-btn.pagada {
+.icon-btn.pagada,
+.icon-btn.activo {
     border-color: var(--c-green);
     background: rgba(96, 172, 148, 0.1);
     color: var(--c-green);
@@ -903,9 +904,9 @@ input[type="number"] {
     transition: max-height var(--transition-base), opacity var(--transition-base), margin var(--transition-base);
 }
 
+
 .servicios-actions.hidden,
-#servicios-content.semi-collapsed .servicios-actions,
-#servicios-content.semi-collapsed .search-container {
+#servicios-content.semi-collapsed .servicios-actions {
     max-height: 0;
     opacity: 0;
     margin-bottom: 0;

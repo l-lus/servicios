@@ -1694,10 +1694,12 @@ class GestionServicios {
         const valor = parseFloat(input.value) || 0;
 
         if (valor < 0) {
-            btn.classList.add('pagada');
+            btn.classList.add('activo');
+            input.dataset.negativo = 'true';
             btn.title = 'Cambiar a gasto normal';
         } else {
-            btn.classList.remove('pagada');
+            btn.classList.remove('activo');
+            input.dataset.negativo = 'false';
             btn.title = 'Cambiar a saldo a favor';
         }
     }
@@ -1879,6 +1881,7 @@ class GestionServicios {
         'modal-editar-servicio': 'modal-editar-servicio-close',
         'modal-agregar-ingreso': 'modal-ingreso-close',
         'modal-editar-ingreso':  'modal-ingreso-volver',
+        'modal-editar-perfil':   'btn-cancelar-editar-perfil',
     };
 
     volverDesdeModalActivo() {
@@ -2205,12 +2208,21 @@ class FacturaService {
             const factura = servicio?.facturas.find(f => f.id === facturaId);
             if (!factura) return;
             this.app.origenModalFactura = origen;
-            document.getElementById(ids.monto).value = Math.abs(factura.monto);
+            
+            // Quitamos Math.abs para que muestre el signo -
+            document.getElementById(ids.monto).value = factura.monto; 
             document.getElementById(ids.tipo).value  = factura.tipo || 'mensual';
             document.getElementById(ids.fecha).value = factura.fecha;
             this.app.utils.setMonedaBtn(ids.moneda, ids.btnMoneda, factura.moneda || 'ars');
+            
             const btnNeg = document.getElementById(ids.btnNegativo);
-            if (btnNeg) btnNeg.classList.toggle('activo', factura.monto < 0);
+            const inputMonto = document.getElementById(ids.monto);
+            if (btnNeg) {
+                const esNeg = factura.monto < 0;
+                btnNeg.classList.toggle('activo', esNeg);
+                if (inputMonto) inputMonto.dataset.negativo = esNeg ? 'true' : 'false';
+            }
+            
             const btnPagada = document.getElementById(ids.btnPagada);
             if (factura.pagada || factura.conCredito) {
                 btnPagada.classList.add('pagada');
@@ -2314,10 +2326,16 @@ class FacturaService {
         const btnId = inputId === 'factura-monto' ? 'btn-toggle-negativo' : 'btn-editar-toggle-negativo';
         const btn   = document.getElementById(btnId);
         if (!input || !btn) return;
-        const actual = parseFloat(input.value) || 0;
-        input.value  = Math.abs(actual !== 0 ? -actual : 0);
-        btn.classList.toggle('activo', actual > 0);
-        input.dataset.negativo = actual > 0 ? 'true' : 'false';
+        
+        const nuevoNegativo = input.dataset.negativo !== 'true';
+        input.dataset.negativo = nuevoNegativo ? 'true' : 'false';
+        btn.classList.toggle('activo', nuevoNegativo);
+        btn.title = nuevoNegativo ? 'Cambiar a gasto normal' : 'Cambiar a saldo a favor';
+
+        const valorActual = parseFloat(input.value) || 0;
+        if (valorActual !== 0) {
+            input.value = nuevoNegativo ? -Math.abs(valorActual) : Math.abs(valorActual);
+        }
     }
 
     establecerFechaHoy(tipo = 'factura', modo = 'agregar') {
@@ -4372,7 +4390,7 @@ class GistService {
                         const umbral = 0.75;
                         if (payloadLocal.length < payloadRemoto.length * umbral) {
                             console.warn(`AutoSync bloqueado: datos locales (${payloadLocal.length}b) son menos del 75% del remoto (${payloadRemoto.length}b)`);
-                            this.app.mostrarToast('⚠️ AutoSync bloqueado: demasiados datos borrados', 'error');
+                            this.app.mostrarToast('⚠️ AutoSync bloqueado: los datos locales son significativamente menores que el backup. Subí manualmente si es intencional.', 'error');
                             return;
                         }
                     }
