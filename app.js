@@ -4358,8 +4358,31 @@ class GistService {
         const perfil = this.getPerfil();
         if (!perfil.gistAuto || !this.getToken()) return;
         clearTimeout(this._debounceTimer);
-        this._debounceTimer = setTimeout(() => {
-            if (!this._subiendo) this._ejecutarSubida(true);
+        this._debounceTimer = setTimeout(async () => {
+            if (this._subiendo) return;
+
+            // Guard: si hay un gist existente, comparar tamaño antes de subir
+            if (this.esIdValido(perfil.gistId)) {
+                try {
+                    const remoto = await this._fetchGist(perfil.gistId, this.getToken());
+                    if (remoto) {
+                        const categorias = this.app.categoria.getCategorias();
+                        const payloadLocal = JSON.stringify({ servicios: this.servicios, categorias });
+                        const payloadRemoto = JSON.stringify(remoto);
+                        const umbral = 0.75;
+                        if (payloadLocal.length < payloadRemoto.length * umbral) {
+                            console.warn(`AutoSync bloqueado: datos locales (${payloadLocal.length}b) son menos del 75% del remoto (${payloadRemoto.length}b)`);
+                            this.app.mostrarToast('⚠️ AutoSync bloqueado: demasiados datos borrados', 'error');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // Si no se puede comparar, dejar pasar (sin internet, etc.)
+                    console.warn('AutoSync guard: no se pudo comparar con remoto, se permite la subida.', e);
+                }
+            }
+
+            this._ejecutarSubida(true);
         }, this.DEBOUNCE_MS);
     }
 
