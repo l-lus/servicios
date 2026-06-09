@@ -1529,7 +1529,7 @@ input[type="number"] {
     right: 0;
     top: 0;
     bottom: 0;
-    display: flex;
+    display: none;             /* oculto por defecto; se muestra con d-flex-force */
     align-items: center;
     justify-content: center;
     width: 3rem;

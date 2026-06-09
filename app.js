@@ -602,11 +602,12 @@ class GestionServicios {
             if (/^[a-zA-Z]$/.test(e.key)) {
                 e.preventDefault();
                 const serviciosContent = document.getElementById('servicios-content');
-                if (serviciosContent.classList.contains('collapsed') || serviciosContent.classList.contains('semi-collapsed')) {
-                    serviciosContent.classList.remove('collapsed', 'semi-collapsed');
-                    document.getElementById('servicios-chevron').classList.remove('collapsed', 'semi-collapsed');
-                    localStorage.setItem('servicios-collapse-state', 'expanded');
-                    this.serviciosCollapseState = 'expanded';
+                // Solo expandir desde collapsed → semi-collapsed (buscador visible, sin botones)
+                // Si ya está en semi-collapsed o expanded el buscador ya es visible, no cambiar
+                if (serviciosContent.classList.contains('collapsed')) {
+                    this.aplicarEstadoServicios('semi-collapsed');
+                    localStorage.setItem('servicios-collapse-state', 'semi-collapsed');
+                    this.serviciosCollapseState = 'semi-collapsed';
                 }
                 const searchInput = document.getElementById('search-input');
                 searchInput.focus();
@@ -3653,7 +3654,7 @@ class UtilsService {
         if (!searchInput) return;
         searchInput.value = '';
         this.app.terminoBusqueda = '';
-        searchClear.classList.remove('d-flex-imp');
+        searchClear.classList.remove('d-flex-force');
         if (this.app._catColapsadasAntesBusqueda !== null) {
             this.app._catColapsadas = this.app._catColapsadasAntesBusqueda;
             this.app._catColapsadasAntesBusqueda = null;
