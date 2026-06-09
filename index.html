@@ -249,6 +249,28 @@
         <symbol id="icon-add" viewBox="0 0 24 24">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
         </symbol>
+        <symbol id="icon-csd-arrow" viewBox="0 0 24 24">
+            <path d="M7 10l5 5 5-5z" />
+        </symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+        </symbol>
+        <symbol id="icon-check-square" viewBox="0 0 24 24">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </symbol>
+        <symbol id="icon-gift" viewBox="0 0 24 24">
+            <path d="M20 12V22H4V12" />
+            <path d="M22 7H2v5h20V7z" />
+            <path d="M12 22V7" />
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+        </symbol>
     </svg>
 
     <!-- Header -->
@@ -428,7 +450,7 @@
                             <div class="custom-select-wrapper" id="estadisticas-tipo-csd">
                                 <div class="custom-select-trigger">
                                     <span class="csd-label"></span>
-                                    <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                    <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                                 </div>
                                 <div class="custom-select-dropdown"></div>
                             </div>
@@ -451,9 +473,7 @@
                                             <div class="custom-select-wrapper" id="calculador-servicio-csd">
                                                 <div class="custom-select-trigger">
                                                     <span class="csd-label">Seleccionar servicio...</span>
-                                                    <svg class="csd-arrow" viewBox="0 0 24 24">
-                                                        <path d="M7 10l5 5 5-5z" />
-                                                    </svg>
+                                                    <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                                                 </div>
                                                 <div class="custom-select-dropdown"></div>
                                             </div>
@@ -555,10 +575,7 @@
                         </div>
 
                         <div class="search-container">
-                            <svg class="search-icon icon" viewBox="0 0 24 24">
-                                <circle cx="11" cy="11" r="8" class="icon-line" stroke="currentColor"></circle>
-                                <path d="m21 21-4.35-4.35" class="icon-line" stroke="currentColor"></path>
-                            </svg>
+                            <svg class="search-icon icon icon-line"><use href="#icon-search"/></svg>
                             <input type="text" id="search-input" class="search-input" placeholder="Buscar servicio...">
                             <button class="search-clear hidden" id="search-clear">
                                 <svg class="icon">
@@ -828,7 +845,7 @@
                             <div class="custom-select-wrapper" id="servicio-categoria-csd">
                                 <div class="custom-select-trigger">
                                     <span class="csd-label"></span>
-                                    <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                    <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                                 </div>
                                 <div class="custom-select-dropdown"></div>
                             </div>
@@ -872,7 +889,7 @@
                             <div class="custom-select-wrapper" id="editar-servicio-categoria-csd">
                                 <div class="custom-select-trigger">
                                     <span class="csd-label"></span>
-                                    <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                    <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                                 </div>
                                 <div class="custom-select-dropdown"></div>
                             </div>
@@ -918,7 +935,7 @@
                 <div class="custom-select-wrapper" id="select-orden-csd">
                     <div class="custom-select-trigger">
                         <span class="csd-label"></span>
-                        <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                     </div>
                     <div class="custom-select-dropdown"></div>
                 </div>
@@ -934,7 +951,7 @@
                 <div class="custom-select-wrapper" id="select-vista-csd">
                     <div class="custom-select-trigger">
                         <span class="csd-label"></span>
-                        <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                        <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                     </div>
                     <div class="custom-select-dropdown"></div>
                 </div>
@@ -991,7 +1008,7 @@
                     <div class="custom-select-wrapper" id="factura-servicio-csd">
                         <div class="custom-select-trigger">
                             <span class="csd-label"></span>
-                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                            <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                         </div>
                         <div class="custom-select-dropdown"></div>
                     </div>
@@ -1004,7 +1021,7 @@
                     <div class="custom-select-wrapper" id="factura-tipo-csd">
                         <div class="custom-select-trigger">
                             <span class="csd-label"></span>
-                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                            <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                         </div>
                         <div class="custom-select-dropdown"></div>
                     </div>
@@ -1074,7 +1091,7 @@
                     <div class="custom-select-wrapper" id="editar-factura-servicio-csd">
                         <div class="custom-select-trigger">
                             <span class="csd-label"></span>
-                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                            <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                         </div>
                         <div class="custom-select-dropdown"></div>
                     </div>
@@ -1087,7 +1104,7 @@
                     <div class="custom-select-wrapper" id="editar-factura-tipo-csd">
                         <div class="custom-select-trigger">
                             <span class="csd-label"></span>
-                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                            <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                         </div>
                         <div class="custom-select-dropdown"></div>
                     </div>
@@ -1230,7 +1247,7 @@
                     <div class="custom-select-wrapper" id="ingreso-tipo-csd">
                         <div class="custom-select-trigger">
                             <span class="csd-label"></span>
-                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                            <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                         </div>
                         <div class="custom-select-dropdown"></div>
                     </div>
@@ -1281,7 +1298,7 @@
                     <div class="custom-select-wrapper" id="editar-ingreso-tipo-csd">
                         <div class="custom-select-trigger">
                             <span class="csd-label"></span>
-                            <svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                            <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
                         </div>
                         <div class="custom-select-dropdown"></div>
                     </div>
@@ -1520,29 +1537,17 @@
     <!-- Menú contextual servicios -->
     <div class="ctx-menu" id="ctx-menu-servicio">
         <button class="ctx-menu-item" id="ctx-seleccionar">
-            <svg class="icon icon-line" viewBox="0 0 24 24">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-            </svg>
+            <svg class="icon icon-line"><use href="#icon-check-square"/></svg>
             Seleccionar
         </button>
         <div class="ctx-menu-separator"></div>
         <button class="ctx-menu-item" id="ctx-copiar-monto">
-            <svg class="icon icon-line" viewBox="0 0 24 24">
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
+            <svg class="icon icon-line"><use href="#icon-copy"/></svg>
             Copiar monto
         </button>
         <div class="ctx-menu-separator"></div>
         <button class="ctx-menu-item" id="ctx-pagar-factura">
-            <svg class="icon icon-line" viewBox="0 0 24 24">
-                <path d="M20 12V22H4V12" />
-                <path d="M22 7H2v5h20V7z" />
-                <path d="M12 22V7" />
-                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-            </svg>
+            <svg class="icon icon-line"><use href="#icon-gift"/></svg>
             Pagar factura del mes
         </button>
     </div>
@@ -1552,7 +1557,7 @@
 </html>
 
 <!--// ====================================================================
-    //         NOTAS SISTEMA LUSHIBOSCA SERVICIOS VERSION 260512 V1
+    //         NOTAS SISTEMA LUSHIBOSCA SERVICIOS VERSION 260608
     // ====================================================================
     
      - CAMBIOS
