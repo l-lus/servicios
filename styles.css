@@ -467,19 +467,18 @@ input[type="number"] {
 .modal-content,
 .servicios-lista,
 .facturas-lista,
-.custom-select-dropdown,
 .menu-content,
 .info-content,
 .max-h-60vh {
     overflow-y: auto;
     overflow-x: hidden;
 }
+/* custom-select-dropdown gestiona su propio overflow por estado (ver reglas del componente) */
 
 .custom-scroll::-webkit-scrollbar,
 .modal-content::-webkit-scrollbar,
 .servicios-lista::-webkit-scrollbar,
 .facturas-lista::-webkit-scrollbar,
-.custom-select-dropdown::-webkit-scrollbar,
 .menu-content::-webkit-scrollbar,
 .info-content::-webkit-scrollbar,
 .max-h-60vh::-webkit-scrollbar {
@@ -490,7 +489,6 @@ input[type="number"] {
 .modal-content::-webkit-scrollbar-track,
 .servicios-lista::-webkit-scrollbar-track,
 .facturas-lista::-webkit-scrollbar-track,
-.custom-select-dropdown::-webkit-scrollbar-track,
 .menu-content::-webkit-scrollbar-track,
 .info-content::-webkit-scrollbar-track,
 .max-h-60vh::-webkit-scrollbar-track {
@@ -502,7 +500,6 @@ input[type="number"] {
 .modal-content::-webkit-scrollbar-thumb,
 .servicios-lista::-webkit-scrollbar-thumb,
 .facturas-lista::-webkit-scrollbar-thumb,
-.custom-select-dropdown::-webkit-scrollbar-thumb,
 .menu-content::-webkit-scrollbar-thumb,
 .info-content::-webkit-scrollbar-thumb,
 .max-h-60vh::-webkit-scrollbar-thumb {
@@ -514,7 +511,6 @@ input[type="number"] {
 .modal-content::-webkit-scrollbar-thumb:hover,
 .servicios-lista::-webkit-scrollbar-thumb:hover,
 .facturas-lista::-webkit-scrollbar-thumb:hover,
-.custom-select-dropdown::-webkit-scrollbar-thumb:hover,
 .menu-content::-webkit-scrollbar-thumb:hover,
 .info-content::-webkit-scrollbar-thumb:hover,
 .max-h-60vh::-webkit-scrollbar-thumb:hover {
@@ -1306,6 +1302,7 @@ input[type="number"] {
 
 .custom-select-dropdown {
     position: absolute;
+    top: 100%;             /* posición por defecto: debajo del trigger */
     left: 0;
     right: 0;
     z-index: 300;
@@ -1313,8 +1310,8 @@ input[type="number"] {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow-float);
-    max-height: 260px;
-    overflow-y: auto;
+    max-height: 0;         /* colapsado: no contribuye al scroll-area del modal */
+    overflow: hidden;      /* clip del contenido cuando cerrado */
     overscroll-behavior: contain;
     /* Animación idéntica al ctx-menu */
     opacity: 0;
@@ -1322,16 +1319,27 @@ input[type="number"] {
     transform-origin: top center;
     pointer-events: none;
     visibility: hidden;
-    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+    /* max-height/overflow se aplican DESPUÉS del fade-out (0.15s delay) para
+       evitar que el contenido se corte mientras la animación de cierre ocurre */
+    transition: opacity 0.15s ease, transform 0.15s ease,
+                visibility 0s linear 0.15s,
+                max-height 0s linear 0.15s,
+                overflow 0s linear 0.15s;
 }
 
 .custom-select-wrapper.open .custom-select-dropdown,
 .custom-select-dropdown.csd-open {
+    max-height: 260px;     /* expandido: muestra opciones */
+    overflow-y: auto;      /* scroll si hay muchas opciones */
     opacity: 1;
     transform: scale(1);
     pointer-events: auto;
     visibility: visible;
-    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0s;
+    /* Al abrir: max-height/overflow cambian instantáneamente (sin delay) */
+    transition: opacity 0.15s ease, transform 0.15s ease,
+                visibility 0s linear 0s,
+                max-height 0s linear 0s,
+                overflow 0s linear 0s;
 }
 
 .custom-select-option {
@@ -1349,6 +1357,18 @@ input[type="number"] {
 .custom-select-option.selected {
     font-weight: 600;
 }
+
+/* Scrollbar del dropdown (sólo aplica cuando está abierto y tiene overflow-y: auto) */
+.custom-select-dropdown::-webkit-scrollbar { width: 8px; }
+.custom-select-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-body);
+    border-radius: var(--radius);
+}
+.custom-select-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius);
+}
+.custom-select-dropdown::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 .est-cat-tags-row {
     display: flex;
