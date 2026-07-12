@@ -2227,6 +2227,7 @@ class FacturaService {
             const btnPagada = document.getElementById(ids.btnPagada);
             if (factura.pagada || factura.conCredito) {
                 btnPagada.classList.add('pagada');
+                btnPagada.querySelector('use')?.setAttribute('href', '#icon-cancel');
                 const fpInput = document.getElementById(ids.fechaPago);
                 fpInput.disabled = false; fpInput.value = factura.fechaPago || '';
                 const btnCred = document.getElementById(ids.btnCredito);
@@ -2234,11 +2235,20 @@ class FacturaService {
                 if (factura.conCredito) {
                     document.getElementById(ids.conCredito).value = 'true';
                     if (btnCred) { btnCred.classList.add('pagada'); btnCred.querySelector('use')?.setAttribute('href', '#icon-card'); }
+                } else {
+                    document.getElementById(ids.conCredito).value = 'false';
+                    this._resetBtnCredito(btnCred);
                 }
             } else {
                 btnPagada.classList.remove('pagada');
+                btnPagada.querySelector('use')?.setAttribute('href', '#icon-card');
                 document.getElementById(ids.fechaPago).disabled = true;
                 document.getElementById(ids.fechaPago).value = '';
+                const btnCred = document.getElementById(ids.btnCredito);
+                const inputCred = document.getElementById(ids.conCredito);
+                if (inputCred) inputCred.value = 'false';
+                if (btnCred) btnCred.classList.remove('btn-credito-visible');
+                this._resetBtnCredito(btnCred);
             }
             // Poblar select de servicios en modal editar
             const selEdit = document.getElementById(ids.servicio);
