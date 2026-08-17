@@ -55,7 +55,20 @@ const BackNav = (function () {
     window.addEventListener('popstate', () => {
         if (_ignorarPopstate) { _ignorarPopstate = false; return; }
         const top = _pila.pop();
-        if (top) top.cerrar();
+        if (!top) return;
+        try {
+            top.cerrar();
+        } catch (err) {
+            // Si el cierre/reapertura de la capa falla a mitad de camino (por ej.
+            // un error de JS puntual mientras se repuebla el modal padre), no
+            // dejamos el historial desincronizado: cerramos todo lo que haya
+            // quedado visualmente abierto y logueamos para poder diagnosticarlo.
+            console.error('BackNav: error al resolver el "atrás", se fuerza el cierre de todas las capas', err);
+            _pila.length = 0;
+            document.querySelectorAll('.modal.active, #menu-ajustes.active, #menu-agregar.active, #ctx-menu-servicio.active')
+                .forEach(el => el.classList.remove('active'));
+            document.body.classList.remove('modal-open');
+        }
     });
 
     function _programarCommit() {
