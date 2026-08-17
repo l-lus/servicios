@@ -31,6 +31,75 @@
 })();
 
 // ============================================
+// NAVEGACIÓN CON BOTÓN ATRÁS (Android / PWA)
+// ============================================
+// Cada vez que se abre un modal, menú lateral o menú contextual,
+// se apila una entrada en el historial del navegador. Al tocar el
+// botón atrás del dispositivo se dispara 'popstate', que cierra la
+// capa superior en vez de salir de la app.
+const BackNav = (function () {
+    const _pila = []; // { id, cerrar }
+    let _ignorarPopstate = false;
+
+    // Cuando un cierre (cerrar) es seguido, en el mismo tick de JS, por una
+    // apertura (abrir) —el patrón típico de "cierro este modal y abro el
+    // siguiente" que encadenan varias pantallas—, NO usamos history.back()
+    // + history.pushState() por separado: mezclar una navegación asíncrona
+    // (back) con una síncrona (pushState) en el mismo tick desincroniza el
+    // historial del navegador (el siguiente "atrás" real puede saltarse un
+    // paso y salir de la app). En cambio, colapsamos ese cierre+apertura en
+    // un único history.replaceState(), sin gastar un paso real de historial.
+    let _cierrePendiente = false;
+    let _commitProgramado = false;
+
+    window.addEventListener('popstate', () => {
+        if (_ignorarPopstate) { _ignorarPopstate = false; return; }
+        const top = _pila.pop();
+        if (top) top.cerrar();
+    });
+
+    function _programarCommit() {
+        if (_commitProgramado) return;
+        _commitProgramado = true;
+        queueMicrotask(() => {
+            _commitProgramado = false;
+            if (!_cierrePendiente) return; // ya se resolvió con un abrir() -> replaceState
+            _cierrePendiente = false;
+            _ignorarPopstate = true;
+            history.back();
+        });
+    }
+
+    function abrir(id, cerrarFn) {
+        _pila.push({ id, cerrar: cerrarFn });
+        if (_cierrePendiente) {
+            _cierrePendiente = false;
+            history.replaceState({ overlay: id }, '');
+        } else {
+            history.pushState({ overlay: id }, '');
+        }
+    }
+
+    function cerrar(id) {
+        const idx = _pila.findIndex(o => o.id === id);
+        if (idx === -1) return; // no estaba trackeada (evita un history.back() de más)
+        _pila.splice(idx, 1);
+        _cierrePendiente = true;
+        _programarCommit();
+    }
+
+    function cerrarTodo() {
+        _cierrePendiente = false;
+        if (_pila.length === 0) return;
+        _ignorarPopstate = true;
+        history.go(-_pila.length);
+        _pila.length = 0;
+    }
+
+    return { abrir, cerrar, cerrarTodo };
+})();
+
+// ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
 // ============================================
 
@@ -2623,11 +2692,16 @@ class ContextMenuService {
 
         menu.style.setProperty('--ctx-x', `${x}px`);
         menu.style.setProperty('--ctx-y', `${y}px`);
+
+        BackNav.abrir('ctx-menu-servicio', () => this.cerrar());
     }
 
     cerrar() {
-        document.getElementById('ctx-menu-servicio').classList.remove('active');
+        const menu = document.getElementById('ctx-menu-servicio');
+        const estabaAbierto = menu.classList.contains('active');
+        menu.classList.remove('active');
         this.app._ctxServicioId = null;
+        if (estabaAbierto) BackNav.cerrar('ctx-menu-servicio');
     }
 
     seleccionar(servicioId) {
@@ -3383,8 +3457,12 @@ class UIManager {
     // ── Modales ───────────────────────────────────────────────
     abrirModal(modalId) {
         const modal = document.getElementById(modalId);
+        const yaAbierto = modal.classList.contains('active');
         modal.classList.add('active');
         document.body.classList.add('modal-open');
+        // Reusamos volverDesdeModalActivo (la misma lógica de "tocar afuera del modal")
+        // para que el botón atrás resuelva igual los encadenados vía _MODAL_VOLVER_BTN.
+        if (!yaAbierto) BackNav.abrir(modalId, () => this.app.volverDesdeModalActivo());
     }
 
     cerrarModal(modalId) {
@@ -3394,6 +3472,7 @@ class UIManager {
             document.body.classList.remove('modal-open');
         }
         if (modalId === 'modal-gist') this.app.gist.actualizarBotones();
+        BackNav.cerrar(modalId);
     }
 
     cerrarTodosLosModales() {
@@ -3406,15 +3485,20 @@ class UIManager {
         document.body.classList.remove('modal-open');
         this.app._anoExpandidoFacturas = {};
         this.app._anoExpandidoIngresos = {};
+        BackNav.cerrarTodo();
     }
 
     // ── Menú ajustes ──────────────────────────────────────────
     toggleMenuAjustes() {
         const menu = document.getElementById('menu-ajustes');
-        const overlay = document.getElementById('menu-overlay');
-        menu.classList.toggle('active');
-        overlay.classList.toggle('active');
-        document.body.classList.toggle('modal-open', menu.classList.contains('active'));
+        if (menu.classList.contains('active')) {
+            this.cerrarMenuAjustes();
+            return;
+        }
+        menu.classList.add('active');
+        document.getElementById('menu-overlay').classList.add('active');
+        document.body.classList.add('modal-open');
+        BackNav.abrir('menu-ajustes', () => this.cerrarMenuAjustes());
     }
 
     cerrarMenuAjustes() {
@@ -3427,20 +3511,20 @@ class UIManager {
                 document.getElementById(id)?.classList.remove('open');
             });
         document.body.classList.remove('modal-open');
+        BackNav.cerrar('menu-ajustes');
     }
 
     // ── Menú agregar ──────────────────────────────────────────
     toggleMenuAgregar() {
         const menu = document.getElementById('menu-agregar');
-        const overlay = document.getElementById('menu-agregar-overlay');
-        menu.classList.toggle('active');
-        overlay.classList.toggle('active');
         if (menu.classList.contains('active')) {
-            document.body.classList.add('modal-open');
-        } else {
-            document.body.classList.remove('modal-open');
-            this._resetVistaMenuAgregar();
+            this.cerrarMenuAgregar();
+            return;
         }
+        menu.classList.add('active');
+        document.getElementById('menu-agregar-overlay').classList.add('active');
+        document.body.classList.add('modal-open');
+        BackNav.abrir('menu-agregar', () => this.cerrarMenuAgregar());
     }
 
     cerrarMenuAgregar() {
@@ -3450,6 +3534,7 @@ class UIManager {
         overlay.classList.remove('active');
         document.body.classList.remove('modal-open');
         this._resetVistaMenuAgregar();
+        BackNav.cerrar('menu-agregar');
     }
 
     _resetVistaMenuAgregar() {
