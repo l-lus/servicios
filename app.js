@@ -30,87 +30,586 @@
     });
 })();
 
-// ============================================
-// NAVEGACIÓN CON BOTÓN ATRÁS (Android / PWA)
-// ============================================
-// Cada vez que se abre un modal, menú lateral o menú contextual,
-// se apila una entrada en el historial del navegador. Al tocar el
-// botón atrás del dispositivo se dispara 'popstate', que cierra la
-// capa superior en vez de salir de la app.
-const BackNav = (function () {
-    const _pila = []; // { id, cerrar }
-    let _ignorarPopstate = false;
+// ============================================================
+// SEGURIDAD Y UTILIDADES (Sanitización, XSS, IDs, Hash)
+// ============================================================
+const SecurityAndUtils = (function () {
+    'use strict';
 
-    // Cuando un cierre (cerrar) es seguido, en el mismo tick de JS, por una
-    // apertura (abrir) —el patrón típico de "cierro este modal y abro el
-    // siguiente" que encadenan varias pantallas—, NO usamos history.back()
-    // + history.pushState() por separado: mezclar una navegación asíncrona
-    // (back) con una síncrona (pushState) en el mismo tick desincroniza el
-    // historial del navegador (el siguiente "atrás" real puede saltarse un
-    // paso y salir de la app). En cambio, colapsamos ese cierre+apertura en
-    // un único history.replaceState(), sin gastar un paso real de historial.
+    const SECURITY_LIMITS = {
+        MAX_STRING_LENGTH: 100,
+        MAX_JSON_SIZE: 4 * 1024 * 1024,
+    };
+
+    function sanitizeString(str, maxLength = SECURITY_LIMITS.MAX_STRING_LENGTH) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/[<>"'`]/g, '')
+            .replace(/javascript:/gi, '')
+            .replace(/data:/gi, '')
+            .replace(/vbscript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .replace(/[\x00-\x1F\x7F]/g, '')
+            .replace(/&lt;/gi, '')
+            .replace(/&gt;/gi, '')
+            .replace(/&#/g, '')
+            .trim()
+            .substring(0, maxLength);
+    }
+
+    function escapeHtml(s) {
+        return s == null ? '' : String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    const CLAVES_PROTO_PELIGROSAS = ['__proto__', 'constructor', 'prototype'];
+
+    function reviverJSONSeguro(key, value) {
+        return CLAVES_PROTO_PELIGROSAS.includes(key) ? undefined : value;
+    }
+
+    function generarIDSeguro() {
+        if (window.crypto && window.crypto.getRandomValues) {
+            const array = new Uint32Array(4);
+            crypto.getRandomValues(array);
+            return Array.from(array, num => num.toString(36)).join('');
+        }
+        const timestamp = Date.now().toString(36);
+        const random1 = Math.random().toString(36).substring(2, 11);
+        const random2 = Math.random().toString(36).substring(2, 11);
+        return `${timestamp}-${random1}${random2}`;
+    }
+
+    return {
+        SECURITY_LIMITS,
+        sanitizeString,
+        escapeHtml,
+        reviverJSONSeguro,
+        generarIDSeguro
+    };
+})();
+
+// ============================================================
+// STORAGE HELPER (Persistencia tipada, cuotas, perfiles)
+// ============================================================
+const StorageHelper = (function () {
+    'use strict';
+
+    let notify = { mostrarToast: () => { } };
+    function configurarNotificaciones(handlers) { notify = { ...notify, ...handlers }; }
+
+    function _getKey(key, useProfile) {
+        if (!useProfile) return key;
+        const perfilActivo = window.app?.perfilActivo || localStorage.getItem('gestion_servicios_perfil_activo') || 'default';
+        return `${key}_${perfilActivo}`;
+    }
+
+    function setItem(key, value, useProfile = false) {
+        try {
+            const finalKey = _getKey(key, useProfile);
+            const valueToStore = typeof value === 'object' ? JSON.stringify(value) : String(value);
+            localStorage.setItem(finalKey, valueToStore);
+            return true;
+        } catch (e) {
+            console.error(`Error guardando en Storage (${key}):`, e);
+            if (e.name === 'QuotaExceededError' || e.code === 22) {
+                notify.mostrarToast('Almacenamiento lleno, no se pudo guardar', 'error');
+            }
+            return false;
+        }
+    }
+
+    function getItem(key, defaultValue = null, useProfile = false) {
+        try {
+            const value = localStorage.getItem(_getKey(key, useProfile));
+            return value !== null ? value : defaultValue;
+        } catch (e) {
+            return defaultValue;
+        }
+    }
+
+    function getBoolean(key, defaultValue = false, useProfile = false) {
+        const val = getItem(key, null, useProfile);
+        if (val === null) return defaultValue;
+        return val === 'true';
+    }
+
+    function getNumber(key, defaultValue = 0, useProfile = false) {
+        const val = getItem(key, null, useProfile);
+        if (val === null) return defaultValue;
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? defaultValue : parsed;
+    }
+
+    function getObject(key, defaultValue = null, useProfile = false) {
+        const val = getItem(key, null, useProfile);
+        if (!val) return defaultValue;
+        try {
+            return JSON.parse(val, SecurityAndUtils.reviverJSONSeguro);
+        } catch (e) {
+            return defaultValue;
+        }
+    }
+
+    function removeItem(key, useProfile = false) {
+        try {
+            localStorage.removeItem(_getKey(key, useProfile));
+        } catch (e) { }
+    }
+
+    return {
+        setItem,
+        getItem,
+        getBoolean,
+        getNumber,
+        getObject,
+        removeItem,
+        configurarNotificaciones
+    };
+})();
+
+// ============================================================
+// GESTOS TÁCTILES (Swipe con bloqueo direccional)
+// ============================================================
+function registrarSwipe(el, callback, { minX = 50, maxY = 80, ignoreInputs = false } = {}) {
+    if (!el || el.dataset.swipeInit) return;
+    el.dataset.swipeInit = '1';
+    let _x = null, _y = null;
+    let _direccionBloqueada = null;
+
+    el.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        if (ignoreInputs && ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+        _x = e.touches[0].clientX;
+        _y = e.touches[0].clientY;
+        _direccionBloqueada = null;
+    }, { passive: true });
+
+    el.addEventListener('touchmove', e => {
+        if (_x === null || _y === null) return;
+
+        const dx = Math.abs(e.touches[0].clientX - _x);
+        const dy = Math.abs(e.touches[0].clientY - _y);
+
+        if (!_direccionBloqueada && (dx > 5 || dy > 5)) {
+            _direccionBloqueada = dx > dy ? 'x' : 'y';
+        }
+
+        if (_direccionBloqueada === 'x' && e.cancelable) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    el.addEventListener('touchend', e => {
+        if (_x === null || _direccionBloqueada === 'y') {
+            _x = null; _y = null;
+            return;
+        }
+
+        const dx = e.changedTouches[0].clientX - _x;
+        const dy = e.changedTouches[0].clientY - _y;
+        _x = null; _y = null;
+
+        if (Math.abs(dy) > maxY) return;
+        if (Math.abs(dx) < minX) return;
+
+        callback(dx < 0 ? 1 : -1);
+    }, { passive: true });
+}
+
+// ============================================================
+// TOAST MANAGER (Cola, deduplicación, velocidad dinámica, swipe)
+// ============================================================
+const ToastManager = (function () {
+    const _toastQueue = [];
+    let _toastRunning = false;
+    let _toastTimeout = null;
+    const MAX_TOAST_QUEUE = 5;
+
+    function mostrarToast(mensaje, tipo = 'info', duracion = 3000, detalle = null) {
+        const texto = detalle ? `${mensaje}, ${detalle}` : mensaje;
+        const textoLimpio = SecurityAndUtils.sanitizeString(texto, 200);
+        const ultimo = _toastQueue[_toastQueue.length - 1];
+        const toastEl = document.getElementById('toast');
+        const actual = _toastRunning ? toastEl?.textContent : null;
+        if ((ultimo && ultimo.mensaje === textoLimpio) || actual === textoLimpio) return;
+        _toastQueue.push({ mensaje: textoLimpio, tipo, duracionBase: duracion });
+        if (_toastQueue.length > MAX_TOAST_QUEUE) {
+            _toastQueue.splice(0, _toastQueue.length - MAX_TOAST_QUEUE);
+        }
+        if (!_toastRunning) _procesarToastQueue();
+    }
+
+    function _procesarToastQueue() {
+        if (_toastQueue.length === 0) {
+            _toastRunning = false;
+            return;
+        }
+
+        _toastRunning = true;
+        const actual = _toastQueue.shift();
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+
+        toast.classList.remove('show');
+        toast.textContent = actual.mensaje;
+        toast.className = `toast ${actual.tipo}`;
+        let duracionFinal = actual.duracionBase || 3000;
+        if (_toastQueue.length >= 1) {
+            duracionFinal = Math.floor(duracionFinal / 2);
+        }
+
+        setTimeout(() => {
+            toast.classList.add('show');
+            _habilitarCierreToast();
+            _toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+                _toastTimeout = null;
+                setTimeout(() => _procesarToastQueue(), 350);
+            }, duracionFinal);
+        }, 10);
+    }
+
+    function _cerrarToastActual() {
+        if (_toastTimeout) { clearTimeout(_toastTimeout); _toastTimeout = null; }
+        const toast = document.getElementById('toast');
+        if (!toast || !toast.classList.contains('show')) return;
+        toast.classList.remove('show');
+        setTimeout(() => _procesarToastQueue(), 350);
+    }
+
+    function _habilitarCierreToast() {
+        const toast = document.getElementById('toast');
+        if (!toast || toast.dataset.cierreInit) return;
+        toast.dataset.cierreInit = '1';
+        toast.addEventListener('click', () => _cerrarToastActual());
+        registrarSwipe(toast, () => _cerrarToastActual(), { minX: 40 });
+    }
+
+    return {
+        mostrarToast,
+        cerrarActual: _cerrarToastActual
+    };
+})();
+
+// Conectar notificaciones de almacenamiento con ToastManager
+StorageHelper.configurarNotificaciones({ mostrarToast: ToastManager.mostrarToast });
+
+// ============================================================
+// MODAL MANAGER & HISTORIAL (Popstate, jerarquía y confirmación)
+// ============================================================
+const ModalManager = (function () {
+    const _padres = {};
+    const _accionesVolver = {
+        'modal-confirmar': () => document.getElementById('modal-confirmar-cancel')?.click(),
+        'modal-agregar-servicio': () => document.getElementById('modal-servicio-close')?.click(),
+        'modal-editar-servicio': () => document.getElementById('modal-editar-servicio-close')?.click(),
+        'modal-agregar-factura': () => document.getElementById('modal-factura-close')?.click(),
+        'modal-editar-factura': () => document.getElementById('modal-factura-close-en-grid')?.click(),
+        'modal-facturas-servicio': () => document.getElementById('btn-cerrar-modal-facturas-servicio')?.click(),
+        'modal-ingresos-lista': () => document.getElementById('btn-cerrar-modal-ingresos-lista')?.click(),
+        'modal-agregar-ingreso': () => document.getElementById('modal-ingreso-close')?.click(),
+        'modal-editar-ingreso': () => document.getElementById('modal-ingreso-volver')?.click(),
+        'modal-ordenar': () => document.getElementById('btn-cerrar-modal-ordenar')?.click(),
+        'modal-nueva-categoria': () => document.getElementById('btn-cerrar-modal-categorias')?.click(),
+        'modal-perfiles': () => document.getElementById('btn-cerrar-modal-perfiles')?.click(),
+        'modal-editar-perfil': () => document.getElementById('btn-cancelar-editar-perfil')?.click(),
+        'modal-informacion': () => document.getElementById('modal-informacion-close')?.click(),
+        'modal-info-resumen': () => document.getElementById('btn-cerrar-modal-info-resumen')?.click(),
+        'modal-gist': () => document.getElementById('btn-gist-cerrar')?.click(),
+        'modal-gist-novedades': () => document.getElementById('gist-novedades-ignorar-btn')?.click(),
+        'modal-gist-merge': () => document.getElementById('btn-gist-merge-cancelar')?.click(),
+        'modal-debug-estadisticas': () => document.getElementById('btn-cerrar-modal-debug')?.click(),
+        'menu-ajustes': () => window.app?.ui?.cerrarMenuAjustes(),
+        'menu-agregar': () => window.app?.ui?.cerrarMenuAgregar(),
+        'ctx-menu-servicio': () => window.app?.contextMenu?.cerrar()
+    };
+
+    function registrarAccionVolver(modalId, fn) {
+        _accionesVolver[modalId] = fn;
+    }
+
+    let _navegandoHaciaAtras = false;
+    let _ignorandoPopstate = false;
+    let _enAlternanciaHaciaAdelante = false;
+    let _enAlternanciaHaciaAtras = false;
     let _cierrePendiente = false;
     let _commitProgramado = false;
-
-    window.addEventListener('popstate', () => {
-        if (_ignorarPopstate) { _ignorarPopstate = false; return; }
-        const top = _pila.pop();
-        if (!top) return;
-        try {
-            top.cerrar();
-        } catch (err) {
-            // Si el cierre/reapertura de la capa falla a mitad de camino (por ej.
-            // un error de JS puntual mientras se repuebla el modal padre), no
-            // dejamos el historial desincronizado: cerramos todo lo que haya
-            // quedado visualmente abierto y logueamos para poder diagnosticarlo.
-            console.error('BackNav: error al resolver el "atrás", se fuerza el cierre de todas las capas', err);
-            _pila.length = 0;
-            document.querySelectorAll('.modal.active, #menu-ajustes.active, #menu-agregar.active, #ctx-menu-servicio.active')
-                .forEach(el => el.classList.remove('active'));
-            document.body.classList.remove('modal-open');
-        }
-    });
 
     function _programarCommit() {
         if (_commitProgramado) return;
         _commitProgramado = true;
         queueMicrotask(() => {
             _commitProgramado = false;
-            if (!_cierrePendiente) return; // ya se resolvió con un abrir() -> replaceState
+            if (!_cierrePendiente) return;
             _cierrePendiente = false;
-            _ignorarPopstate = true;
+            _ignorandoPopstate = true;
             history.back();
         });
     }
 
-    function abrir(id, cerrarFn) {
-        _pila.push({ id, cerrar: cerrarFn });
-        if (_cierrePendiente) {
-            _cierrePendiente = false;
-            history.replaceState({ overlay: id }, '');
+    function _getAccionVolver(modalId) {
+        return _accionesVolver[modalId] || null;
+    }
+
+    function _ejecutarAccionCierre(modalId) {
+        const accionVolver = _getAccionVolver(modalId);
+        if (accionVolver) {
+            accionVolver();
+        } else if (_padres[modalId]) {
+            alternar(modalId, _padres[modalId]);
         } else {
-            history.pushState({ overlay: id }, '');
+            cerrar(modalId);
+        }
+
+        // Fallback de seguridad: si el modal sigue abierto, forzar cierre limpio
+        const el = document.getElementById(modalId);
+        if (el && (el.classList.contains('show') || el.classList.contains('active'))) {
+            cerrar(modalId);
         }
     }
 
-    function cerrar(id) {
-        const idx = _pila.findIndex(o => o.id === id);
-        if (idx === -1) return; // no estaba trackeada (evita un history.back() de más)
-        _pila.splice(idx, 1);
-        _cierrePendiente = true;
-        _programarCommit();
-    }
+    window.addEventListener('popstate', (event) => {
+        if (_ignorandoPopstate) {
+            _ignorandoPopstate = false;
+            return;
+        }
 
-    function cerrarTodo() {
         _cierrePendiente = false;
-        if (_pila.length === 0) return;
-        _ignorarPopstate = true;
-        history.go(-_pila.length);
-        _pila.length = 0;
+        _navegandoHaciaAtras = true;
+
+        // Context menu abierto tiene prioridad máxima
+        const ctxMenu = document.getElementById('ctx-menu-servicio');
+        if (ctxMenu && (ctxMenu.classList.contains('active') || ctxMenu.classList.contains('show'))) {
+            _ejecutarAccionCierre('ctx-menu-servicio');
+            setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
+            return;
+        }
+
+        // Modales en pantalla
+        const modalesAbiertos = Array.from(document.querySelectorAll('.modal.show, .modal.active'));
+        if (modalesAbiertos.length > 0) {
+            const topModal = modalesAbiertos[modalesAbiertos.length - 1];
+            _ejecutarAccionCierre(topModal.id);
+            setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
+            return;
+        }
+
+        // Paneles laterales
+        const menuAjustes = document.getElementById('menu-ajustes');
+        if (menuAjustes && (menuAjustes.classList.contains('active') || menuAjustes.classList.contains('show'))) {
+            _ejecutarAccionCierre('menu-ajustes');
+            setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
+            return;
+        }
+
+        const menuAgregar = document.getElementById('menu-agregar');
+        if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
+            _ejecutarAccionCierre('menu-agregar');
+            setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
+            return;
+        }
+
+        setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
+    });
+
+    let _mousedownEnOverlay = false;
+
+    function _handleOverlayMousedown(event) {
+        _mousedownEnOverlay = (event.target === event.currentTarget) &&
+            event.target.classList.contains('modal') &&
+            (event.target.classList.contains('show') || event.target.classList.contains('active'));
     }
 
-    return { abrir, cerrar, cerrarTodo };
+    function handleOutsideClick(event) {
+        if (!_mousedownEnOverlay) return;
+        _mousedownEnOverlay = false;
+        if (event.target === event.currentTarget &&
+            event.target.classList.contains('modal') &&
+            (event.target.classList.contains('show') || event.target.classList.contains('active'))) {
+            const modalId = event.target.id;
+            if (modalId === 'modal-confirmar') {
+                return;
+            }
+            _ejecutarAccionCierre(modalId);
+        }
+    }
+
+    function abrir(modalId, callback = null) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.add('show', 'active');
+        document.body.classList.add('modal-open');
+
+        if (!_navegandoHaciaAtras && !_enAlternanciaHaciaAtras) {
+            if (_cierrePendiente) {
+                _cierrePendiente = false;
+                history.replaceState({ modalId: modalId }, "");
+            } else {
+                history.pushState({ modalId: modalId }, "");
+            }
+        }
+
+        setTimeout(() => {
+            modal.addEventListener('pointerdown', _handleOverlayMousedown, { passive: true });
+            modal.addEventListener('mousedown', _handleOverlayMousedown);
+            modal.addEventListener('click', handleOutsideClick);
+        }, 100);
+
+        if (callback) callback();
+    }
+
+    function cerrar(modalId, callback = null) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        const estabaAbierto = modal.classList.contains('show') || modal.classList.contains('active');
+        modal.classList.remove('show', 'active');
+
+        if (document.querySelectorAll('.modal.show, .modal.active, .menu-ajustes.active, .menu-ajustes.show, .menu-agregar.active, .menu-agregar.show').length === 0) {
+            document.body.classList.remove('modal-open');
+        }
+
+        modal.removeEventListener('pointerdown', _handleOverlayMousedown);
+        modal.removeEventListener('mousedown', _handleOverlayMousedown);
+        modal.removeEventListener('click', handleOutsideClick);
+
+        if (modalId === 'modal-gist' && window.app?.gist) {
+            window.app.gist.actualizarBotones();
+        }
+
+        if (estabaAbierto && !_navegandoHaciaAtras && !_enAlternanciaHaciaAdelante) {
+            _cierrePendiente = true;
+            _programarCommit();
+        }
+
+        if (callback) callback();
+    }
+
+    function alternar(modalIdCerrar, modalIdAbrir, callbackCerrar = null, callbackAbrir = null) {
+        const esHaciaAtras = (_padres[modalIdCerrar] === modalIdAbrir);
+
+        if (esHaciaAtras) {
+            _enAlternanciaHaciaAtras = true;
+            delete _padres[modalIdCerrar];
+        } else {
+            _enAlternanciaHaciaAdelante = true;
+            if (modalIdCerrar && modalIdAbrir) {
+                _padres[modalIdAbrir] = modalIdCerrar;
+            }
+        }
+
+        cerrar(modalIdCerrar, callbackCerrar);
+        abrir(modalIdAbrir, callbackAbrir);
+
+        _enAlternanciaHaciaAdelante = false;
+        _enAlternanciaHaciaAtras = false;
+    }
+
+    function cerrarTodos() {
+        _cierrePendiente = false;
+        document.querySelectorAll('.custom-select-dropdown.csd-fixed').forEach(dd => {
+            if (dd._csdInstance) dd._csdInstance.close();
+            else if (dd.parentElement === document.body) dd.remove();
+        });
+
+        document.querySelectorAll('.modal, #menu-ajustes, #menu-agregar, #ctx-menu-servicio').forEach(modal => {
+            modal.classList.remove('show', 'active');
+            modal.removeEventListener('pointerdown', _handleOverlayMousedown);
+            modal.removeEventListener('mousedown', _handleOverlayMousedown);
+            modal.removeEventListener('click', handleOutsideClick);
+        });
+        document.querySelectorAll('#menu-overlay, #menu-agregar-overlay').forEach(el => el.classList.remove('active', 'show'));
+        Object.keys(_padres).forEach(k => delete _padres[k]);
+        document.body.classList.remove('modal-open');
+
+        if (window.app) {
+            window.app._anoExpandidoFacturas = {};
+            window.app._anoExpandidoIngresos = {};
+        }
+    }
+
+    function confirmar(texto, labelOk = 'Confirmar', icono = '#icon-trash', opciones = {}) {
+        return new Promise((resolve) => {
+            const elTexto = document.getElementById('modal-confirmar-texto');
+            const elLabel = document.getElementById('modal-confirmar-label-ok');
+            const elLabelCancel = document.getElementById('modal-confirmar-label-cancel');
+            const elTitulo = document.getElementById('modal-confirmar-titulo');
+            const elIcono = document.querySelector('#modal-confirmar-ok svg use');
+            const elIconoCancel = document.querySelector('#modal-confirmar-cancel svg use');
+            const btnOk = document.getElementById('modal-confirmar-ok');
+            const btnCancel = document.getElementById('modal-confirmar-cancel');
+            if (!elTexto || !btnOk || !btnCancel) { resolve(false); return; }
+
+            elTexto.textContent = texto;
+            if (elLabel) elLabel.textContent = labelOk;
+            if (elLabelCancel) elLabelCancel.textContent = opciones.labelCancel || 'Cancelar';
+            if (elTitulo) elTitulo.textContent = opciones.titulo || 'Atención';
+            if (elIcono) elIcono.setAttribute('href', icono);
+            if (elIconoCancel) elIconoCancel.setAttribute('href', opciones.iconoCancel || '#icon-cancel');
+
+            const modalPadre = document.querySelector('.modal.show, .modal.active');
+            const modalPadreId = modalPadre ? modalPadre.id : null;
+
+            function ok() { cleanup(); resolve(true); }
+            function cancel() { cleanup(); resolve(false); }
+
+            function onPopstate() {
+                _removeListeners();
+                resolve(false);
+            }
+
+            function _removeListeners() {
+                btnOk.removeEventListener('click', ok);
+                btnCancel.removeEventListener('click', cancel);
+                window.removeEventListener('popstate', onPopstate);
+            }
+
+            function cleanup() {
+                _removeListeners();
+                if (modalPadreId) {
+                    alternar('modal-confirmar', modalPadreId);
+                } else {
+                    cerrar('modal-confirmar');
+                }
+            }
+
+            btnOk.addEventListener('click', ok);
+            btnCancel.addEventListener('click', cancel);
+            window.addEventListener('popstate', onPopstate, { once: true });
+            if (modalPadreId) {
+                alternar(modalPadreId, 'modal-confirmar');
+            } else {
+                abrir('modal-confirmar');
+            }
+        });
+    }
+
+    return {
+        abrir,
+        cerrar,
+        alternar,
+        cerrarTodos,
+        confirmar,
+        ejecutarAccionCierre: _ejecutarAccionCierre,
+        getPadre: (id) => _padres[id] || null,
+        setPadre: (id, padreId) => { if (id && padreId) _padres[id] = padreId; },
+        registrarAccionVolver
+    };
 })();
+
+// Compatibilidad con llamadas legacy a BackNav
+const BackNav = {
+    abrir: (id, cerrarFn) => {
+        if (cerrarFn) ModalManager.registrarAccionVolver(id, cerrarFn);
+        ModalManager.abrir(id);
+    },
+    cerrar: (id) => ModalManager.cerrar(id),
+    cerrarTodo: () => ModalManager.cerrarTodos()
+};
 
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
@@ -573,7 +1072,9 @@ class GestionServicios {
             }, { passive: true });
             modal.addEventListener('click', (e) => {
                 if (e.target === modal && _downOnOverlay) {
-                    this.volverDesdeModalActivo();
+                    _downOnOverlay = false;
+                    if (modal.id === 'modal-confirmar') return;
+                    ModalManager.ejecutarAccionCierre(modal.id);
                 }
             });
         });
@@ -640,14 +1141,14 @@ class GestionServicios {
         document.addEventListener('keydown', (e) => {
             // ESC: cerrar modales, menús, modo calculadora o búsqueda
             if (e.key === 'Escape') {
-                const hayModalAbierto = document.querySelector('.modal.active');
-                const hayMenuAbierto = document.getElementById('menu-ajustes').classList.contains('active')
-                    || document.getElementById('menu-agregar').classList.contains('active');
+                const hayCapaAbierta = document.querySelector(
+                    '.modal.show, .modal.active, .menu-ajustes.active, .menu-ajustes.show, .menu-agregar.active, .menu-agregar.show, #ctx-menu-servicio.active, #ctx-menu-servicio.show'
+                );
 
                 if (this.modoCalculadora) { this.desactivarModoCalculadora(); return; }
-                if (hayModalAbierto || hayMenuAbierto) {
+                if (hayCapaAbierta) {
+                    e.preventDefault();
                     this.volverDesdeModalActivo();
-                    this.cerrarMenuAjustes();
                     return;
                 }
                 if (this.terminoBusqueda) { this._limpiarBusqueda(); return; }
@@ -656,7 +1157,7 @@ class GestionServicios {
             // Enter en modal nueva categoría
             if (e.key === 'Enter') {
                 const modalCat = document.getElementById('modal-nueva-categoria');
-                if (modalCat?.classList.contains('active')) {
+                if (modalCat && (modalCat.classList.contains('active') || modalCat.classList.contains('show'))) {
                     e.preventDefault();
                     this.guardarNuevaCategoria();
                     return;
@@ -1730,10 +2231,16 @@ class GestionServicios {
         }
     }
 
-    eliminarServicio() {
+    async eliminarServicio() {
         if (!this.servicioActual) return;
 
-        if (confirm('¿Estás seguro de eliminar este servicio y todas sus facturas?')) {
+        const confirmado = await ModalManager.confirmar(
+            '¿Estás seguro de eliminar este servicio y todas sus facturas?',
+            'Eliminar',
+            '#icon-trash',
+            { titulo: 'Eliminar servicio' }
+        );
+        if (confirmado) {
             this.servicios = this.servicios.filter(s => s.id !== this.servicioActual);
 
             this.guardarDatos();
@@ -1891,7 +2398,7 @@ class GestionServicios {
         this._toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
     }
 
-    limpiarDatos(tipo = 'todo') {
+    async limpiarDatos(tipo = 'todo') {
         const mensajes = {
             todo: '¿Estás seguro de eliminar TODOS los datos? (servicios, facturas, ingresos y categorías)',
             servicios: '¿Estás seguro de eliminar todos los servicios y sus facturas? Los ingresos y categorías se conservarán.',
@@ -1908,38 +2415,44 @@ class GestionServicios {
             categorias: 'Todas las categorías han sido eliminadas'
         };
 
-        if (confirm(mensajes[tipo] || mensajes.todo)) {
-            if (tipo === 'todo') {
-                this.servicios = [];
-                this._saveCategorias([]);
-            } else if (tipo === 'servicios') {
-                // Eliminar todos los servicios excepto el de ingresos
-                this.servicios = this.servicios.filter(s => s.id === this.SERVICIO_INGRESOS_ID);
-            } else if (tipo === 'facturas') {
-                // Vaciar facturas de todos los servicios normales (no ingresos)
-                this.servicios = this.servicios.map(s => {
-                    if (s.id === this.SERVICIO_INGRESOS_ID) return s;
-                    return { ...s, facturas: [] };
-                });
-            } else if (tipo === 'ingresos') {
-                // Eliminar todas las facturas del servicio de ingresos
-                const servicioIngresos = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-                if (servicioIngresos) {
-                    servicioIngresos.facturas = [];
-                }
-            } else if (tipo === 'categorias') {
-                // Limpiar categorías y quitar la categoría asignada a los servicios
-                this._saveCategorias([]);
-                this.servicios = this.servicios.map(s => ({ ...s, categoria: '' }));
-            }
+        const confirmado = await ModalManager.confirmar(
+            mensajes[tipo] || mensajes.todo,
+            'Borrar',
+            '#icon-trash',
+            { titulo: 'Eliminar datos' }
+        );
+        if (!confirmado) return;
 
-            this._postGuardado();
-            this.actualizarBotonesHistorial();
-            this.mostrarToast(toasts[tipo] || toasts.todo, 'success');
-            document.getElementById('opciones-borrar').classList.remove('open');
-            document.getElementById('menu-limpiar').classList.remove('open');
-            this.cerrarMenuAjustes();
+        if (tipo === 'todo') {
+            this.servicios = [];
+            this._saveCategorias([]);
+        } else if (tipo === 'servicios') {
+            // Eliminar todos los servicios excepto el de ingresos
+            this.servicios = this.servicios.filter(s => s.id === this.SERVICIO_INGRESOS_ID);
+        } else if (tipo === 'facturas') {
+            // Vaciar facturas de todos los servicios normales (no ingresos)
+            this.servicios = this.servicios.map(s => {
+                if (s.id === this.SERVICIO_INGRESOS_ID) return s;
+                return { ...s, facturas: [] };
+            });
+        } else if (tipo === 'ingresos') {
+            // Eliminar todas las facturas del servicio de ingresos
+            const servicioIngresos = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
+            if (servicioIngresos) {
+                servicioIngresos.facturas = [];
+            }
+        } else if (tipo === 'categorias') {
+            // Limpiar categorías y quitar la categoría asignada a los servicios
+            this._saveCategorias([]);
+            this.servicios = this.servicios.map(s => ({ ...s, categoria: '' }));
         }
+
+        this._postGuardado();
+        this.actualizarBotonesHistorial();
+        this.mostrarToast(toasts[tipo] || toasts.todo, 'success');
+        document.getElementById('opciones-borrar').classList.remove('open');
+        document.getElementById('menu-limpiar').classList.remove('open');
+        this.cerrarMenuAjustes();
     }
 
     // ========================================
@@ -1959,24 +2472,54 @@ class GestionServicios {
     // Mapa de modales hijo → id del botón "volver" que se debe simular al cerrar con ESC/overlay.
     // Modales que no aparecen aquí no tienen padre → cerrarTodosLosModales normalmente.
     _MODAL_VOLVER_BTN = {
-        'modal-editar-factura':  'modal-factura-close-en-grid',
-        'modal-agregar-factura': 'modal-factura-close',
-        'modal-editar-servicio': 'modal-editar-servicio-close',
-        'modal-agregar-ingreso': 'modal-ingreso-close',
-        'modal-editar-ingreso':  'modal-ingreso-volver',
-        'modal-editar-perfil':   'btn-cancelar-editar-perfil',
+        'modal-editar-factura':     'modal-factura-close-en-grid',
+        'modal-agregar-factura':    'modal-factura-close',
+        'modal-editar-servicio':    'modal-editar-servicio-close',
+        'modal-agregar-servicio':   'modal-servicio-close',
+        'modal-agregar-ingreso':    'modal-ingreso-close',
+        'modal-editar-ingreso':     'modal-ingreso-volver',
+        'modal-editar-perfil':      'btn-cancelar-editar-perfil',
+        'modal-nueva-categoria':    'btn-cerrar-modal-categorias',
+        'modal-ordenar':            'btn-cerrar-modal-ordenar',
+        'modal-perfiles':           'btn-cerrar-modal-perfiles',
+        'modal-informacion':        'modal-informacion-close',
+        'modal-info-resumen':       'btn-cerrar-modal-info-resumen',
+        'modal-gist':               'btn-gist-cerrar',
+        'modal-gist-novedades':     'gist-novedades-ignorar-btn',
+        'modal-debug-estadisticas': 'btn-cerrar-modal-debug',
+        'modal-facturas-servicio':  'btn-cerrar-modal-facturas-servicio',
+        'modal-ingresos-lista':     'btn-cerrar-modal-ingresos-lista',
     };
 
     volverDesdeModalActivo() {
-        const modalActivo = document.querySelector('.modal.active');
-        if (!modalActivo) { this.cerrarTodosLosModales(); return; }
-        const btnId = this._MODAL_VOLVER_BTN[modalActivo.id];
-        if (btnId !== undefined) {
-            // Modal con padre definido → simular clic en su botón volver
-            const btn = document.getElementById(btnId);
-            if (btn) { btn.click(); return; }
+        // 1. Context menu abierto tiene prioridad máxima
+        const ctxMenu = document.getElementById('ctx-menu-servicio');
+        if (ctxMenu && (ctxMenu.classList.contains('active') || ctxMenu.classList.contains('show'))) {
+            ModalManager.ejecutarAccionCierre('ctx-menu-servicio');
+            return;
         }
-        // Modal sin padre (raíz) o botón no encontrado → cerrar todo
+
+        // 2. Modales en pantalla (el superior en orden DOM)
+        const modales = Array.from(document.querySelectorAll('.modal.show, .modal.active'));
+        if (modales.length > 0) {
+            const topModal = modales[modales.length - 1];
+            ModalManager.ejecutarAccionCierre(topModal.id);
+            return;
+        }
+
+        // 3. Paneles laterales
+        const menuAjustes = document.getElementById('menu-ajustes');
+        if (menuAjustes && (menuAjustes.classList.contains('active') || menuAjustes.classList.contains('show'))) {
+            ModalManager.ejecutarAccionCierre('menu-ajustes');
+            return;
+        }
+
+        const menuAgregar = document.getElementById('menu-agregar');
+        if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
+            ModalManager.ejecutarAccionCierre('menu-agregar');
+            return;
+        }
+
         this.cerrarTodosLosModales();
     }
 
@@ -2257,13 +2800,19 @@ class FacturaService {
         if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoFacturas[servicioId] = null; }
     }
 
-    borrarTodas() {
+    async borrarTodas() {
         if (!this.app.servicioActual) return;
         const servicio = this.servicios.find(s => s.id === this.app.servicioActual);
         if (!servicio) return;
         const total = servicio.facturas?.length || 0;
         if (total === 0) { this.app.ui.mostrarToast('No hay facturas para borrar', 'info'); return; }
-        if (confirm(`¿Borrar las ${total} factura${total !== 1 ? 's' : ''} de "${servicio.nombre}"? Esta acción no se puede deshacer.`)) {
+        const confirmado = await ModalManager.confirmar(
+            `¿Borrar las ${total} factura${total !== 1 ? 's' : ''} de "${servicio.nombre}"? Esta acción no se puede deshacer.`,
+            'Borrar',
+            '#icon-trash',
+            { titulo: 'Borrar facturas' }
+        );
+        if (confirmado) {
             servicio.facturas = [];
             this.app.guardarDatos();
             this.app.renderServicios();
@@ -3469,85 +4018,62 @@ class UIManager {
 
     // ── Modales ───────────────────────────────────────────────
     abrirModal(modalId) {
-        const modal = document.getElementById(modalId);
-        const yaAbierto = modal.classList.contains('active');
-        modal.classList.add('active');
-        document.body.classList.add('modal-open');
-        // Reusamos volverDesdeModalActivo (la misma lógica de "tocar afuera del modal")
-        // para que el botón atrás resuelva igual los encadenados vía _MODAL_VOLVER_BTN.
-        if (!yaAbierto) BackNav.abrir(modalId, () => this.app.volverDesdeModalActivo());
+        ModalManager.abrir(modalId);
     }
 
     cerrarModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.remove('active');
-        if (!document.querySelector('.modal.active')) {
-            document.body.classList.remove('modal-open');
-        }
-        if (modalId === 'modal-gist') this.app.gist.actualizarBotones();
-        BackNav.cerrar(modalId);
+        ModalManager.cerrar(modalId);
     }
 
     cerrarTodosLosModales() {
-        // Cerrar cualquier CSD en modo fixed que haya quedado en el body
-        document.querySelectorAll('.custom-select-dropdown.csd-fixed').forEach(dd => {
-            if (dd._csdInstance) dd._csdInstance.close();
-            else if (dd.parentElement === document.body) dd.remove();
-        });
-        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-        document.body.classList.remove('modal-open');
-        this.app._anoExpandidoFacturas = {};
-        this.app._anoExpandidoIngresos = {};
-        BackNav.cerrarTodo();
+        ModalManager.cerrarTodos();
     }
 
     // ── Menú ajustes ──────────────────────────────────────────
     toggleMenuAjustes() {
         const menu = document.getElementById('menu-ajustes');
-        if (menu.classList.contains('active')) {
+        if (menu.classList.contains('active') || menu.classList.contains('show')) {
             this.cerrarMenuAjustes();
             return;
         }
-        menu.classList.add('active');
-        document.getElementById('menu-overlay').classList.add('active');
-        document.body.classList.add('modal-open');
-        BackNav.abrir('menu-ajustes', () => this.cerrarMenuAjustes());
+        document.getElementById('menu-overlay')?.classList.add('active');
+        ModalManager.abrir('menu-ajustes');
     }
 
     cerrarMenuAjustes() {
         const menu = document.getElementById('menu-ajustes');
         const overlay = document.getElementById('menu-overlay');
-        menu.classList.remove('active');
-        overlay.classList.remove('active');
+        const estabaAbierto = menu && (menu.classList.contains('active') || menu.classList.contains('show'));
+        if (!estabaAbierto) return;
+
+        overlay?.classList.remove('active');
         ['opciones-importacion', 'opciones-borrar', 'opciones-dolar',
             'menu-importar', 'menu-limpiar', 'menu-dolar'].forEach(id => {
                 document.getElementById(id)?.classList.remove('open');
             });
-        document.body.classList.remove('modal-open');
-        BackNav.cerrar('menu-ajustes');
+        ModalManager.cerrar('menu-ajustes');
     }
 
     // ── Menú agregar ──────────────────────────────────────────
     toggleMenuAgregar() {
         const menu = document.getElementById('menu-agregar');
-        if (menu.classList.contains('active')) {
+        if (menu.classList.contains('active') || menu.classList.contains('show')) {
             this.cerrarMenuAgregar();
             return;
         }
-        menu.classList.add('active');
-        document.getElementById('menu-agregar-overlay').classList.add('active');
-        document.body.classList.add('modal-open');
-        BackNav.abrir('menu-agregar', () => this.cerrarMenuAgregar());
+        document.getElementById('menu-agregar-overlay')?.classList.add('active');
+        ModalManager.abrir('menu-agregar');
     }
 
     cerrarMenuAgregar() {
         const menu = document.getElementById('menu-agregar');
         const overlay = document.getElementById('menu-agregar-overlay');
-        menu.classList.remove('active');
-        overlay.classList.remove('active');
-        document.body.classList.remove('modal-open');
+        const estabaAbierto = menu && (menu.classList.contains('active') || menu.classList.contains('show'));
+        if (!estabaAbierto) return;
+
+        overlay?.classList.remove('active');
         this._resetVistaMenuAgregar();
-        BackNav.cerrar('menu-agregar');
+        ModalManager.cerrar('menu-agregar');
     }
 
     _resetVistaMenuAgregar() {
@@ -3600,19 +4126,8 @@ class UIManager {
     }
 
     // ── Toast ─────────────────────────────────────────────────
-    mostrarToast(mensaje, tipo = 'success') {
-        const toast = document.getElementById('toast');
-        if (this.app.toastTimeout) clearTimeout(this.app.toastTimeout);
-        toast.classList.remove('show');
-        setTimeout(() => {
-            toast.textContent = mensaje;
-            toast.className = `toast ${tipo}`;
-            toast.classList.add('show');
-            this.app.toastTimeout = setTimeout(() => {
-                toast.classList.remove('show');
-                this.app.toastTimeout = null;
-            }, 3000);
-        }, 150);
+    mostrarToast(mensaje, tipo = 'success', duracion = 3000, detalle = null) {
+        ToastManager.mostrarToast(mensaje, tipo, duracion, detalle);
     }
 }
 
@@ -3676,7 +4191,7 @@ class UtilsService {
     }
 
     generarId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        return SecurityAndUtils.generarIDSeguro();
     }
 
     obtenerFechaLocal() {
@@ -3685,9 +4200,7 @@ class UtilsService {
     }
 
     escaparHTML(texto) {
-        const div = document.createElement('div');
-        div.textContent = texto;
-        return div.innerHTML;
+        return SecurityAndUtils.escapeHtml(texto);
     }
 
     escaparAtributoHTML(texto) {
@@ -3941,13 +4454,18 @@ class PerfilService {
         this.abrirModal();
     }
 
-    // ── Eliminar ──────────────────────────────────────────────
-    eliminar(perfilId) {
+    async eliminar(perfilId) {
         if (perfilId === 'default') {
             this.app.ui.mostrarToast('No puedes eliminar el perfil principal', 'error'); return;
         }
         const perfil = this.perfiles[perfilId];
-        if (!confirm(`¿Eliminar el perfil "${perfil.nombre}"? Todos sus datos se perderán.`)) return;
+        const confirmado = await ModalManager.confirmar(
+            `¿Eliminar el perfil "${perfil.nombre}"? Todos sus datos se perderán.`,
+            'Eliminar',
+            '#icon-trash',
+            { titulo: 'Eliminar perfil' }
+        );
+        if (!confirmado) return;
         if (perfilId === this.perfilActivo) this.cambiar('default');
         localStorage.removeItem(`gestion_servicios_datos_${perfilId}`);
         delete this.perfiles[perfilId];
@@ -4740,13 +5258,7 @@ class StorageService {
     cargarDatosPerfilActivo() {
         try {
             const key = `gestion_servicios_datos_${this.perfilActivo}`;
-            const datos = localStorage.getItem(key);
-            if (datos) {
-                this.servicios = JSON.parse(datos);
-            } else {
-                this.servicios = [];
-                localStorage.setItem(key, JSON.stringify([]));
-            }
+            this.servicios = StorageHelper.getObject(key, []);
             this.app.inicializarHistorial();
         } catch (error) {
             console.error('Error al cargar datos del perfil:', error);
@@ -4758,9 +5270,9 @@ class StorageService {
     guardarDatosPerfilActivo() {
         try {
             const key = `gestion_servicios_datos_${this.perfilActivo}`;
-            localStorage.setItem(key, JSON.stringify(this.servicios));
-            // NUEVO: Auto-subida a Gist (si está habilitada)
-            if (this.app.gist) this.app.gist.subirAuto();
+            const ok = StorageHelper.setItem(key, this.servicios);
+            // Auto-subida a Gist (si está habilitada)
+            if (ok && this.app.gist) this.app.gist.subirAuto();
         } catch (error) {
             console.error('Error al guardar datos del perfil:', error);
             this.app.ui.mostrarToast('Error al guardar datos', 'error');
@@ -4876,11 +5388,17 @@ class StorageService {
                 this.app.ui.mostrarToast('Solo se permiten archivos .json', 'error'); return;
             }
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 try {
-                    const datos = JSON.parse(event.target.result);
+                    const datos = JSON.parse(event.target.result, SecurityAndUtils.reviverJSONSeguro);
                     if (datos.version && datos.version !== '1.0') {
-                        if (!confirm(`Versión ${datos.version} detectada (actual: 1.0). Puede haber incompatibilidades. ¿Continuar?`)) return;
+                        const continuar = await ModalManager.confirmar(
+                            `Versión ${datos.version} detectada (actual: 1.0). Puede haber incompatibilidades. ¿Continuar?`,
+                            'Continuar',
+                            '#icon-help',
+                            { titulo: 'Versión detectada' }
+                        );
+                        if (!continuar) return;
                     }
                     if (!datos.servicios || !Array.isArray(datos.servicios)) {
                         throw new Error('Formato de archivo inválido: falta "servicios"');
@@ -4900,7 +5418,13 @@ class StorageService {
                         if (facturas > 0) partes.push(this.app.utils.plural(facturas, 'factura', 'facturas'));
                         if (ingresos > 0) partes.push(this.app.utils.plural(ingresos, 'ingreso', 'ingresos'));
                         if (cats.length > 0) partes.push(this.app.utils.plural(cats.length, 'categoría', 'categorías'));
-                        if (confirm(`Se restaurarán ${partes.join(', ')}. ¿Deseas reemplazar todos los datos actuales?`)) {
+                        const reemplazar = await ModalManager.confirmar(
+                            `Se restaurarán ${partes.join(', ')}. ¿Deseas reemplazar todos los datos actuales?`,
+                            'Reemplazar',
+                            '#icon-upload',
+                            { titulo: 'Reemplazar datos' }
+                        );
+                        if (reemplazar) {
                             this._aplicarImportacion('reemplazar', datos);
                         }
                     }

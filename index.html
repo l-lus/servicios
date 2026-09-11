@@ -66,6 +66,12 @@
             <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             <circle cx="12" cy="8" r="1" fill="currentColor" />
         </symbol>
+        <symbol id="icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </symbol>
         <symbol id="icon-dollar" viewBox="0 0 24 24">
             <line x1="12" y1="1" x2="12" y2="23" class="icon-line" stroke="currentColor"></line>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" class="icon-line" stroke="currentColor"></path>
@@ -1527,6 +1533,41 @@
                 <button id="btn-cerrar-modal-debug" class="w-100">
                     <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación genérico -->
+    <div class="modal" id="modal-confirmar" role="dialog" aria-modal="true" aria-labelledby="modal-confirmar-titulo">
+        <div class="modal-content">
+            <div class="modal-panel-header">
+                <h3>
+                    <span class="modal-title-block">
+                        <svg class="icon">
+                            <use href="#icon-help" />
+                        </svg>
+                        <span id="modal-confirmar-titulo">Atención</span>
+                    </span>
+                </h3>
+            </div>
+            <div class="modal-panel-body">
+                <p id="modal-confirmar-texto"></p>
+            </div>
+            <div class="modal-panel-footer">
+                <div class="btn-group">
+                    <button class="btn-delete" id="modal-confirmar-ok">
+                        <svg class="icon">
+                            <use href="#icon-trash" />
+                        </svg>
+                        <span id="modal-confirmar-label-ok">Confirmar</span>
+                    </button>
+                    <button class="btn-cancel" id="modal-confirmar-cancel">
+                        <svg class="icon">
+                            <use href="#icon-cancel" />
+                        </svg>
+                        <span id="modal-confirmar-label-cancel">Cancelar</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
