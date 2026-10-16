@@ -274,8 +274,7 @@ const Anim = (function () {
 
     // Clona el elemento como "fantasma" fijo sobre su posición actual para
     // que pueda animar su salida mientras el original se re-renderiza.
-    function _fantasmaDe(el) {
-        const rect = el.getBoundingClientRect();
+    function _fantasmaDe(el, rect = el.getBoundingClientRect()) {
         const clon = el.cloneNode(true);
         clon.removeAttribute('id');
         clon.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
@@ -367,10 +366,121 @@ const Anim = (function () {
     }
 
     // Marca un elemento recién creado/modificado para que entre animado.
-    function marcarNuevo(el) {
+    // delay (ms) permite esperar, p. ej., a que termine de abrirse un modal;
+    // mientras tanto el elemento queda en el estado inicial (oculto).
+    function marcarNuevo(el, { delay = 0 } = {}) {
         if (!el || Motion.reducido()) return;
+        el.style.animationDelay = delay ? `${delay}ms` : '';
         el.classList.add('nuevo-item-animacion');
-        el.addEventListener('animationend', () => el.classList.remove('nuevo-item-animacion'), { once: true });
+        el.addEventListener('animationend', () => {
+            el.classList.remove('nuevo-item-animacion');
+            el.style.animationDelay = '';
+        }, { once: true });
+    }
+
+    function _rectVisibleEn(rect, clip) {
+        return rect.width > 0 && rect.height > 0 &&
+            rect.top >= clip.top - 1 && rect.bottom <= clip.bottom + 1 &&
+            rect.bottom > 0 && rect.top < window.innerHeight;
+    }
+
+    // Re-renderiza una lista con renderFn y anima la diferencia por clave:
+    // ítems nuevos entran, eliminados salen como fantasma y modificados
+    // hacen la mutación salida/entrada. Con muchos cambios (búsquedas,
+    // reordenamientos masivos) no anima para no saturar.
+    function diffLista(cont, selector, atributoClave, renderFn, { maxCambios = 8 } = {}) {
+        if (!cont || Motion.reducido() || !cont.offsetParent) { renderFn(); return; }
+
+        const clip = cont.getBoundingClientRect();
+        const antes = new Map();
+        cont.querySelectorAll(selector).forEach(el => {
+            if (estaColapsado(el)) return;
+            antes.set(el.getAttribute(atributoClave), { el, rect: el.getBoundingClientRect(), firma: el.outerHTML });
+        });
+
+        renderFn();
+        if (antes.size === 0) return;
+
+        const despues = new Map();
+        cont.querySelectorAll(selector).forEach(el => despues.set(el.getAttribute(atributoClave), el));
+
+        const nuevos = [], eliminados = [], modificados = [];
+        despues.forEach((el, clave) => {
+            const previo = antes.get(clave);
+            if (!previo) { if (!estaColapsado(el)) nuevos.push(el); }
+            else if (previo.firma !== el.outerHTML) modificados.push({ previo, el });
+        });
+        antes.forEach((previo, clave) => { if (!despues.has(clave)) eliminados.push(previo); });
+
+        if (nuevos.length + eliminados.length + modificados.length > maxCambios) return;
+
+        const dur = DUR_ANIM();
+        const fantasma = ({ el, rect }) => {
+            if (!_rectVisibleEn(rect, clip)) return;
+            const f = _fantasmaDe(el, rect);
+            setTimeout(() => f.remove(), dur + 50);
+        };
+
+        eliminados.forEach(fantasma);
+        nuevos.forEach(el => marcarNuevo(el));
+        modificados.forEach(({ previo, el }) => {
+            fantasma(previo);
+            el.classList.add('mutacion-entrante');
+            setTimeout(() => el.classList.remove('mutacion-entrante'), dur);
+        });
+    }
+
+    // Texto "lógico" de un valor, aunque esté a mitad de una animación.
+    function _textoValor(el) {
+        const est = _valorEstado.get(el);
+        return est ? est.texto : el.textContent;
+    }
+
+    function _numeroDe(texto) {
+        const limpio = String(texto).replace(/[^\d-]/g, '');
+        return limpio && limpio !== '-' ? parseInt(limpio, 10) : NaN;
+    }
+
+    // Reemplaza el contenido de cont por html animando el cambio:
+    // si la estructura es la misma y solo cambian los textos de los
+    // elementos selValores, cada valor rueda hacia arriba o abajo según
+    // aumente o disminuya; si cambia la estructura, hace la mutación
+    // completa (fantasma saliente + contenido entrante).
+    function morph(cont, html, selValores) {
+        if (!cont) return;
+        if (Motion.reducido() || !cont.offsetParent || !cont.firstElementChild) {
+            cont.innerHTML = html;
+            return;
+        }
+        const nuevo = document.createElement('div');
+        nuevo.innerHTML = html;
+
+        // Los style inline los pone JS después de renderizar (la CSP no deja
+        // escribirlos en el HTML), así que no cuentan como estructura.
+        const firma = root => {
+            const c = root.cloneNode(true);
+            c.querySelectorAll('[style]').forEach(n => n.removeAttribute('style'));
+            c.querySelectorAll(selValores).forEach(v => {
+                if (v.children.length === 0 || v.querySelector(':scope > .valor-roll')) v.textContent = '';
+            });
+            return c.innerHTML.replace(/\s+/g, ' ').trim();
+        };
+
+        if (firma(cont) !== firma(nuevo)) {
+            mutacion(cont, () => { cont.innerHTML = html; });
+            return;
+        }
+
+        const viejos = cont.querySelectorAll(selValores);
+        const nuevos = nuevo.querySelectorAll(selValores);
+        viejos.forEach((el, i) => {
+            const n = nuevos[i];
+            if (!n || n.children.length > 0) return;
+            const antes = _textoValor(el), despues = n.textContent;
+            if (antes === despues) return;
+            const delta = _numeroDe(despues) - _numeroDe(antes);
+            valor(el, despues, Number.isNaN(delta) ? 1 : (Math.sign(delta) || 1));
+        });
     }
 
     const _valorEstado = new WeakMap();
@@ -415,7 +525,7 @@ const Anim = (function () {
 
     return {
         aArray, getCSSdur, durSiAnima, esperar, esperarAnim, estaColapsado,
-        mutacion, fantasmaSiVisible, marcarNuevo, valor
+        mutacion, fantasmaSiVisible, marcarNuevo, valor, diffLista, morph
     };
 })();
 
@@ -1914,8 +2024,14 @@ class GestionServicios {
         const serviciosNormales = this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID);
         const servicioIngresos = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
 
+        const pintar = (contenido) => {
+            const fn = () => { lista.innerHTML = contenido; };
+            if (this._animarRender) Anim.diffLista(lista, '.servicio-wrapper', 'data-id', fn);
+            else fn();
+        };
+
         if (serviciosNormales.length === 0 && !this.ingresosHabilitado()) {
-            lista.innerHTML = `
+            pintar(`
                       <div class="empty-state">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -1924,7 +2040,7 @@ class GestionServicios {
                           </svg>
                           <p>No hay servicios registrados<br>Presiona el botón + para agregar uno</p>
                       </div>
-                  `;
+                  `);
             this.actualizarResumenMes();
             return;
         }
@@ -2078,7 +2194,7 @@ class GestionServicios {
             }
         }
 
-        lista.innerHTML = html;
+        pintar(html);
 
         // Eventos de click en servicios
         lista.querySelectorAll('.servicio-item').forEach(item => {
@@ -2329,6 +2445,21 @@ class GestionServicios {
             this._poblarSelectCategorias('servicio-categoria', '');
             this.abrirModal('modal-agregar-servicio');
         }
+    }
+
+    // Anima el ítem recién guardado en la lista de facturas/ingresos,
+    // expandiendo su año si estaba colapsado. Espera a que termine de
+    // abrirse el modal para que la animación se vea.
+    _resaltarItemLista(lista, id) {
+        if (!lista || !id) return;
+        const item = lista.querySelector(`.factura-item[data-id="${CSS.escape(id)}"]`);
+        if (!item) return;
+        const grupo = item.closest('.facturas-grupo-contenido.collapsed');
+        if (grupo) {
+            const ano = grupo.previousElementSibling?.querySelector('.facturas-grupo-ano-texto')?.textContent;
+            this._restaurarAnoExpandido(ano);
+        }
+        Anim.marcarNuevo(item, { delay: Anim.getCSSdur('--dur-pop') });
     }
 
     _restaurarAnoExpandido(anoObjetivo) {
@@ -2608,7 +2739,15 @@ class GestionServicios {
     // SISTEMA UNDO/REDO
     // ========================================
 
-    guardarEstado(descripcion = null) { this.historial_mgr.guardarEstado(descripcion); }
+    guardarEstado(descripcion = null) { this.historial_mgr.guardarEstado(descripcion); this._marcarRenderAnimado(); }
+
+    // Los renders que siguen a un cambio de datos (guardar, deshacer) animan
+    // la lista; los de búsqueda, orden o filtros no. La marca dura hasta que
+    // termina la tarea actual.
+    _marcarRenderAnimado() {
+        this._animarRender = true;
+        queueMicrotask(() => { this._animarRender = false; });
+    }
     inicializarHistorial() { this.historial_mgr.inicializarHistorial(); }
     deshacer() { this.historial_mgr.deshacer(); }
     rehacer() { this.historial_mgr.rehacer(); }
@@ -3022,7 +3161,7 @@ class FacturaService {
     }
 
     // ── Modal lista facturas ──────────────────────────────────
-    abrirModalLista(servicioId) {
+    abrirModalLista(servicioId, { resaltar = null } = {}) {
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
         const lista     = document.getElementById('lista-facturas-modal');
@@ -3045,6 +3184,7 @@ class FacturaService {
         this.app.abrirModal('modal-facturas-servicio');
         const anoGuardado = this.app._anoExpandidoFacturas[servicioId];
         if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoFacturas[servicioId] = null; }
+        this.app._resaltarItemLista(lista, resaltar);
     }
 
     async borrarTodas() {
@@ -3259,6 +3399,7 @@ class FacturaService {
         const servicio = this.servicios.find(s => s.id === servicioSelId);
         if (!servicio) { this.app.ui.mostrarToast('Servicio no encontrado', 'error'); return; }
 
+        let facturaId = esEditar ? this.app.facturaActual : null;
         if (esEditar) {
             const factura = servicio.facturas.find(f => f.id === this.app.facturaActual);
             if (!factura) return;
@@ -3271,11 +3412,12 @@ class FacturaService {
             }
             Object.assign(factura, { monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
         } else {
-            servicio.facturas.push({ id: this.app.utils.generarId(), monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
+            facturaId = this.app.utils.generarId();
+            servicio.facturas.push({ id: facturaId, monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
         }
         this.app.utils.postGuardado(`${esEditar ? 'editar' : 'agregar'} factura (${servicio.nombre})`);
         this.app.cerrarModal(esEditar ? 'modal-editar-factura' : 'modal-agregar-factura');
-        this.abrirModalLista(servicioSelId);
+        this.abrirModalLista(servicioSelId, { resaltar: facturaId });
         this.app.ui.mostrarToast(esEditar ? 'Factura actualizada' : 'Factura agregada', 'success');
     }
 
@@ -3308,7 +3450,7 @@ class IngresoService {
         this.app.guardarDatos();
     }
 
-    abrirModalLista(servicioId) {
+    abrirModalLista(servicioId, { resaltar = null } = {}) {
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
         const lista = document.getElementById('lista-ingresos-modal');
@@ -3337,6 +3479,7 @@ class IngresoService {
         this.app.abrirModal('modal-ingresos-lista');
         const anoGuardado = this.app._anoExpandidoIngresos[servicioId];
         if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoIngresos[servicioId] = null; }
+        this.app._resaltarItemLista(lista, resaltar);
     }
 
     abrirModal(ingresoId = null, desdeMenu = false) {
@@ -3386,6 +3529,7 @@ class IngresoService {
         if (!this.app.factura.validarFecha(fecha)) return;
         let servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
         if (!servicio) { this.crearServicio(); servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID); }
+        let ingresoId = this.app.ingresoActual;
         if (this.app.ingresoActual) {
             const ingreso = servicio.facturas.find(f => f.id === this.app.ingresoActual);
             if (ingreso) {
@@ -3397,13 +3541,14 @@ class IngresoService {
                 Object.assign(ingreso, { monto, tipo, fecha, moneda });
             }
         } else {
-            servicio.facturas.push({ id: this.app.utils.generarId(), monto, tipo, fecha, moneda, pagada: true });
+            ingresoId = this.app.utils.generarId();
+            servicio.facturas.push({ id: ingresoId, monto, tipo, fecha, moneda, pagada: true });
         }
         this.app.guardarDatos();
         this.app.guardarEstado(this.app.ingresoActual ? 'editar ingreso' : 'agregar ingreso');
         this.app.renderServicios();
         this.app.cerrarModal(esEditar ? 'modal-editar-ingreso' : 'modal-agregar-ingreso');
-        if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID);
+        if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID, { resaltar: ingresoId });
         this.app.ui.mostrarToast(this.app.ingresoActual ? 'Ingreso actualizado' : 'Ingreso agregado', 'success');
     }
 
@@ -3862,20 +4007,16 @@ class EstadisticasService {
         <div class="resumen-fecha">${fechaFormateada}</div>
     </div>
 </div>`;
-        document.getElementById('resumen-mes').innerHTML = resumenHTML;
+        const contResumen = document.getElementById('resumen-mes');
+        if (debeAnimar) Anim.morph(contResumen, resumenHTML, '.resumen-valor, .resumen-valor-usd, .resumen-label');
+        else contResumen.innerHTML = resumenHTML;
         const barra = document.getElementById('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
         StorageHelper.setItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO, esPendiente ? 'false' : 'true');
-        if (this.app.blurHabilitado && !this.app.resumenDesblurado && (hayARS || hayUSD)) {
-            const elBlur = document.getElementById('resumen-toggle');
-            if (elBlur) elBlur.classList.add('resumen-blur');
-        }
+        const elBlur = document.getElementById('resumen-toggle');
+        if (elBlur) elBlur.classList.toggle('resumen-blur', this.app.blurHabilitado && !this.app.resumenDesblurado && (hayARS || hayUSD));
         this.app.ultimoEstadoResumen = estadoActual;
         this._actualizarBordeResumen(colorBorde);
-        if (debeAnimar) {
-            const toggle = document.getElementById('resumen-toggle');
-            if (toggle) { toggle.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade'); requestAnimationFrame(() => toggle.classList.add('anim-slide-down-fade')); }
-        }
     }
 
     abrirModalInfoResumen() {
@@ -3932,20 +4073,8 @@ class EstadisticasService {
             return;
         }
         if (!this.app.resumenDesblurado) this.app.resumenDesblurado = true;
-        if (resumenActual) {
-            resumenActual.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
-            void resumenActual.offsetWidth;
-            resumenActual.classList.add('anim-slide-up-fade');
-            setTimeout(() => {
-                if (this.app.mostrandoPagadoMes) this.mostrarPendienteEnResumen();
-                else this.mostrarPagadoEnResumen();
-                document.getElementById('resumen-toggle')?.classList.remove('resumen-blur');
-            }, 190);
-        } else {
-            if (this.app.mostrandoPagadoMes) this.mostrarPendienteEnResumen();
-            else this.mostrarPagadoEnResumen();
-            document.getElementById('resumen-toggle')?.classList.remove('resumen-blur');
-        }
+        if (this.app.mostrandoPagadoMes) this.mostrarPendienteEnResumen();
+        else this.mostrarPagadoEnResumen();
     }
 
     // ── Estadísticas mensuales ────────────────────────────────
@@ -4036,10 +4165,9 @@ class EstadisticasService {
         <div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="vencidas"><span class="estadistica-label">Vencidas</span><span class="estadistica-valor">${cantidadVencidas}</span></div>
         ${ingresosHTML}`;
             const lista = document.querySelector('#estadisticas-mensual-container .estadisticas-lista');
-            if (lista) {
-                lista.innerHTML = itemsHTML;
-                if (estadoCambio) { lista.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade'); requestAnimationFrame(() => lista.classList.add('anim-slide-down-fade')); }
-            }
+            if (!lista) return;
+            if (estadoCambio) Anim.morph(lista, itemsHTML, '.estadistica-valor');
+            else lista.innerHTML = itemsHTML;
         };
 
         const hayDatos = this.servicios.length > 0 && this.servicios.some(s => s.facturas?.length > 0);
@@ -4067,13 +4195,8 @@ class EstadisticasService {
                 if (csd?._customSelect) csd._customSelect.refresh();
             }
             this._renderTagsCategoriaEstadisticas();
-            const lista = document.querySelector('#estadisticas-mensual-container .estadisticas-lista');
-            if (lista && estadoCambio) {
-                lista.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
-                void lista.offsetWidth;
-                lista.classList.add('anim-slide-up-fade');
-                setTimeout(() => { renderizarContenido(); this.app.ultimoEstadoEstadisticas = estadoActual; }, 190);
-            } else if (lista) { renderizarContenido(); }
+            renderizarContenido();
+            this.app.ultimoEstadoEstadisticas = estadoActual;
         }
     }
 
@@ -4909,22 +5032,12 @@ class CalculadorService {
     ${_promUSDItem}
     ${variacion != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación</span><span class="calculador-resultado-valor">${variacion}</span></div>` : ''}
     ${_varUSDItem}`;
-        const renderizarResultados = () => {
-            resultadosContainer.innerHTML = generarResultadosHTML(totalRegistros, variacionTexto);
-            if (calculadorCambio) {
-                resultadosContainer.classList.remove('anim-slide-down-fade', 'anim-slide-up-fade');
-                requestAnimationFrame(() => {
-                    resultadosContainer.classList.add('anim-slide-down-fade');
-                });
-            }
-        };
+        const html = generarResultadosHTML(totalRegistros, variacionTexto);
         if (calculadorCambio) {
-            resultadosContainer.classList.remove('anim-slide-up-fade', 'anim-slide-down-fade');
-            void resultadosContainer.offsetWidth;
-            resultadosContainer.classList.add('anim-slide-up-fade');
-            setTimeout(() => { renderizarResultados(); this.app.ultimoEstadoCalculador = estadoCalculador; }, 190);
+            Anim.morph(resultadosContainer, html, '.calculador-resultado-valor');
+            this.app.ultimoEstadoCalculador = estadoCalculador;
         } else {
-            renderizarResultados();
+            resultadosContainer.innerHTML = html;
         }
     }
 
@@ -5542,6 +5655,7 @@ class HistorialManager {
         this.app.servicios = copia.servicios;
         this.app.categoria.saveCategorias(copia.categorias);
         this.app.guardarDatos();
+        this.app._marcarRenderAnimado();
         this.app.renderServicios();
         this.app.ui.cerrarTodosLosModales();
         this._persistir();

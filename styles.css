@@ -845,18 +845,6 @@ input[type="number"] {
     }
 }
 
-@keyframes slideUpFade {
-    from {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    to {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-}
-
 @keyframes slideUp2 {
     from {
         opacity: 0;
@@ -2253,15 +2241,6 @@ input[type="number"] {
     max-width: 600px !important;
 }
 
-/* --- Animaciones de lista (usadas desde JS) --- */
-.anim-slide-up-fade {
-    animation: slideUpFade 0.2s ease-out forwards;
-}
-
-.anim-slide-down-fade {
-    animation: slideDownFade 0.2s ease-out;
-}
-
 /* --- Animation delays (card-fade-in) --- */
 .delay-1 {
     animation-delay: 0.1s;
@@ -2715,7 +2694,7 @@ input[type="number"] {
     transform-origin: center;
     position: relative;
     z-index: 3;
-    animation: mutacionEntrada var(--dur-anim) ease-out;
+    animation: mutacionEntrada var(--dur-anim) ease-out backwards;
 }
 
 @keyframes mutacionSalida {
