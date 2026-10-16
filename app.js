@@ -63,6 +63,16 @@ const SecurityAndUtils = (function () {
     const SECURITY_LIMITS = {
         MAX_STRING_LENGTH: 100,
         MAX_JSON_SIZE: 4 * 1024 * 1024,
+        MAX_NOMBRE_LENGTH: 30,
+        MAX_CATEGORIAS: 100,
+        MAX_MONTO: 99999999,
+        // v1 = '1.0' (sin hash); v2 agrega hash SHA-256 de { servicios, categorias }
+        SCHEMA_VERSION: 2,
+    };
+
+    const REGEX_PATTERNS = {
+        ID: /^[A-Za-z0-9_-]{1,100}$/,
+        FECHA: /^\d{4}-\d{2}-\d{2}$/,
     };
 
     function sanitizeString(str, maxLength = SECURITY_LIMITS.MAX_STRING_LENGTH) {
@@ -106,12 +116,20 @@ const SecurityAndUtils = (function () {
         return `${timestamp}-${random1}${random2}`;
     }
 
+    async function calcularHashSHA256(data) {
+        const buffer = new TextEncoder().encode(JSON.stringify(data));
+        const hash = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     return {
         SECURITY_LIMITS,
+        REGEX_PATTERNS,
         sanitizeString,
         escapeHtml,
         reviverJSONSeguro,
-        generarIDSeguro
+        generarIDSeguro,
+        calcularHashSHA256
     };
 })();
 
@@ -2488,9 +2506,10 @@ class GestionServicios {
 
     generarHTMLFactura(factura, accion = null) {
         const { estadoPago, claseMonto } = this.obtenerEstadoFactura(factura);
-        const dataAccion = accion ? `data-action="factura-click" data-factura-accion="${accion}" data-factura-id="${factura.id}"` : '';
-        const moneda = factura.moneda || 'ars';
-        const badgeClass = moneda === 'usd' ? 'usd' : 'ars';
+        const esc = t => this.escaparAtributoHTML(t);
+        const dataAccion = accion ? `data-action="factura-click" data-factura-accion="${esc(accion)}" data-factura-id="${esc(factura.id)}"` : '';
+        const moneda = factura.moneda === 'usd' ? 'usd' : 'ars';
+        const badgeClass = moneda;
         const pagoBadge = factura.pagada
             ? (factura.conCredito
                 ? '<span class="moneda-badge credito">Crédito</span>'
@@ -2498,11 +2517,11 @@ class GestionServicios {
             : '';
 
         return `
-        <div class="factura-item" data-id="${factura.id}">
+        <div class="factura-item" data-id="${esc(factura.id)}">
             <div class="factura-info" ${dataAccion}>
                 <div class="${claseMonto}">${this.formatearMoneda(factura.monto, moneda)}<span class="moneda-badge ${badgeClass}">${moneda.toUpperCase()}</span>${pagoBadge}</div>
                 <div class="factura-fecha">
-                    ${factura.tipo || 'mensual'} | Vence: ${this.formatearFecha(factura.fecha)}
+                    ${this.escaparHTML(factura.tipo || 'mensual')} | Vence: ${this.formatearFecha(factura.fecha)}
                 </div>
                 ${estadoPago}
             </div>
@@ -2682,7 +2701,7 @@ class GestionServicios {
         const modal = document.getElementById('modal-facturas-servicio');
         if (modal?.classList.contains('active')) {
             const sid = modal.dataset.servicioId;
-            const item = document.querySelector(`.factura-item[data-id="${facturaId}"]`);
+            const item = document.querySelector(`.factura-item[data-id="${CSS.escape(facturaId)}"]`);
             const grupo = item?.closest('.facturas-grupo-ano');
             const ano = grupo?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
             this._anoExpandidoFacturas[sid] = ano;
@@ -3221,7 +3240,7 @@ class FacturaService {
             .filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID)
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
         const optsHTML = optsServicios.map(s =>
-            `<option value="${s.id}" ${s.id === servicioId ? 'selected' : ''}>${this.app.utils.escaparHTML(s.nombre)}</option>`
+            `<option value="${this.app.utils.escaparAtributoHTML(s.id)}" ${s.id === servicioId ? 'selected' : ''}>${this.app.utils.escaparHTML(s.nombre)}</option>`
         ).join('');
 
         if (facturaId) {
@@ -3463,10 +3482,11 @@ class IngresoService {
                 const html = grupo.items.map(ingreso => {
                     const tipo   = ingreso.tipo === 'complementario' ? 'Complementario' : ingreso.tipo === 'transferencia' ? 'Transferencia' : 'Regular';
                     const emoji  = ingreso.tipo === 'complementario' ? '💼' : ingreso.tipo === 'transferencia' ? '🔄' : '💵';
-                    const moneda = ingreso.moneda || 'ars';
+                    const moneda = ingreso.moneda === 'usd' ? 'usd' : 'ars';
+                    const idAttr = this.app.utils.escaparAtributoHTML(ingreso.id);
                     return `
-                    <div class="factura-item" data-id="${ingreso.id}">
-                        <div class="factura-info" data-action="abrir-ingreso" data-ingreso-id="${ingreso.id}">
+                    <div class="factura-item" data-id="${idAttr}">
+                        <div class="factura-info" data-action="abrir-ingreso" data-ingreso-id="${idAttr}">
                             <div class="factura-monto">${this.app.utils.formatearMoneda(ingreso.monto, moneda)}<span class="moneda-badge ${moneda}">${moneda.toUpperCase()}</span></div>
                             <div class="factura-fecha">${emoji} ${tipo} | Cobrado: ${this.app.utils.formatearFecha(ingreso.fecha)}</div>
                         </div>
@@ -3487,7 +3507,7 @@ class IngresoService {
             const modal = document.getElementById('modal-ingresos-lista');
             if (modal?.classList.contains('active')) {
                 const sid  = modal.dataset.servicioId;
-                const item = document.querySelector(`.factura-item[data-id="${ingresoId}"]`);
+                const item = document.querySelector(`.factura-item[data-id="${CSS.escape(ingresoId)}"]`);
                 const ano  = item?.closest('.facturas-grupo-ano')?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
                 this.app._anoExpandidoIngresos[sid] = ano;
             }
@@ -3821,7 +3841,9 @@ class CategoriaService {
     }
 
     guardarNueva() {
-        const nombre = document.getElementById('nueva-categoria-nombre').value.trim();
+        // Mismo saneamiento que las categorías importadas (ver StorageService._normalizarCategorias)
+        const nombre = SecurityAndUtils.sanitizeString(document.getElementById('nueva-categoria-nombre').value,
+            SecurityAndUtils.SECURITY_LIMITS.MAX_NOMBRE_LENGTH);
         if (!nombre) { this.app.mostrarToast('El nombre es requerido', 'error'); return; }
         const cats = this.getCategorias();
         if (cats.some(c => c.toLowerCase() === nombre.toLowerCase())) {
@@ -4048,12 +4070,12 @@ class EstadisticasService {
         const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         const renderFila = ({ servicio, factura, estado, badgeClass }) => `
             <div class="info-resumen-fila">
-                <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${servicio}</span><span class="info-resumen-badge ${badgeClass}">${estado}</span></div>
+                <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${this.app.utils.escaparHTML(servicio)}</span><span class="info-resumen-badge ${badgeClass}">${estado}</span></div>
                 <span class="info-resumen-monto">${fmt(factura.monto, factura.moneda || 'ars')}</span>
             </div>`;
         const renderFilaOtroMes = ({ servicio, factura, mesVenc }) => `
             <div class="info-resumen-fila">
-                <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${servicio}</span><span class="info-resumen-badge badge-pagada-otro-mes">Venció ${mesVenc}</span></div>
+                <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${this.app.utils.escaparHTML(servicio)}</span><span class="info-resumen-badge badge-pagada-otro-mes">Venció ${mesVenc}</span></div>
                 <span class="info-resumen-monto">${fmt(factura.monto, factura.moneda || 'ars')}</span>
             </div>`;
         let html = '';
@@ -4585,11 +4607,9 @@ class UtilsService {
         return SecurityAndUtils.escapeHtml(texto);
     }
 
+    // escapeHtml ya escapa comillas, así que sirve también para atributos
     escaparAtributoHTML(texto) {
-        if (!texto) return '';
-        const div = document.createElement('div');
-        div.setAttribute('data-attr', texto);
-        return div.getAttribute('data-attr');
+        return SecurityAndUtils.escapeHtml(texto);
     }
 
     descargarBlob(contenido, nombreArchivo, tipo = 'text/plain;charset=utf-8') {
@@ -4752,7 +4772,7 @@ class PerfilService {
             } catch (e) { }
             return `
     <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
-         data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
+         data-action="cambiar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}">
         <div class="flex-1">
             <div class="perfil-header d-flex align-items-center gap-2">
                 ${this.app.utils.escaparHTML(perfil.nombre)}
@@ -4762,10 +4782,10 @@ class PerfilService {
         </div>
         <div class="d-flex gap-2" data-action="stop-propagation">
             ${!esDefault ? `
-                <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${perfil.id}" title="Eliminar perfil">
+                <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}" title="Eliminar perfil">
                     <svg class="icon"><use href="#icon-trash" /></svg>
                 </button>` : ''}
-            <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${perfil.id}" title="Editar perfil">
+            <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}" title="Editar perfil">
                 <svg class="icon"><use href="#icon-edit" /></svg>
             </button>
         </div>
@@ -5334,8 +5354,7 @@ class GistService {
         this._setBusy(true);
         if (!silencioso) this.app.mostrarToast('Subiendo...', 'info');
 
-        const categorias = this.app.categoria.getCategorias();
-        const payload = JSON.stringify({ servicios: this.servicios, categorias }, null, 2);
+        const payload = JSON.stringify(await this.app.storage._construirExportacion(), null, 2);
         const filename = `deltaF_${this.perfilActivo}.json`;
 
         const url = this.esIdValido(perfil.gistId) ? `https://api.github.com/gists/${perfil.gistId}` : 'https://api.github.com/gists';
@@ -5490,14 +5509,27 @@ class GistService {
         const fileObj = json.files[filename];
         if (!fileObj) throw new Error('Archivo no encontrado');
 
+        const maxBytes = SecurityAndUtils.SECURITY_LIMITS.MAX_JSON_SIZE;
+        if (fileObj.size > maxBytes) throw new Error('Archivo del Gist demasiado grande');
+
         let content = fileObj.content;
         if (fileObj.truncated) {
-            const r2 = await fetch(fileObj.raw_url);
+            // raw_url solo se sigue si es del dominio de contenido de Gist
+            const raw = new URL(fileObj.raw_url);
+            if (raw.protocol !== 'https:' || raw.hostname !== 'gist.githubusercontent.com') throw new Error('URL de contenido inesperada');
+            const r2 = await fetch(raw.href);
+            if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
             content = await r2.text();
         }
+        if (typeof content !== 'string' || content.length > maxBytes) throw new Error('Archivo del Gist demasiado grande');
 
-        const parsed = JSON.parse(content);
-        return { servicios: parsed.servicios, categorias: parsed.categorias || [] };
+        const parsed = JSON.parse(content, SecurityAndUtils.reviverJSONSeguro);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato inválido');
+        if (parsed.hash !== undefined) {
+            const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: parsed.servicios, categorias: parsed.categorias });
+            if (hash !== parsed.hash) throw new Error('El archivo del Gist no pasa la verificación de integridad');
+        }
+        return this.app.storage.normalizarDatos(parsed.servicios, parsed.categorias);
     }
 
     aplicarNovedades() {
@@ -5735,66 +5767,129 @@ class StorageService {
         }
     }
 
-    // ── Validación de integridad ──────────────────────────────
-    validarDatos(datos) {
-        if (!Array.isArray(datos)) {
-            console.error('Validación: datos no es un array');
-            return false;
-        }
-        return datos.every((servicio, idx) => {
-            if (typeof servicio.id !== 'string' || !servicio.id.trim()) {
-                console.error(`Validación: servicio[${idx}].id inválido`); return false;
+    // ── Validación y normalización de datos externos ──────────
+    // Todo lo que entra desde un archivo o un Gist pasa por acá: valida
+    // tipos, formatos y rangos, y reconstruye cada objeto solo con los
+    // campos conocidos (descarta propiedades extra en vez de rechazar el
+    // archivo, para no romper backups viejos). Lanza Error con un mensaje
+    // legible si algo no es válido.
+    normalizarDatos(servicios, categorias = []) {
+        const L = SecurityAndUtils.SECURITY_LIMITS;
+        const R = SecurityAndUtils.REGEX_PATTERNS;
+        const TIPOS = ['mensual', 'bimestral', 'semestral', 'anual', 'regular', 'complementario', 'transferencia'];
+        const MONEDAS = ['ars', 'usd'];
+        const esObjeto = o => o !== null && typeof o === 'object' && !Array.isArray(o);
+        const fallar = msg => { throw new Error(msg); };
+        const textoOpcional = (v, max, donde) => {
+            if (v === undefined || v === null || v === '') return '';
+            if (typeof v !== 'string' || v.length > max) fallar(`${donde} inválido`);
+            return v;
+        };
+
+        if (!Array.isArray(servicios)) fallar('Formato inválido: falta "servicios"');
+        if (categorias !== undefined && categorias !== null && !Array.isArray(categorias)) fallar('Formato inválido: "categorias" no es una lista');
+
+        const idsServicios = new Set();
+        const serviciosOk = servicios.map((s, i) => {
+            const donde = `servicio ${i + 1}`;
+            if (!esObjeto(s)) fallar(`${donde}: formato inválido`);
+            if (typeof s.id !== 'string' || !R.ID.test(s.id)) fallar(`${donde}: id inválido`);
+            if (idsServicios.has(s.id)) fallar(`${donde}: id duplicado`);
+            idsServicios.add(s.id);
+            if (typeof s.nombre !== 'string' || !s.nombre.trim() || s.nombre.length > L.MAX_NOMBRE_LENGTH) fallar(`${donde}: nombre inválido`);
+            if (!Array.isArray(s.facturas)) fallar(`${donde}: facturas no es una lista`);
+
+            const idsFacturas = new Set();
+            const facturas = s.facturas.map((f, j) => {
+                const dondeF = `factura ${j + 1} de "${s.nombre}"`;
+                if (!esObjeto(f)) fallar(`${dondeF}: formato inválido`);
+                if (typeof f.id !== 'string' || !R.ID.test(f.id)) fallar(`${dondeF}: id inválido`);
+                if (idsFacturas.has(f.id)) fallar(`${dondeF}: id duplicado`);
+                idsFacturas.add(f.id);
+                if (typeof f.monto !== 'number' || !Number.isFinite(f.monto) || Math.abs(f.monto) > L.MAX_MONTO) fallar(`${dondeF}: monto inválido`);
+                if (typeof f.fecha !== 'string' || !R.FECHA.test(f.fecha)) fallar(`${dondeF}: fecha inválida`);
+                if (typeof f.pagada !== 'boolean') fallar(`${dondeF}: estado de pago inválido`);
+                if (f.fechaPago != null && (typeof f.fechaPago !== 'string' || !R.FECHA.test(f.fechaPago))) fallar(`${dondeF}: fecha de pago inválida`);
+                if (f.tipo !== undefined && !TIPOS.includes(f.tipo)) fallar(`${dondeF}: tipo inválido`);
+                if (f.moneda !== undefined && f.moneda !== null && !MONEDAS.includes(f.moneda)) fallar(`${dondeF}: moneda inválida`);
+                if (f.conCredito !== undefined && typeof f.conCredito !== 'boolean') fallar(`${dondeF}: crédito inválido`);
+
+                const limpia = { id: f.id, monto: f.monto, fecha: f.fecha, pagada: f.pagada, fechaPago: f.fechaPago ?? null };
+                if (f.tipo !== undefined) limpia.tipo = f.tipo;
+                if (f.moneda) limpia.moneda = f.moneda;
+                if (f.conCredito !== undefined) limpia.conCredito = f.conCredito;
+                return limpia;
+            });
+
+            const limpio = { id: s.id, nombre: s.nombre, categoria: textoOpcional(s.categoria, L.MAX_NOMBRE_LENGTH, `${donde}: categoría`), facturas };
+            if (s.activo !== undefined) {
+                if (typeof s.activo !== 'boolean') fallar(`${donde}: activo inválido`);
+                limpio.activo = s.activo;
             }
-            if (typeof servicio.nombre !== 'string' || !servicio.nombre.trim()) {
-                console.error(`Validación: servicio[${idx}].nombre inválido`); return false;
-            }
-            if (servicio.nombre.length > 30) {
-                console.error(`Validación: servicio[${idx}].nombre demasiado largo`); return false;
-            }
-            if (!Array.isArray(servicio.facturas)) {
-                console.error(`Validación: servicio[${idx}].facturas no es un array`); return false;
-            }
-            return servicio.facturas.every((factura, fidx) => {
-                if (typeof factura.id !== 'string' || !factura.id.trim()) {
-                    console.error(`Validación: factura[${fidx}].id inválido en servicio[${idx}]`); return false;
-                }
-                if (typeof factura.monto !== 'number' || !isFinite(factura.monto)) {
-                    console.error(`Validación: factura[${fidx}].monto inválido en servicio[${idx}]`); return false;
-                }
-                if (Math.abs(factura.monto) > 99999999) {
-                    console.error(`Validación: factura[${fidx}].monto fuera de rango en servicio[${idx}]`); return false;
-                }
-                if (typeof factura.fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(factura.fecha)) {
-                    console.error(`Validación: factura[${fidx}].fecha inválida en servicio[${idx}]`); return false;
-                }
-                if (typeof factura.pagada !== 'boolean') {
-                    console.error(`Validación: factura[${fidx}].pagada no es boolean en servicio[${idx}]`); return false;
-                }
-                if (factura.fechaPago != null) {
-                    if (typeof factura.fechaPago !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(factura.fechaPago)) {
-                        console.error(`Validación: factura[${fidx}].fechaPago inválida en servicio[${idx}]`); return false;
-                    }
-                }
-                if (factura.tipo !== undefined) {
-                    const tiposValidos = ['mensual', 'bimestral', 'semestral', 'anual', 'regular', 'complementario', 'transferencia'];
-                    if (!tiposValidos.includes(factura.tipo)) {
-                        console.error(`Validación: factura[${fidx}].tipo inválido en servicio[${idx}]`); return false;
-                    }
-                }
+            return limpio;
+        });
+
+        const categoriasOk = this._normalizarCategorias(categorias || []);
+        if (categoriasOk.length > L.MAX_CATEGORIAS) fallar(`Máximo ${L.MAX_CATEGORIAS} categorías`);
+        return { servicios: serviciosOk, categorias: categoriasOk };
+    }
+
+    // Categorías: solo strings, saneadas, sin vacías ni duplicadas
+    // (sin distinguir mayúsculas).
+    _normalizarCategorias(categorias) {
+        const L = SecurityAndUtils.SECURITY_LIMITS;
+        const vistas = new Set();
+        return categorias
+            .filter(c => typeof c === 'string')
+            .map(c => SecurityAndUtils.sanitizeString(c, L.MAX_NOMBRE_LENGTH))
+            .filter(c => {
+                const clave = c.toLowerCase();
+                if (!c || vistas.has(clave)) return false;
+                vistas.add(clave);
                 return true;
             });
-        });
+    }
+
+    // Archivo de exportación: versión de esquema + hash de integridad.
+    async _construirExportacion() {
+        const contenido = { servicios: this.servicios, categorias: this.app.categoria.getCategorias() };
+        return {
+            version: SecurityAndUtils.SECURITY_LIMITS.SCHEMA_VERSION,
+            fecha: new Date().toISOString(),
+            hash: await SecurityAndUtils.calcularHashSHA256(contenido),
+            ...contenido
+        };
+    }
+
+    // Verifica versión y hash de un archivo importado. Devuelve false si el
+    // usuario decide no continuar.
+    async _verificarArchivo(datos) {
+        const actual = SecurityAndUtils.SECURITY_LIMITS.SCHEMA_VERSION;
+        const version = datos.version === '1.0' ? 1 : Number(datos.version);
+        if (datos.version !== undefined && (!Number.isFinite(version) || version > actual)) {
+            const continuar = await ModalManager.confirmar(
+                `El archivo es de una versión más nueva (${SecurityAndUtils.sanitizeString(String(datos.version), 20)}). Puede haber incompatibilidades. ¿Continuar?`,
+                'Continuar', '#icon-help', { titulo: 'Versión detectada' }
+            );
+            if (!continuar) return false;
+        }
+        if (datos.hash !== undefined) {
+            const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: datos.servicios, categorias: datos.categorias });
+            if (hash !== datos.hash) {
+                const continuar = await ModalManager.confirmar(
+                    'El archivo fue modificado o está dañado (la verificación de integridad no coincide). ¿Importarlo de todas formas?',
+                    'Importar', '#icon-help', { titulo: 'Integridad' }
+                );
+                if (!continuar) return false;
+            }
+        }
+        return true;
     }
 
     // ── Exportar ──────────────────────────────────────────────
-    exportarDatos() {
+    async exportarDatos() {
         try {
-            const datos = {
-                version: '1.0',
-                fecha: new Date().toISOString(),
-                categorias: this.app.categoria.getCategorias(),
-                servicios: this.servicios
-            };
+            const datos = await this._construirExportacion();
             this.app.utils.descargarBlob(
                 JSON.stringify(datos, null, 2),
                 `servicios_${this.app.utils.obtenerFechaLocal()}.json`,
@@ -5817,8 +5912,9 @@ class StorageService {
         input.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.size > 10 * 1024 * 1024) {
-                this.app.ui.mostrarToast('Archivo demasiado grande (máx 10MB)', 'error'); return;
+            const maxBytes = SecurityAndUtils.SECURITY_LIMITS.MAX_JSON_SIZE;
+            if (file.size > maxBytes) {
+                this.app.ui.mostrarToast(`Archivo demasiado grande (máx ${maxBytes / (1024 * 1024)}MB)`, 'error'); return;
             }
             if (!file.name.endsWith('.json')) {
                 this.app.ui.mostrarToast('Solo se permiten archivos .json', 'error'); return;
@@ -5826,22 +5922,12 @@ class StorageService {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const datos = JSON.parse(event.target.result, SecurityAndUtils.reviverJSONSeguro);
-                    if (datos.version && datos.version !== '1.0') {
-                        const continuar = await ModalManager.confirmar(
-                            `Versión ${datos.version} detectada (actual: 1.0). Puede haber incompatibilidades. ¿Continuar?`,
-                            'Continuar',
-                            '#icon-help',
-                            { titulo: 'Versión detectada' }
-                        );
-                        if (!continuar) return;
+                    const crudo = JSON.parse(event.target.result, SecurityAndUtils.reviverJSONSeguro);
+                    if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) {
+                        throw new Error('Formato de archivo inválido');
                     }
-                    if (!datos.servicios || !Array.isArray(datos.servicios)) {
-                        throw new Error('Formato de archivo inválido: falta "servicios"');
-                    }
-                    if (!this.validarDatos(datos.servicios)) {
-                        throw new Error('Datos corruptos o inválidos en el archivo');
-                    }
+                    if (!(await this._verificarArchivo(crudo))) return;
+                    const datos = this.normalizarDatos(crudo.servicios, crudo.categorias);
                     const cantidad = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).length;
                     const facturas = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
                     const ingresos = datos.servicios.find(s => s.id === this.INGRESOS_ID)?.facturas.length || 0;
@@ -5849,7 +5935,7 @@ class StorageService {
                     if (modo === 'combinar') {
                         this._aplicarImportacion('combinar', datos);
                     } else {
-                        const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
+                        const cats = datos.categorias;
                         const partes = [this.app.utils.plural(cantidad, 'servicio', 'servicios')];
                         if (facturas > 0) partes.push(this.app.utils.plural(facturas, 'factura', 'facturas'));
                         if (ingresos > 0) partes.push(this.app.utils.plural(ingresos, 'ingreso', 'ingresos'));
@@ -5866,7 +5952,7 @@ class StorageService {
                     }
                 } catch (error) {
                     console.error('Error al importar:', error);
-                    this.app.ui.mostrarToast('❌ Error: ' + error.message, 'error');
+                    this.app.ui.mostrarToast('Error al importar: ' + error.message, 'error');
                 }
             };
             reader.onerror = () => this.app.ui.mostrarToast('Error al leer el archivo', 'error');
@@ -6022,7 +6108,8 @@ class CustomSelect {
     refresh() {
         const options = Array.from(this.native.options);
         this.dropdown.innerHTML = options.map(opt =>
-            `<div class="custom-select-option${opt.selected ? ' selected' : ''}" data-value="${opt.value}">${opt.text}</div>`
+            // opt.value y opt.text vienen decodificados: hay que volver a escaparlos
+            `<div class="custom-select-option${opt.selected ? ' selected' : ''}" data-value="${SecurityAndUtils.escapeHtml(opt.value)}">${SecurityAndUtils.escapeHtml(opt.text)}</div>`
         ).join('');
         this.dropdown.querySelectorAll('.custom-select-option').forEach(el => {
             el.addEventListener('pointerdown', e => {

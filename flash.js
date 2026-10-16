@@ -1,3 +1,10 @@
+// Anti-clickjacking: GitHub Pages no permite enviar el header
+// frame-ancestors / X-Frame-Options, y como <meta> los navegadores los ignoran.
+if (window.top !== window.self) {
+    try { window.top.location = window.self.location.href; }
+    catch (e) { document.documentElement.style.display = 'none'; }
+}
+
 (function () {
     var html = document.documentElement;
     // Suprimir transiciones ANTES del primer paint

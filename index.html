@@ -13,13 +13,13 @@
                  style-src 'self';
                  img-src 'self' data: https:; 
                  font-src 'self' data:; 
-                 connect-src 'self' https://dolarapi.com https://api.github.com;
+                 connect-src 'self' https://dolarapi.com https://api.github.com https://gist.githubusercontent.com;
                  object-src 'none'; 
                  base-uri 'self'; 
                  form-action 'self'; 
                  frame-ancestors 'none'; 
                  upgrade-insecure-requests;">
-    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <link rel="manifest" href="manifest.json">
