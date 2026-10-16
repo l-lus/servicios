@@ -1775,6 +1775,24 @@ input[type="number"] {
     border-color: var(--c-blue);
 }
 
+/* Toast con acción ("Deshacer"): texto + botón en línea */
+.toast.toast-con-accion {
+    justify-content: space-between;
+    text-align: left;
+}
+
+.toast-accion {
+    width: auto;
+    flex-shrink: 0;
+    padding: 0.35rem 0.9rem;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--c-blue);
+    color: var(--c-white);
+    font-weight: 600;
+    cursor: pointer;
+}
+
 /* ============================================================
            MENÚ AJUSTES (panel lateral)
         ============================================================ */

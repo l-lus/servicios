@@ -1,7 +1,7 @@
 // Prefijo propio: el origen (GitHub Pages) es compartido con otras apps,
 // así que solo se tocan las cachés que empiezan con CACHE_PREFIX
 // (CACHE_NAME tiene que empezar con ese prefijo).
-const CACHE_NAME = 'SERVICIOS-v261016.0054';
+const CACHE_NAME = 'SERVICIOS-v261016.0059';
 const CACHE_PREFIX = 'SERVICIOS-';
 
 const urlsToCache = [
