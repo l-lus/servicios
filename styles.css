@@ -43,6 +43,7 @@
     --dur-anim: 300ms;
     --dur-collapse: 300ms;
     --dur-pop: 0.35s;
+    --dur-valor: 150ms;
     --ease-anim: ease;
     --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
     --transition-fast: 0.2s;
@@ -2698,4 +2699,90 @@ input[type="number"] {
         padding: 1.5rem;
     }
 
+}
+
+/* ─── MUTACIÓN ENTRADA / SALIDA (ver Anim en app.js) ─────────────────────────── */
+
+.mutacion-saliente {
+    animation: mutacionSalida var(--dur-anim) ease forwards;
+}
+
+.mutacion-entrante {
+    animation: mutacionEntrada var(--dur-anim) ease forwards;
+}
+
+.nuevo-item-animacion {
+    transform-origin: center;
+    position: relative;
+    z-index: 3;
+    animation: mutacionEntrada var(--dur-anim) ease-out;
+}
+
+@keyframes mutacionSalida {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+@keyframes mutacionEntrada {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Cambio de valor con desplazamiento vertical (ver Anim.valor) */
+.valor-roll {
+    display: inline-grid;
+    overflow: hidden;
+    vertical-align: bottom;
+    padding: 0.1em 0;
+    margin: -0.1em 0;
+}
+
+.valor-roll-item {
+    grid-area: 1 / 1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ─── REDUCED MOTION ─────────────────────────────────────────────────────────── */
+
+:root[data-motion="reduce"] {
+    --dur-fast: 1ms;
+    --dur-anim: 1ms;
+    --dur-collapse: 1ms;
+    --dur-pop: 1ms;
+    --dur-valor: 1ms;
+    --transition-fast: 1ms;
+    --transition-base: 1ms;
+}
+
+/* Duraciones escritas a mano en reglas puntuales (0.2s, 1s…): se anulan en bloque */
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* El spinner de sincronización comunica estado: se mantiene girando */
+:root[data-motion="reduce"] .icon-btn-spinning svg {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
 }

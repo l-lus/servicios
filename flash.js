@@ -16,4 +16,14 @@
     });
 }());
 
+// Reducir animaciones: 'on' | 'off' | 'auto' (sin valor = auto, sigue al sistema).
+// Misma regla que Motion en app.js; el CSS solo mira <html data-motion>.
+(function () {
+    try {
+        var m = localStorage.getItem('gestion_servicios_reducir_animaciones');
+        var reducir = m === 'on' || (m !== 'off' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        document.documentElement.setAttribute('data-motion', reducir ? 'reduce' : 'full');
+    } catch (e) { }
+}());
+
 // Parche anti parpadeo blanco en modo oscuro

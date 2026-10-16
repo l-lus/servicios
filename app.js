@@ -1,9 +1,33 @@
+// ============================================================
+// STORAGE KEYS — única fuente de verdad de las claves de localStorage
+// ============================================================
+const STORAGE_KEYS = Object.freeze({
+    TEMA: 'gestion_servicios_theme',
+    PERFIL_ACTIVO: 'gestion_servicios_perfil_activo',
+    PERFILES: 'gestion_servicios_perfiles',
+    ORDEN: 'gestion_servicios_orden',
+    REDUCIR_ANIMACIONES: 'gestion_servicios_reducir_animaciones',
+    CATEGORIAS: 'categorias-servicios',
+    CAT_COLAPSADAS: 'cat-colapsadas',
+    CAT_AGRUPACION: 'cat-agrupacion',
+    VISTA_ESTADOS: 'vista-estados',
+    RESUMEN_MOSTRAR_PAGADO: 'resumen-mostrar-pagado',
+    BLUR_MONTOS: 'blur-montos',
+    INGRESOS_HABILITADO: 'ingresos-habilitado',
+    ESTADISTICAS_TIPO: 'estadisticas-tipo',
+    ESTADISTICAS_COLAPSADAS: 'estadisticas-collapsed',
+    SERVICIOS_COLLAPSE: 'servicios-collapse-state',
+    GIST_TOKEN: 'gist_token',
+
+    DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
+    HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,
+});
+
 // Aplicar estado de tarjetas colapsables
 (function () {
-    const estadisticasColapsadas = localStorage.getItem('estadisticas-collapsed') === 'true';
-    const serviciosState = localStorage.getItem('servicios-collapse-state') || 'expanded';
-
     document.addEventListener('DOMContentLoaded', function () {
+        const estadisticasColapsadas = StorageHelper.getBoolean(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS);
+        const serviciosState = StorageHelper.getItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'expanded');
         const estadisticasContent = document.getElementById('estadisticas-content');
         const estadisticasChevron = document.getElementById('estadisticas-chevron');
         const serviciosContent = document.getElementById('servicios-content');
@@ -102,7 +126,7 @@ const StorageHelper = (function () {
 
     function _getKey(key, useProfile) {
         if (!useProfile) return key;
-        const perfilActivo = window.app?.perfilActivo || localStorage.getItem('gestion_servicios_perfil_activo') || 'default';
+        const perfilActivo = window.app?.perfilActivo || localStorage.getItem(STORAGE_KEYS.PERFIL_ACTIVO) || 'default';
         return `${key}_${perfilActivo}`;
     }
 
@@ -167,6 +191,230 @@ const StorageHelper = (function () {
         getObject,
         removeItem,
         configurarNotificaciones
+    };
+})();
+
+// ============================================================
+// MOTION (preferencia de animaciones: auto | on | off)
+// ============================================================
+// 'on' = reducir animaciones, 'off' = animaciones completas, 'auto' = sigue al
+// sistema (prefers-reduced-motion). El CSS solo mira <html data-motion>, que
+// flash.js aplica antes del primer paint con la misma regla.
+const Motion = (function () {
+    'use strict';
+
+    const MODOS = ['auto', 'on', 'off'];
+    const ETIQUETAS = { auto: 'Auto', on: 'SI', off: 'NO' };
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let modo = null;
+    let iniciado = false;
+
+    function _modo() {
+        if (modo === null) {
+            const guardado = StorageHelper.getItem(STORAGE_KEYS.REDUCIR_ANIMACIONES, 'auto');
+            modo = MODOS.includes(guardado) ? guardado : 'auto';
+        }
+        return modo;
+    }
+    function reducido() {
+        const m = _modo();
+        return m === 'on' || (m === 'auto' && mq.matches);
+    }
+    function _aplicar() {
+        document.documentElement.setAttribute('data-motion', reducido() ? 'reduce' : 'full');
+    }
+    function init() {
+        if (iniciado) return;
+        iniciado = true;
+        mq.addEventListener?.('change', _aplicar);
+        _aplicar();
+    }
+    function setModo(nuevo) {
+        if (!MODOS.includes(nuevo)) return;
+        modo = nuevo;
+        StorageHelper.setItem(STORAGE_KEYS.REDUCIR_ANIMACIONES, nuevo);
+        _aplicar();
+    }
+    function siguienteModo() {
+        setModo(MODOS[(MODOS.indexOf(_modo()) + 1) % MODOS.length]);
+    }
+    return {
+        init, reducido, setModo, siguienteModo, modo: _modo,
+        etiqueta: () => ETIQUETAS[_modo()],
+        scrollBehavior: () => (reducido() ? 'auto' : 'smooth')
+    };
+})();
+
+// ============================================================
+// ANIM — helpers de animación (mutación entrada/salida, valores)
+// ============================================================
+const Anim = (function () {
+    'use strict';
+
+    function aArray(valor) {
+        if (valor === null || valor === undefined) return [];
+        return Array.isArray(valor) ? valor : [valor];
+    }
+
+    function getCSSdur(varName) {
+        const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        if (!raw) return 300;
+        return raw.endsWith('ms') ? parseFloat(raw) : parseFloat(raw) * 1000;
+    }
+    function durSiAnima(varName, el = null) {
+        return (Motion.reducido() || (el && !el.offsetParent)) ? 0 : getCSSdur(varName);
+    }
+    const DUR_ANIM = () => getCSSdur('--dur-anim');
+
+    function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function esperarAnim(extra = 50) { return esperar(DUR_ANIM() + extra); }
+
+    function estaColapsado(el) { return !!el.closest('.collapsed'); }
+
+    // Clona el elemento como "fantasma" fijo sobre su posición actual para
+    // que pueda animar su salida mientras el original se re-renderiza.
+    function _fantasmaDe(el) {
+        const rect = el.getBoundingClientRect();
+        const clon = el.cloneNode(true);
+        clon.removeAttribute('id');
+        clon.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+        clon.classList.add('mutacion-saliente');
+        clon.setAttribute('aria-hidden', 'true');
+
+        Object.assign(clon.style, {
+            position: 'fixed',
+            top: rect.top + 'px',
+            left: rect.left + 'px',
+            width: rect.width + 'px',
+            height: rect.height + 'px',
+            margin: '0',
+            pointerEvents: 'none',
+            zIndex: '80'
+        });
+
+        document.body.appendChild(clon);
+        return clon;
+    }
+
+    const _mutacionEstado = new WeakMap();
+
+    function _finalizarMutacionPendiente(el) {
+        const estado = _mutacionEstado.get(el);
+        if (!estado) return;
+        clearTimeout(estado.timeout);
+        if (estado.fantasma && estado.fantasma.parentNode) estado.fantasma.remove();
+        el.classList.remove('mutacion-entrante');
+        _mutacionEstado.delete(el);
+    }
+
+    // Anima el cambio de contenido de uno o más elementos: el estado viejo
+    // sale como fantasma y el nuevo entra con .mutacion-entrante.
+    // fn hace la mutación del DOM (puede devolver una promesa).
+    function mutacion(elementos, fn, duracion = null) {
+        const els = aArray(elementos).filter(Boolean);
+        const dur = duracion ?? DUR_ANIM();
+
+        els.forEach(_finalizarMutacionPendiente);
+        if (els.length === 0 || Motion.reducido()) return Promise.resolve(fn());
+
+        const fantasmas = [];
+        els.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) fantasmas.push({ el, fantasma: _fantasmaDe(el) });
+        });
+
+        els.forEach(el => el.classList.remove('mutacion-entrante'));
+
+        return Promise.resolve(fn()).then(resultado => {
+            els.forEach(el => {
+                void el.offsetWidth;
+                el.classList.add('mutacion-entrante');
+            });
+
+            const timeout = setTimeout(() => {
+                fantasmas.forEach(({ fantasma }) => fantasma.remove());
+                els.forEach(el => {
+                    el.classList.remove('mutacion-entrante');
+                    _mutacionEstado.delete(el);
+                });
+            }, dur);
+
+            els.forEach(el => {
+                const item = fantasmas.find(m => m.el === el);
+                _mutacionEstado.set(el, { timeout, fantasma: item ? item.fantasma : null });
+            });
+
+            return resultado;
+        });
+    }
+
+    // Deja un fantasma que se desvanece en el lugar de un elemento que está
+    // por eliminarse o reemplazarse (sin animar el que lo reemplaza).
+    function fantasmaSiVisible(el) {
+        if (!el || Motion.reducido()) return null;
+        if (estaColapsado(el)) return null;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) return null;
+        if (r.bottom < 0 || r.top > window.innerHeight) return null;
+
+        const fantasma = _fantasmaDe(el);
+        fantasma.classList.remove('nuevo-item-animacion', 'mutacion-entrante');
+        const limpiar = () => fantasma.remove();
+        fantasma.addEventListener('animationend', limpiar, { once: true });
+        esperarAnim(150).then(limpiar);
+        return fantasma;
+    }
+
+    // Marca un elemento recién creado/modificado para que entre animado.
+    function marcarNuevo(el) {
+        if (!el || Motion.reducido()) return;
+        el.classList.add('nuevo-item-animacion');
+        el.addEventListener('animationend', () => el.classList.remove('nuevo-item-animacion'), { once: true });
+    }
+
+    const _valorEstado = new WeakMap();
+
+    function _finalizarValorPendiente(el) {
+        const est = _valorEstado.get(el);
+        if (!est) return;
+        clearTimeout(est.timeout);
+        est.anims.forEach(a => a.cancel());
+        _valorEstado.delete(el);
+        if (el.querySelector(':scope > .valor-roll')) el.textContent = est.texto;
+    }
+
+    // Cambia el texto de un valor con desplazamiento vertical:
+    // dir > 0 sube (aumentó), dir < 0 baja (disminuyó), 0 sin animación.
+    function valor(el, texto, dir = 0) {
+        if (!el) return;
+        texto = String(texto);
+        const previo = _valorEstado.get(el);
+        const actual = previo ? previo.texto : el.textContent;
+        _finalizarValorPendiente(el);
+        if (actual === texto) { if (el.textContent !== texto) el.textContent = texto; return; }
+
+        const dur = getCSSdur('--dur-valor');
+        if (!dir || Motion.reducido() || !dur || !el.offsetParent) { el.textContent = texto; return; }
+
+        const mk = t => { const s = document.createElement('span'); s.className = 'valor-roll-item'; s.textContent = t; return s; };
+        const saliente = mk(actual), entrante = mk(texto);
+        const roll = document.createElement('span');
+        roll.className = 'valor-roll';
+        roll.append(saliente, entrante);
+        el.replaceChildren(roll);
+
+        const opts = { duration: dur, easing: 'ease-out', fill: 'both' };
+        const sgn = dir > 0 ? 1 : -1;
+        const anims = [
+            saliente.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${-70 * sgn}%)`, opacity: 0 }], opts),
+            entrante.animate([{ transform: `translateY(${70 * sgn}%)`, opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], opts)
+        ];
+        _valorEstado.set(el, { texto, anims, timeout: setTimeout(() => _finalizarValorPendiente(el), dur) });
+    }
+
+    return {
+        aArray, getCSSdur, durSiAnima, esperar, esperarAnim, estaColapsado,
+        mutacion, fantasmaSiVisible, marcarNuevo, valor
     };
 })();
 
@@ -619,7 +867,7 @@ class GestionServicios {
     constructor() {
         // Sistema de perfiles — PerfilService se instancia primero porque
         // cargar() se necesita durante la construcción
-        this.perfilActivo = localStorage.getItem('gestion_servicios_perfil_activo') || 'default';
+        this.perfilActivo = StorageHelper.getItem(STORAGE_KEYS.PERFIL_ACTIVO) || 'default';
         this.perfil = new PerfilService(this);
         this.perfiles = this.perfil.cargar();
 
@@ -631,14 +879,14 @@ class GestionServicios {
         this._anoExpandidoFacturas = {};
         this._anoExpandidoIngresos = {};
         try {
-            this._catColapsadas = JSON.parse(localStorage.getItem('cat-colapsadas') || '{}');
+            this._catColapsadas = StorageHelper.getObject(STORAGE_KEYS.CAT_COLAPSADAS, {});
             this._catColapsadasAntesBusqueda = null;
         } catch (e) {
             this._catColapsadas = {};
         }
 
-        this._agrupacionActiva = localStorage.getItem('cat-agrupacion') === 'on';
-        this._vistaEstados = localStorage.getItem('vista-estados') === 'true';
+        this._agrupacionActiva = StorageHelper.getItem(STORAGE_KEYS.CAT_AGRUPACION) === 'on';
+        this._vistaEstados = StorageHelper.getItem(STORAGE_KEYS.VISTA_ESTADOS) === 'true';
         if (!this._agrupacionActiva && !this._vistaEstados) {
             // si ninguna está activa, estado por defecto
         }
@@ -654,11 +902,9 @@ class GestionServicios {
         this.maxHistorial = 20;
 
         // Configuración
-        this.STORAGE_KEY = 'gestion_servicios_data';
-        this.THEME_KEY = 'gestion_servicios_theme';
-        this.mostrandoPagadoMes = localStorage.getItem('resumen-mostrar-pagado') === 'true';
+        this.mostrandoPagadoMes = StorageHelper.getItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO) === 'true';
         this.resumenDesblurado = false; // Siempre empieza blureado al cargar
-        this.blurHabilitado = localStorage.getItem('blur-montos') === 'true';
+        this.blurHabilitado = StorageHelper.getItem(STORAGE_KEYS.BLUR_MONTOS) === 'true';
         this.datosResumen = { pendiente: 0, pagadoMes: 0, totalPeriodo: 0 };
         this.serviciosCollapseState = 'expanded'; // 'expanded', 'semi-collapsed', 'collapsed'
 
@@ -667,7 +913,7 @@ class GestionServicios {
         this.toggleServiciosDelay = 500;
 
         // Ordenamiento de lista de servicios
-        this.ordenActual = localStorage.getItem('gestion_servicios_orden') || 'nombre';
+        this.ordenActual = StorageHelper.getItem(STORAGE_KEYS.ORDEN) || 'nombre';
         this.terminoBusqueda = '';
         this.enModoBusqueda = false;
         this._ctxServicioId = null;
@@ -680,11 +926,10 @@ class GestionServicios {
         this.ultimoEstadoCalculador = null;
         this.ultimoEstadoResumen = null;
 
-        this.INGRESOS_KEY = 'ingresos-habilitado';
         this.SERVICIO_INGRESOS_ID = 'servicio-ingresos-especial';
 
         // Tipo de estadística seleccionado
-        this.tipoEstadisticaActual = localStorage.getItem('estadisticas-tipo') || 'mensual';
+        this.tipoEstadisticaActual = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
         this._estadisticaCategoriaActiva = null;
 
         // Estado de modales/flujos de servicios auxiliares
@@ -723,6 +968,7 @@ class GestionServicios {
     // ========================================
 
     init() {
+        Motion.init();
         this.ui.cargarTema();
         this.actualizarResumenMes();
         this.renderServicios();
@@ -731,8 +977,8 @@ class GestionServicios {
         this.cargarCotizacionDolar();
 
         // Inicializar indicador de ingresos
-        if (localStorage.getItem(this.INGRESOS_KEY) === null) {
-            localStorage.setItem(this.INGRESOS_KEY, 'false');
+        if (StorageHelper.getItem(STORAGE_KEYS.INGRESOS_HABILITADO) === null) {
+            StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, 'false');
         }
         const ingresosHabilitado = this.ingresosHabilitado();
         const indicator = document.getElementById('ingresos-indicator');
@@ -741,15 +987,17 @@ class GestionServicios {
         }
         const blurIndicator = document.getElementById('blur-indicator');
         if (blurIndicator) blurIndicator.textContent = this.blurHabilitado ? 'SI' : 'NO';
+        const animIndicator = document.getElementById('animaciones-indicator');
+        if (animIndicator) animIndicator.textContent = Motion.etiqueta();
 
         // Restaurar estado de estadísticas colapsadas
-        const estadisticasColapsadas = localStorage.getItem('estadisticas-collapsed') === 'true';
+        const estadisticasColapsadas = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) === 'true';
         if (estadisticasColapsadas) {
             document.getElementById('estadisticas-content').classList.add('collapsed');
             document.getElementById('estadisticas-chevron').classList.add('collapsed');
         } else {
             // Si está expandido, cargar el tipo guardado
-            const tipoGuardado = localStorage.getItem('estadisticas-tipo') || 'mensual';
+            const tipoGuardado = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
             this.tipoEstadisticaActual = tipoGuardado;
             document.getElementById('estadisticas-tipo').value = tipoGuardado;
             this.cambiarTipoEstadistica();
@@ -761,7 +1009,7 @@ class GestionServicios {
         if (csdEstTipo && selEstTipo && !csdEstTipo._customSelect) {
             csdEstTipo._customSelect = new CustomSelect(csdEstTipo, selEstTipo, () => {
                 this.tipoEstadisticaActual = selEstTipo.value;
-                localStorage.setItem('estadisticas-tipo', selEstTipo.value);
+                StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, selEstTipo.value);
                 this.cambiarTipoEstadistica();
             });
         }
@@ -770,7 +1018,7 @@ class GestionServicios {
         this._initCustomSelects();
 
         // Restaurar estado de servicios colapsados
-        const serviciosState = localStorage.getItem('servicios-collapse-state') || 'semi-collapsed';
+        const serviciosState = StorageHelper.getItem(STORAGE_KEYS.SERVICIOS_COLLAPSE) || 'semi-collapsed';
         this.serviciosCollapseState = serviciosState;
         this.aplicarEstadoServicios(serviciosState);
 
@@ -800,8 +1048,8 @@ class GestionServicios {
             const val = e.target.value;
             this._vistaEstados = val === 'estados';
             this._agrupacionActiva = val === 'categorias';
-            localStorage.setItem('cat-agrupacion', this._agrupacionActiva ? 'on' : 'off');
-            localStorage.setItem('vista-estados', this._vistaEstados ? 'true' : 'false');
+            StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this._agrupacionActiva ? 'on' : 'off');
+            StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS, this._vistaEstados ? 'true' : 'false');
             this.renderServicios();
         });
 
@@ -914,8 +1162,8 @@ class GestionServicios {
             const val = document.getElementById('select-vista').value;
             this._vistaEstados    = val === 'estados';
             this._agrupacionActiva = val === 'categorias';
-            localStorage.setItem('cat-agrupacion', this._agrupacionActiva ? 'on' : 'off');
-            localStorage.setItem('vista-estados',  this._vistaEstados ? 'true' : 'false');
+            StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this._agrupacionActiva ? 'on' : 'off');
+            StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS,  this._vistaEstados ? 'true' : 'false');
             this.renderServicios();
         });
 
@@ -974,6 +1222,7 @@ class GestionServicios {
         document.getElementById('menu-borrar-categorias').addEventListener('click', () => this.limpiarDatos('categorias'));
         document.getElementById('menu-toggle-ingresos').addEventListener('click', () => this.ui.toggleIngresos());
         document.getElementById('menu-toggle-blur').addEventListener('click', () => this.ui.toggleBlur());
+        document.getElementById('menu-toggle-animaciones').addEventListener('click', () => this.ui.toggleAnimaciones());
 
         // Menú agregar
         document.getElementById('menu-agregar-overlay').addEventListener('click', () => this.cerrarMenuAgregar());
@@ -1121,7 +1370,7 @@ class GestionServicios {
         // Selector de tipo de estadística
         document.getElementById('estadisticas-tipo').addEventListener('change', (e) => {
             this.tipoEstadisticaActual = e.target.value;
-            localStorage.setItem('estadisticas-tipo', e.target.value);
+            StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, e.target.value);
             this.cambiarTipoEstadistica();
         });
 
@@ -1189,7 +1438,7 @@ class GestionServicios {
                 // Si ya está en semi-collapsed o expanded el buscador ya es visible, no cambiar
                 if (serviciosContent.classList.contains('collapsed')) {
                     this.aplicarEstadoServicios('semi-collapsed');
-                    localStorage.setItem('servicios-collapse-state', 'semi-collapsed');
+                    StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
                     this.serviciosCollapseState = 'semi-collapsed';
                 }
                 const searchInput = document.getElementById('search-input');
@@ -1467,7 +1716,7 @@ class GestionServicios {
             this.toggleServiciosTimer = null;
             this.serviciosCollapseState = 'collapsed';
             this.aplicarEstadoServicios('collapsed');
-            localStorage.setItem('servicios-collapse-state', 'collapsed');
+            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'collapsed');
 
             // Limpiar búsqueda al colapsar
             if (this.terminoBusqueda) this._limpiarBusqueda();
@@ -1485,13 +1734,13 @@ class GestionServicios {
             // De collapsed a semi-collapsed
             this.serviciosCollapseState = 'semi-collapsed';
             this.aplicarEstadoServicios('semi-collapsed');
-            localStorage.setItem('servicios-collapse-state', 'semi-collapsed');
+            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
 
         } else if (this.serviciosCollapseState === 'semi-collapsed') {
             // De semi-collapsed a expanded (AQUÍ INICIA EL TIMER)
             this.serviciosCollapseState = 'expanded';
             this.aplicarEstadoServicios('expanded');
-            localStorage.setItem('servicios-collapse-state', 'expanded');
+            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'expanded');
 
             // Activar timer de 3 segundos
             this.toggleServiciosTimer = setTimeout(() => {
@@ -1502,7 +1751,7 @@ class GestionServicios {
             // De expanded a semi-collapsed (después de que expiró el timer)
             this.serviciosCollapseState = 'semi-collapsed';
             this.aplicarEstadoServicios('semi-collapsed');
-            localStorage.setItem('servicios-collapse-state', 'semi-collapsed');
+            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
 
             // Limpiar búsqueda al contraer
             if (this.terminoBusqueda) this._limpiarBusqueda();
@@ -1983,7 +2232,7 @@ class GestionServicios {
     aplicarOrden() {
         const select = document.getElementById('select-orden');
         this.ordenActual = select.value;
-        localStorage.setItem('gestion_servicios_orden', this.ordenActual);
+        StorageHelper.setItem(STORAGE_KEYS.ORDEN, this.ordenActual);
         this.renderServicios();
         this.mostrarToast('Orden aplicado', 'success');
     }
@@ -2006,7 +2255,7 @@ class GestionServicios {
             contenido.classList.add('collapsed');
             this._catColapsadas[cat] = true;
         }
-        localStorage.setItem('cat-colapsadas', JSON.stringify(this._catColapsadas));
+        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, this._catColapsadas);
     }
 
     _lpStart(event, headerElement) {
@@ -2044,7 +2293,7 @@ class GestionServicios {
                 this._catColapsadas[cat] = true;
             }
         });
-        localStorage.setItem('cat-colapsadas', JSON.stringify(this._catColapsadas));
+        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, this._catColapsadas);
         this.mostrarToast(estaColapsado ? 'Categorías expandidas' : 'Categorías colapsadas', 'info');
     }
 
@@ -3350,11 +3599,11 @@ class CategoriaService {
 
     // ── Persistencia ──────────────────────────────────────────
     getCategorias() {
-        return JSON.parse(localStorage.getItem('categorias-servicios') || '[]');
+        return StorageHelper.getObject(STORAGE_KEYS.CATEGORIAS, []);
     }
 
     saveCategorias(cats) {
-        localStorage.setItem('categorias-servicios', JSON.stringify(cats));
+        StorageHelper.setItem(STORAGE_KEYS.CATEGORIAS, cats);
     }
 
     // ── Selects ───────────────────────────────────────────────
@@ -3520,7 +3769,7 @@ class EstadisticasService {
             totalPeriodo: totalFacturasMesActualARS
         };
 
-        this.app.mostrandoPagadoMes = localStorage.getItem('resumen-mostrar-pagado') === 'true';
+        this.app.mostrandoPagadoMes = StorageHelper.getItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO) === 'true';
         if (this.app.mostrandoPagadoMes) this.mostrarPagadoEnResumen();
         else this.mostrarPendienteEnResumen();
         this.actualizarEstadisticas();
@@ -3615,7 +3864,7 @@ class EstadisticasService {
         document.getElementById('resumen-mes').innerHTML = resumenHTML;
         const barra = document.getElementById('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
-        localStorage.setItem('resumen-mostrar-pagado', esPendiente ? 'false' : 'true');
+        StorageHelper.setItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO, esPendiente ? 'false' : 'true');
         if (this.app.blurHabilitado && !this.app.resumenDesblurado && (hayARS || hayUSD)) {
             const elBlur = document.getElementById('resumen-toggle');
             if (elBlur) elBlur.classList.add('resumen-blur');
@@ -3852,7 +4101,7 @@ class EstadisticasService {
         content.classList.toggle('collapsed');
         chevron.classList.toggle('collapsed');
         const estaColapsado = content.classList.contains('collapsed');
-        localStorage.setItem('estadisticas-collapsed', estaColapsado);
+        StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS, estaColapsado);
         if (!estaColapsado) {
             document.getElementById('estadisticas-tipo').value = this.app.tipoEstadisticaActual;
             const csdEstTipo = document.getElementById('estadisticas-tipo-csd');
@@ -3954,10 +4203,10 @@ class UIManager {
 
     // ── Tema ──────────────────────────────────────────────────
     cargarTema() {
-        const tema = localStorage.getItem(this.app.THEME_KEY);
+        const tema = StorageHelper.getItem(STORAGE_KEYS.TEMA);
         if (tema === 'dark' || tema === null) {
             document.body.classList.add('dark-mode');
-            if (tema === null) localStorage.setItem(this.app.THEME_KEY, 'dark');
+            if (tema === null) StorageHelper.setItem(STORAGE_KEYS.TEMA, 'dark');
         }
         this._actualizarIconoTema(document.body.classList.contains('dark-mode'));
     }
@@ -3966,7 +4215,7 @@ class UIManager {
         document.body.classList.toggle('dark-mode');
         const esDark = document.body.classList.contains('dark-mode');
         document.documentElement.classList.toggle('dark-mode', esDark);
-        localStorage.setItem(this.app.THEME_KEY, esDark ? 'dark' : 'light');
+        StorageHelper.setItem(STORAGE_KEYS.TEMA, esDark ? 'dark' : 'light');
         this._actualizarIconoTema(esDark);
         this.mostrarToast(`Tema ${esDark ? 'oscuro' : 'claro'} activado`, 'success');
         this.cerrarMenuAjustes();
@@ -3980,7 +4229,7 @@ class UIManager {
     // ── Blur / privacidad ─────────────────────────────────────
     toggleBlur() {
         this.app.blurHabilitado = !this.app.blurHabilitado;
-        localStorage.setItem('blur-montos', this.app.blurHabilitado.toString());
+        StorageHelper.setItem(STORAGE_KEYS.BLUR_MONTOS, this.app.blurHabilitado.toString());
         const indicator = document.getElementById('blur-indicator');
         if (indicator) indicator.textContent = this.app.blurHabilitado ? 'SI' : 'NO';
         const el = document.getElementById('resumen-toggle');
@@ -3995,14 +4244,23 @@ class UIManager {
         this.cerrarMenuAjustes();
     }
 
+    // ── Animaciones ───────────────────────────────────────────
+    toggleAnimaciones() {
+        Motion.siguienteModo();
+        const indicator = document.getElementById('animaciones-indicator');
+        if (indicator) indicator.textContent = Motion.etiqueta();
+        const msg = { auto: 'Animaciones según el sistema', on: 'Animaciones reducidas', off: 'Animaciones completas' };
+        this.mostrarToast(msg[Motion.modo()], 'success');
+    }
+
     // ── Ingresos ──────────────────────────────────────────────
     ingresosHabilitado() {
-        return localStorage.getItem(this.app.INGRESOS_KEY) === 'true';
+        return StorageHelper.getItem(STORAGE_KEYS.INGRESOS_HABILITADO) === 'true';
     }
 
     toggleIngresos() {
         const nuevoEstado = !this.ingresosHabilitado();
-        localStorage.setItem(this.app.INGRESOS_KEY, nuevoEstado.toString());
+        StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, nuevoEstado.toString());
         const indicator = document.getElementById('ingresos-indicator');
         if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
         this.app.renderServicios();
@@ -4313,8 +4571,8 @@ class PerfilService {
     // ── Persistencia ──────────────────────────────────────────
     cargar() {
         try {
-            const guardados = localStorage.getItem('gestion_servicios_perfiles');
-            if (guardados) return JSON.parse(guardados);
+            const guardados = StorageHelper.getObject(STORAGE_KEYS.PERFILES, null);
+            if (guardados) return guardados;
         } catch (error) {
             console.error('Error al cargar perfiles:', error);
         }
@@ -4323,7 +4581,7 @@ class PerfilService {
 
     guardar() {
         try {
-            localStorage.setItem('gestion_servicios_perfiles', JSON.stringify(this.perfiles));
+            StorageHelper.setItem(STORAGE_KEYS.PERFILES, this.perfiles);
         } catch (error) {
             console.error('Error al guardar perfiles:', error);
             this.app.ui.mostrarToast('Error al guardar perfiles', 'error');
@@ -4335,7 +4593,7 @@ class PerfilService {
         if (perfilId === this.perfilActivo) return;
         this.app.guardarDatosPerfilActivo();
         this.perfilActivo = perfilId;
-        localStorage.setItem('gestion_servicios_perfil_activo', perfilId);
+        StorageHelper.setItem(STORAGE_KEYS.PERFIL_ACTIVO, perfilId);
         this.app.cargarDatosPerfilActivo();
         this.app._estadisticaCategoriaActiva = null;
         this.app.ultimoEstadoEstadisticas = null;
@@ -4366,8 +4624,7 @@ class PerfilService {
             const esDefault = perfil.id === 'default';
             let cantidadServicios = 0;
             try {
-                const datos = localStorage.getItem(`gestion_servicios_datos_${perfil.id}`);
-                if (datos) cantidadServicios = JSON.parse(datos).length;
+                cantidadServicios = StorageHelper.getObject(STORAGE_KEYS.DATOS_PERFIL(perfil.id), []).length;
             } catch (e) { }
             return `
     <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
@@ -4404,7 +4661,7 @@ class PerfilService {
         }
         const nuevoId = 'perfil_' + Date.now();
         this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
-        localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
+        StorageHelper.setItem(STORAGE_KEYS.DATOS_PERFIL(nuevoId), []);
         input.value = '';
         this.guardar();
         this.app.ui.mostrarToast('Perfil creado', 'success');
@@ -4446,7 +4703,7 @@ class PerfilService {
             }
             const nuevoId = 'perfil_' + Date.now();
             this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
-            localStorage.setItem(`gestion_servicios_datos_${nuevoId}`, JSON.stringify([]));
+            StorageHelper.setItem(STORAGE_KEYS.DATOS_PERFIL(nuevoId), []);
             this.app.ui.mostrarToast('Perfil creado', 'success');
         }
         this.guardar();
@@ -4467,7 +4724,7 @@ class PerfilService {
         );
         if (!confirmado) return;
         if (perfilId === this.perfilActivo) this.cambiar('default');
-        localStorage.removeItem(`gestion_servicios_datos_${perfilId}`);
+        StorageHelper.removeItem(STORAGE_KEYS.DATOS_PERFIL(perfilId));
         delete this.perfiles[perfilId];
         this.guardar();
         this.app.ui.mostrarToast('Perfil eliminado', 'success');
@@ -4835,7 +5092,7 @@ class GistService {
     set servicios(v) { this.app.servicios = v; }
     get perfilActivo() { return this.app.perfilActivo; }
 
-    getToken() { return localStorage.getItem('gist_token') || ''; }
+    getToken() { return StorageHelper.getItem(STORAGE_KEYS.GIST_TOKEN) || ''; }
     getPerfil() { return this.app.perfiles[this.perfilActivo] || {}; }
 
     setPerfil(campos) {
@@ -4898,8 +5155,8 @@ class GistService {
             return;
         }
 
-        if (token) localStorage.setItem('gist_token', token);
-        else localStorage.removeItem('gist_token');
+        if (token) StorageHelper.setItem(STORAGE_KEYS.GIST_TOKEN, token);
+        else StorageHelper.removeItem(STORAGE_KEYS.GIST_TOKEN);
 
         this.setPerfil({ gistId, gistAuto: auto });
 
@@ -5251,13 +5508,12 @@ class StorageService {
     get servicios() { return this.app.servicios; }
     set servicios(v) { this.app.servicios = v; }
     get perfilActivo() { return this.app.perfilActivo; }
-    get STORAGE_KEY() { return this.app.STORAGE_KEY; }
     get INGRESOS_ID() { return this.app.SERVICIO_INGRESOS_ID; }
 
     // ── Carga / guardado por perfil ───────────────────────────
     cargarDatosPerfilActivo() {
         try {
-            const key = `gestion_servicios_datos_${this.perfilActivo}`;
+            const key = STORAGE_KEYS.DATOS_PERFIL(this.perfilActivo);
             this.servicios = StorageHelper.getObject(key, []);
             this.app.inicializarHistorial();
         } catch (error) {
@@ -5269,7 +5525,7 @@ class StorageService {
 
     guardarDatosPerfilActivo() {
         try {
-            const key = `gestion_servicios_datos_${this.perfilActivo}`;
+            const key = STORAGE_KEYS.DATOS_PERFIL(this.perfilActivo);
             const ok = StorageHelper.setItem(key, this.servicios);
             // Auto-subida a Gist (si está habilitada)
             if (ok && this.app.gist) this.app.gist.subirAuto();
