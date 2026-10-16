@@ -335,11 +335,13 @@
                 </svg>
             </div>
             <div id="opciones-importacion" class="menu-submenu">
-                <div class="menu-item" id="menu-importar-reemplazar">
-                    <span>Reemplazar</span>
-                </div>
-                <div class="menu-item" id="menu-importar-combinar">
-                    <span>Combinar</span>
+                <div class="collapsible-inner">
+                    <div class="menu-item" id="menu-importar-reemplazar">
+                        <span>Reemplazar</span>
+                    </div>
+                    <div class="menu-item" id="menu-importar-combinar">
+                        <span>Combinar</span>
+                    </div>
                 </div>
             </div>
             <div class="menu-item menu-item-parent" id="menu-limpiar">
@@ -352,20 +354,22 @@
                 </svg>
             </div>
             <div id="opciones-borrar" class="menu-submenu">
-                <div class="menu-item" id="menu-borrar-todo">
-                    <span>Todo</span>
-                </div>
-                <div class="menu-item" id="menu-borrar-servicios">
-                    <span>Servicios</span>
-                </div>
-                <div class="menu-item" id="menu-borrar-facturas">
-                    <span>Facturas</span>
-                </div>
-                <div class="menu-item" id="menu-borrar-ingresos">
-                    <span>Ingresos</span>
-                </div>
-                <div class="menu-item" id="menu-borrar-categorias">
-                    <span>Categorías</span>
+                <div class="collapsible-inner">
+                    <div class="menu-item" id="menu-borrar-todo">
+                        <span>Todo</span>
+                    </div>
+                    <div class="menu-item" id="menu-borrar-servicios">
+                        <span>Servicios</span>
+                    </div>
+                    <div class="menu-item" id="menu-borrar-facturas">
+                        <span>Facturas</span>
+                    </div>
+                    <div class="menu-item" id="menu-borrar-ingresos">
+                        <span>Ingresos</span>
+                    </div>
+                    <div class="menu-item" id="menu-borrar-categorias">
+                        <span>Categorías</span>
+                    </div>
                 </div>
             </div>
             <div class="menu-item menu-item-parent" id="menu-dolar">
@@ -379,13 +383,15 @@
                 </svg>
             </div>
             <div id="opciones-dolar" class="menu-submenu">
-                <div class="menu-item cursor-default justify-content-between">
-                    <span class="text-muted">Oficial</span>
-                    <span class="dolar-widget-valor" id="dolar-oficial">-</span>
-                </div>
-                <div class="menu-item cursor-default justify-content-between">
-                    <span class="text-muted">MEP</span>
-                    <span class="dolar-widget-valor" id="dolar-mep">-</span>
+                <div class="collapsible-inner">
+                    <div class="menu-item cursor-default justify-content-between">
+                        <span class="text-muted">Oficial</span>
+                        <span class="dolar-widget-valor" id="dolar-oficial">-</span>
+                    </div>
+                    <div class="menu-item cursor-default justify-content-between">
+                        <span class="text-muted">MEP</span>
+                        <span class="dolar-widget-valor" id="dolar-mep">-</span>
+                    </div>
                 </div>
             </div>
             <div class="menu-item" id="menu-categorias">
@@ -457,86 +463,88 @@
                         </svg>
                     </h2>
                     <div id="estadisticas-content" class="collapsible-content collapsed">
-                        <!-- Selector de tipo de estadística -->
-                        <div class="estadisticas-selector-container">
-                            <label class="calculador-label">Tipo de estadística</label>
-                            <div class="custom-select-wrapper" id="estadisticas-tipo-csd">
-                                <div class="custom-select-trigger">
-                                    <span class="csd-label"></span>
-                                    <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
+                        <div class="collapsible-inner">
+                            <!-- Selector de tipo de estadística -->
+                            <div class="estadisticas-selector-container">
+                                <label class="calculador-label">Tipo de estadística</label>
+                                <div class="custom-select-wrapper" id="estadisticas-tipo-csd">
+                                    <div class="custom-select-trigger">
+                                        <span class="csd-label"></span>
+                                        <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
+                                    </div>
+                                    <div class="custom-select-dropdown"></div>
                                 </div>
-                                <div class="custom-select-dropdown"></div>
+                                <select id="estadisticas-tipo" class="hidden">
+                                    <option value="mensual">Mensual</option>
+                                    <option value="individual">Individual</option>
+                                </select>
                             </div>
-                            <select id="estadisticas-tipo" class="hidden">
-                                <option value="mensual">Mensual</option>
-                                <option value="individual">Individual</option>
-                            </select>
-                        </div>
 
-                        <!-- Contenedor para estadísticas mensuales -->
-                        <div id="estadisticas-mensual-container" class="estadisticas-container"></div>
+                            <!-- Contenedor para estadísticas mensuales -->
+                            <div id="estadisticas-mensual-container" class="estadisticas-container"></div>
 
-                        <!-- Contenedor para estadísticas individuales -->
-                        <div id="estadisticas-individual-container" class="estadisticas-container hidden">
-                            <div class="calculador-filtros">
-                                <div class="calculador-campo">
-                                    <label class="calculador-label">Servicio</label>
-                                    <div class="d-flex gap-2">
-                                        <div class="flex-1 pos-relative">
-                                            <div class="custom-select-wrapper" id="calculador-servicio-csd">
-                                                <div class="custom-select-trigger">
-                                                    <span class="csd-label">Seleccionar servicio...</span>
-                                                    <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
+                            <!-- Contenedor para estadísticas individuales -->
+                            <div id="estadisticas-individual-container" class="estadisticas-container hidden">
+                                <div class="calculador-filtros">
+                                    <div class="calculador-campo">
+                                        <label class="calculador-label">Servicio</label>
+                                        <div class="d-flex gap-2">
+                                            <div class="flex-1 pos-relative">
+                                                <div class="custom-select-wrapper" id="calculador-servicio-csd">
+                                                    <div class="custom-select-trigger">
+                                                        <span class="csd-label">Seleccionar servicio...</span>
+                                                        <svg class="csd-arrow"><use href="#icon-csd-arrow"/></svg>
+                                                    </div>
+                                                    <div class="custom-select-dropdown"></div>
                                                 </div>
-                                                <div class="custom-select-dropdown"></div>
+                                                <select id="calculador-servicio" class="hidden"></select>
                                             </div>
-                                            <select id="calculador-servicio" class="hidden"></select>
+                                            <button type="button" class="icon-btn" id="btn-calculador-ver-facturas"
+                                                title="Ver facturas del servicio">
+                                                <svg class="icon">
+                                                    <use href="#icon-deuda" />
+                                                </svg>
+                                            </button>
                                         </div>
-                                        <button type="button" class="icon-btn" id="btn-calculador-ver-facturas"
-                                            title="Ver facturas del servicio">
-                                            <svg class="icon">
-                                                <use href="#icon-deuda" />
-                                            </svg>
-                                        </button>
+                                    </div>
+                                    <div class="calculador-campo">
+                                        <label class="calculador-label">Desde</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="date" id="calculador-desde" class="calculador-input flex-1">
+                                            <button type="button" class="icon-btn" id="btn-calculador-desde-hoy"
+                                                title="Fecha de hoy / Limpiar">
+                                                <svg class="icon">
+                                                    <use href="#icon-calendar" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="calculador-campo">
+                                        <label class="calculador-label">Hasta</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="date" id="calculador-hasta" class="calculador-input"
+                                                class="flex-1">
+                                            <button type="button" class="icon-btn" id="btn-calculador-hasta-hoy"
+                                                title="Fecha de hoy / Limpiar">
+                                                <svg class="icon">
+                                                    <use href="#icon-calendar" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="calculador-campo">
-                                    <label class="calculador-label">Desde</label>
-                                    <div class="d-flex gap-2">
-                                        <input type="date" id="calculador-desde" class="calculador-input flex-1">
-                                        <button type="button" class="icon-btn" id="btn-calculador-desde-hoy"
-                                            title="Fecha de hoy / Limpiar">
-                                            <svg class="icon">
-                                                <use href="#icon-calendar" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="calculador-campo">
-                                    <label class="calculador-label">Hasta</label>
-                                    <div class="d-flex gap-2">
-                                        <input type="date" id="calculador-hasta" class="calculador-input"
-                                            class="flex-1">
-                                        <button type="button" class="icon-btn" id="btn-calculador-hasta-hoy"
-                                            title="Fecha de hoy / Limpiar">
-                                            <svg class="icon">
-                                                <use href="#icon-calendar" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
+
+                                <div class="calculador-resultados" id="calculador-resultados"></div>
                             </div>
 
-                            <div class="calculador-resultados" id="calculador-resultados"></div>
+                            <button type="button" id="btn-reporte-estadisticas"
+                                class="w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                                <svg class="icon">
+                                    <use href="#icon-download" />
+                                </svg>
+                                Reporte
+                            </button>
                         </div>
-
-                        <button type="button" id="btn-reporte-estadisticas"
-                            class="w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
-                            <svg class="icon">
-                                <use href="#icon-download" />
-                            </svg>
-                            Reporte
-                        </button>
                     </div>
                 </div>
             </div>
@@ -557,48 +565,50 @@
                         </svg>
                     </h2>
                     <div id="servicios-content" class="collapsible-content custom-scroll collapsed">
-                        <div class="card-actions servicios-actions" id="servicios-actions">
-                            <button class="icon-btn" id="btn-sort" title="Opciones de vista">
-                                <svg class="icon">
-                                    <use href="#icon-sort" />
-                                </svg>
-                            </button>
-                            <button class="icon-btn transparent" id="btn-hist-restaurar" title="Restaurar">
-                                <svg class="icon">
-                                    <use href="#icon-upload" />
-                                </svg>
-                            </button>
-                            <button class="icon-btn transparent" id="btn-hist-respaldar" title="Respaldar">
-                                <svg class="icon">
-                                    <use href="#icon-download" />
-                                </svg>
-                            </button>
-                            <div class="ml-auto d-flex gap-2">
-                                <button class="icon-btn" id="btn-undo" title="Deshacer (Ctrl+Z)" disabled>
+                        <div class="collapsible-inner">
+                            <div class="card-actions servicios-actions" id="servicios-actions">
+                                <button class="icon-btn" id="btn-sort" title="Opciones de vista">
                                     <svg class="icon">
-                                        <use href="#icon-undo" />
+                                        <use href="#icon-sort" />
                                     </svg>
                                 </button>
-                                <button class="icon-btn" id="btn-redo" title="Rehacer (Ctrl+Y)" disabled>
+                                <button class="icon-btn transparent" id="btn-hist-restaurar" title="Restaurar">
                                     <svg class="icon">
-                                        <use href="#icon-redo" />
+                                        <use href="#icon-upload" />
+                                    </svg>
+                                </button>
+                                <button class="icon-btn transparent" id="btn-hist-respaldar" title="Respaldar">
+                                    <svg class="icon">
+                                        <use href="#icon-download" />
+                                    </svg>
+                                </button>
+                                <div class="ml-auto d-flex gap-2">
+                                    <button class="icon-btn" id="btn-undo" title="Deshacer (Ctrl+Z)" disabled>
+                                        <svg class="icon">
+                                            <use href="#icon-undo" />
+                                        </svg>
+                                    </button>
+                                    <button class="icon-btn" id="btn-redo" title="Rehacer (Ctrl+Y)" disabled>
+                                        <svg class="icon">
+                                            <use href="#icon-redo" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="search-container">
+                                <svg class="search-icon icon icon-line"><use href="#icon-search"/></svg>
+                                <input type="text" id="search-input" class="search-input" placeholder="Buscar servicio...">
+                                <button class="search-clear hidden" id="search-clear">
+                                    <svg class="icon">
+                                        <use href="#icon-cancel" />
                                     </svg>
                                 </button>
                             </div>
-                        </div>
 
-                        <div class="search-container">
-                            <svg class="search-icon icon icon-line"><use href="#icon-search"/></svg>
-                            <input type="text" id="search-input" class="search-input" placeholder="Buscar servicio...">
-                            <button class="search-clear hidden" id="search-clear">
-                                <svg class="icon">
-                                    <use href="#icon-cancel" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="servicios-lista custom-scroll" id="servicios-lista">
-                            <!-- Los servicios se cargarán aquí -->
+                            <div class="servicios-lista custom-scroll" id="servicios-lista">
+                                <!-- Los servicios se cargarán aquí -->
+                            </div>
                         </div>
                     </div>
                 </div>

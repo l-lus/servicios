@@ -541,9 +541,50 @@ const Anim = (function () {
         _valorEstado.set(el, { texto, anims, timeout: setTimeout(() => _finalizarValorPendiente(el), dur) });
     }
 
+    // ── Colapsables (acordeón) ───────────────────────────────
+    // Las tarjetas (.collapsible-content) recortan su interior solo mientras
+    // se animan: .asentado se pone al terminar de abrirse para que los
+    // dropdowns internos no queden cortados.
+    function _sincronizarAsentado(el) {
+        el.classList.toggle('asentado', !el.classList.contains('collapsed'));
+    }
+
+    function initColapsables() {
+        document.querySelectorAll('.collapsible-content').forEach(_sincronizarAsentado);
+        document.addEventListener('transitionend', e => {
+            if (e.propertyName !== 'grid-template-rows') return;
+            if (e.target.classList?.contains('collapsible-content')) _sincronizarAsentado(e.target);
+        });
+    }
+
+    function _contenedorScroll(el) {
+        for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+            const oy = getComputedStyle(p).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+        }
+        return null;
+    }
+
+    // Tras expandir un bloque, si quedó cortado lo trae a la vista: entero
+    // si entra, o desde su comienzo si es más alto que el área visible.
+    function scrollAlExpandir(el) {
+        if (!el) return;
+        setTimeout(() => {
+            if (!el.isConnected) return;
+            const cont = _contenedorScroll(el);
+            const r = el.getBoundingClientRect();
+            const cr = cont ? cont.getBoundingClientRect() : null;
+            const top = Math.max(cr ? cr.top : 0, 0);
+            const bottom = Math.min(cr ? cr.bottom : window.innerHeight, window.innerHeight);
+            if (r.top >= top && r.bottom <= bottom) return;
+            el.scrollIntoView({ behavior: Motion.scrollBehavior(), block: r.height <= bottom - top ? 'nearest' : 'start' });
+        }, getCSSdur('--dur-collapse') + 20);
+    }
+
     return {
         aArray, getCSSdur, durSiAnima, esperar, esperarAnim, estaColapsado,
-        mutacion, fantasmaSiVisible, marcarNuevo, valor, diffLista, morph
+        mutacion, fantasmaSiVisible, marcarNuevo, valor, diffLista, morph,
+        initColapsables, scrollAlExpandir
     };
 })();
 
@@ -727,6 +768,102 @@ const ModalManager = (function () {
         });
     }
 
+    // ── Origen de la animación (el modal crece desde lo que lo abrió) ──
+    let _ultimoTrigger = null;
+    let _ultimoClickCoords = null;
+    const _origenesModal = {};
+    const _triggerInfoPorModal = {};
+    const SELECTOR_TRIGGER = 'button, [role="button"], a, .menu-item, .servicio-item, .factura-info, .categoria-tag, .custom-select-option, .icon-btn, [data-action]';
+
+    window.addEventListener('pointerdown', (event) => {
+        if (event.target.classList?.contains('modal')) return;
+        _ultimoClickCoords = { x: event.clientX, y: event.clientY };
+        _ultimoTrigger = event.target.closest(SELECTOR_TRIGGER) || event.target;
+    }, true);
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const active = document.activeElement;
+        if (active && active !== document.body && !active.classList.contains('modal')) {
+            _ultimoTrigger = active;
+            const r = active.getBoundingClientRect();
+            _ultimoClickCoords = { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        }
+    }, true);
+
+    // transform-origin relativo a la posición final (centrada) del contenido
+    function _calcularOrigen(triggerEl, coords, content) {
+        let origenX = window.innerWidth / 2;
+        let origenY = window.innerHeight / 2;
+
+        const tr = triggerEl && document.body.contains(triggerEl) ? triggerEl.getBoundingClientRect() : null;
+        if (tr && (tr.width > 0 || tr.height > 0)) {
+            origenX = tr.left + tr.width / 2;
+            origenY = tr.top + tr.height / 2;
+        } else if (coords && coords.x !== undefined) {
+            origenX = coords.x;
+            origenY = coords.y;
+        }
+
+        // Posición de layout del contenido (offsetLeft/Top no se ven afectados
+        // por el scale de la animación). Centrar sobre innerWidth falla por el
+        // ancho de la barra de scroll.
+        let left, top;
+        const padre = content.offsetParent;
+        if (padre) {
+            const pr = padre.getBoundingClientRect();
+            left = pr.left + content.offsetLeft;
+            top = pr.top + content.offsetTop;
+        } else {
+            left = (window.innerWidth - (content.offsetWidth || 450)) / 2;
+            top = (window.innerHeight - (content.offsetHeight || 350)) / 2;
+        }
+        return `${Math.round(origenX - left)}px ${Math.round(origenY - top)}px`;
+    }
+
+    function _aplicarOrigenAnimacion(modal, modalId) {
+        const content = modal.querySelector('.modal-content');
+        if (!content) return;
+
+        // Volviendo a un modal padre: reusa el origen con que se abrió
+        if (_enAlternanciaHaciaAtras && _origenesModal[modalId]) {
+            content.style.transformOrigin = _origenesModal[modalId];
+            return;
+        }
+
+        const origen = _calcularOrigen(_ultimoTrigger, _ultimoClickCoords, content);
+        content.style.transformOrigin = origen;
+        _origenesModal[modalId] = origen;
+        _triggerInfoPorModal[modalId] = { trigger: _ultimoTrigger, coords: _ultimoClickCoords };
+    }
+
+    // Al cerrar, el modal se encoge hacia el mismo origen del que salió
+    function _restaurarOrigen(modal) {
+        const content = modal.querySelector('.modal-content');
+        if (content && _origenesModal[modal.id]) content.style.transformOrigin = _origenesModal[modal.id];
+    }
+
+    function _limpiarOrigenDiferido(modalId) {
+        setTimeout(() => {
+            const modal = document.getElementById(modalId);
+            if (modal && (modal.classList.contains('show') || modal.classList.contains('active'))) return;
+            delete _origenesModal[modalId];
+            delete _triggerInfoPorModal[modalId];
+        }, 350);
+    }
+
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.modal.show, .modal.active').forEach(modal => {
+            const content = modal.querySelector('.modal-content');
+            const info = _triggerInfoPorModal[modal.id];
+            if (content && info) {
+                const origen = _calcularOrigen(info.trigger, info.coords, content);
+                content.style.transformOrigin = origen;
+                _origenesModal[modal.id] = origen;
+            }
+        });
+    }, { passive: true });
+
     function _getAccionVolver(modalId) {
         return _accionesVolver[modalId] || null;
     }
@@ -818,6 +955,7 @@ const ModalManager = (function () {
         const modal = document.getElementById(modalId);
         if (!modal) return;
 
+        if (modal.classList.contains('modal')) _aplicarOrigenAnimacion(modal, modalId);
         modal.classList.add('show', 'active');
         document.body.classList.add('modal-open');
 
@@ -844,7 +982,9 @@ const ModalManager = (function () {
         if (!modal) return;
 
         const estabaAbierto = modal.classList.contains('show') || modal.classList.contains('active');
+        _restaurarOrigen(modal);
         modal.classList.remove('show', 'active');
+        _limpiarOrigenDiferido(modalId);
 
         if (document.querySelectorAll('.modal.show, .modal.active, .menu-ajustes.active, .menu-ajustes.show, .menu-agregar.active, .menu-agregar.show').length === 0) {
             document.body.classList.remove('modal-open');
@@ -894,7 +1034,9 @@ const ModalManager = (function () {
         });
 
         document.querySelectorAll('.modal, #menu-ajustes, #menu-agregar, #ctx-menu-servicio').forEach(modal => {
+            _restaurarOrigen(modal);
             modal.classList.remove('show', 'active');
+            _limpiarOrigenDiferido(modal.id);
             modal.removeEventListener('pointerdown', _handleOverlayMousedown);
             modal.removeEventListener('mousedown', _handleOverlayMousedown);
             modal.removeEventListener('click', handleOutsideClick);
@@ -1093,6 +1235,7 @@ class GestionServicios {
 
     init() {
         Motion.init();
+        Anim.initColapsables();
         this.ui.cargarTema();
         this.actualizarResumenMes();
         this.renderServicios();
@@ -2126,7 +2269,7 @@ class GestionServicios {
                 <svg class="icon servicios-grupo-cat-chevron ${collapsed}"><use href="#icon-chevron-down"/></svg>
             </div>
             <div class="servicios-grupo-cat-contenido ${collapsed}">
-                ${items.map(generarItemServicio).join('')}
+                <div class="collapsible-inner">${items.map(generarItemServicio).join('')}</div>
             </div>
         </div>`;
             });
@@ -2172,7 +2315,7 @@ class GestionServicios {
              </div>
             </div>
             <div class="servicios-grupo-cat-contenido ${collapsed}">
-                ${itemsHTML}
+                <div class="collapsible-inner">${itemsHTML}</div>
             </div>
         </div>
                         `;
@@ -2380,6 +2523,7 @@ class GestionServicios {
             chevron.classList.remove('collapsed');
             contenido.classList.remove('collapsed');
             delete this._catColapsadas[cat];
+            Anim.scrollAlExpandir(headerElement.closest('.servicios-grupo-cat'));
         } else {
             chevron.classList.add('collapsed');
             contenido.classList.add('collapsed');
@@ -2432,14 +2576,15 @@ class GestionServicios {
         const contenido = headerElement.nextElementSibling;
 
         if (chevron.classList.contains('collapsed')) {
-            const todosLosChevrons = document.querySelectorAll('.facturas-grupo-chevron:not(.collapsed)');
-            const todosLosContenidos = document.querySelectorAll('.facturas-grupo-contenido:not(.collapsed)');
-
-            todosLosChevrons.forEach(ch => ch.classList.add('collapsed'));
-            todosLosContenidos.forEach(cont => cont.classList.add('collapsed'));
+            // Acordeón: abrir un año cierra los demás de la misma lista
+            const grupo = headerElement.closest('.facturas-grupo-ano');
+            const lista = grupo?.parentElement || document;
+            lista.querySelectorAll('.facturas-grupo-chevron:not(.collapsed)').forEach(ch => ch.classList.add('collapsed'));
+            lista.querySelectorAll('.facturas-grupo-contenido:not(.collapsed)').forEach(cont => cont.classList.add('collapsed'));
 
             chevron.classList.remove('collapsed');
             contenido.classList.remove('collapsed');
+            Anim.scrollAlExpandir(grupo);
         } else {
             chevron.classList.add('collapsed');
             contenido.classList.add('collapsed');
@@ -3175,7 +3320,7 @@ class FacturaService {
                 </div>
                 <svg class="icon facturas-grupo-chevron ${collapsed}"><use href="#icon-chevron-down" /></svg>
             </div>
-            <div class="facturas-grupo-contenido ${collapsed}">${itemHTML}</div>
+            <div class="facturas-grupo-contenido ${collapsed}"><div class="collapsible-inner">${itemHTML}</div></div>
         </div>`;
     }
 
@@ -4653,6 +4798,7 @@ class UtilsService {
         });
         document.getElementById(opcionesId).classList.toggle('open', abriendo);
         document.getElementById(padreId).classList.toggle('open', abriendo);
+        if (abriendo) Anim.scrollAlExpandir(document.getElementById(opcionesId));
     }
 
     setMonedaBtn(hiddenId, btnId, moneda) {
@@ -5525,11 +5671,9 @@ class GistService {
 
         const parsed = JSON.parse(content, SecurityAndUtils.reviverJSONSeguro);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato inválido');
-        if (parsed.hash !== undefined) {
-            const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: parsed.servicios, categorias: parsed.categorias });
-            if (hash !== parsed.hash) throw new Error('El archivo del Gist no pasa la verificación de integridad');
-        }
-        return this.app.storage.normalizarDatos(parsed.servicios, parsed.categorias);
+        const datos = this.app.storage.normalizarDatos(parsed.servicios, parsed.categorias);
+        await this.app.storage.advertirIntegridad(parsed, 'El archivo del Gist');
+        return datos;
     }
 
     aplicarNovedades() {
@@ -5873,17 +6017,19 @@ class StorageService {
             );
             if (!continuar) return false;
         }
-        if (datos.hash !== undefined) {
-            const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: datos.servicios, categorias: datos.categorias });
-            if (hash !== datos.hash) {
-                const continuar = await ModalManager.confirmar(
-                    'El archivo fue modificado o está dañado (la verificación de integridad no coincide). ¿Importarlo de todas formas?',
-                    'Importar', '#icon-help', { titulo: 'Integridad' }
-                );
-                if (!continuar) return false;
-            }
-        }
+        await this.advertirIntegridad(datos, 'El archivo');
         return true;
+    }
+
+    // El hash detecta archivos editados a mano o dañados. No impide
+    // restaurar (la validación de estructura ya protege los datos): solo
+    // avisa para que el usuario revise lo importado.
+    async advertirIntegridad(datos, origen) {
+        if (datos.hash === undefined) return true;
+        const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: datos.servicios, categorias: datos.categorias });
+        if (hash === datos.hash) return true;
+        this.app.ui.mostrarToast(`${origen} fue modificado o está dañado (la verificación de integridad no coincide). Revisá los datos importados`, 'warning', 6000);
+        return false;
     }
 
     // ── Exportar ──────────────────────────────────────────────

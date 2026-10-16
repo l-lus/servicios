@@ -51,6 +51,9 @@
     --transition-anim: opacity var(--dur-anim) var(--ease-anim), transform var(--dur-anim) var(--ease-anim);
     --transition-collapse: grid-template-rows var(--dur-collapse) ease-out, opacity var(--dur-collapse) ease-out;
     --transition-ui: var(--dur-anim) ease;
+    /* Modales: crecen desde el elemento que los abrió (transform-origin lo calcula ModalManager) */
+    --transition-pop-in: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out;
+    --transition-pop-out: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.16s ease-in;
     --modal-overlay: rgba(0, 0, 0, 0.5);
     --touch-target: 48px;
     --input-height: 48px;
@@ -267,9 +270,9 @@ body.modal-open {
     user-select: none;
 }
 
-/* Extiende la transición base para animar también el padding en tarjetas colapsables */
+/* Extiende la transición del colapsable para animar también el padding en tarjetas */
 .card-header-collapsible+.collapsible-content {
-    transition: max-height var(--transition-base), opacity var(--transition-base), padding var(--transition-base);
+    transition: var(--transition-collapse), padding var(--dur-collapse) ease-out, visibility 0s linear var(--vis-delay);
 }
 
 .card-header-collapsible+.collapsible-content:not(.collapsed) {
@@ -652,15 +655,17 @@ input[type="number"] {
     max-width: 500px;
     max-height: 90vh;
     box-shadow: var(--shadow-modal);
-    transform: translateY(24px) scale(0.96);
+    transform: scale(0.15);
+    transform-origin: center center;
     opacity: 0;
-    transition: transform var(--dur-pop, 0.35s) var(--ease-pop, cubic-bezier(0.34, 1.56, 0.64, 1)), opacity 0.25s ease;
+    transition: var(--transition-pop-out);
 }
 
 .modal.show .modal-content,
 .modal.active .modal-content {
-    transform: translateY(0) scale(1);
+    transform: scale(1);
     opacity: 1;
+    transition: var(--transition-pop-in);
     will-change: transform, opacity;
 }
 
@@ -888,82 +893,74 @@ input[type="number"] {
 }
 
 /* ============================================================
-           COLLAPSIBLE CONTENT (patrón unificado)
-           Usado por: tarjetas principales, grupos de facturas y categorías
+           COLAPSABLE / ACORDEÓN (patrón de horarios)
         ============================================================ */
 /*
-         * PATRÓN COLLAPSIBLE — tarjetas principales (servicios, estadísticas)
-         *
-         * Estado inicial = cerrado (max-height:0, invisible).
-         * JS agrega/quita la clase .collapsed para alternar.
-         * Se usa visibility además de opacity para que los elementos
-         * colapsados no sean focusables con teclado/tab.
-         *
-         * Nota: .facturas-grupo-contenido y .servicios-grupo-cat-contenido
-         * usan un patrón simplificado (sin visibility) porque son listas
-         * internas que no necesitan bloquear el foco — ver sección GRUPOS.
-         */
-.collapsible-content {
-    max-height: 0;
-    opacity: 0;
-    visibility: hidden;
-    overflow: hidden;
-    transition: max-height var(--transition-base), opacity var(--transition-base), visibility var(--transition-base);
-}
-
-.collapsible-content:not(.collapsed) {
-    max-height: none;
+ * Se anima grid-template-rows (0fr ↔ 1fr) en lugar de max-height: la
+ * altura real se anima completa en ambos sentidos, sin topes fijos que
+ * retrasan el cierre ni "none" que no se puede animar.
+ *
+ * Estructura: contenedor colapsable con un único hijo .collapsible-inner
+ * (overflow hidden + min-height 0, lo que permite llegar a 0fr).
+ * Cerrado: visibility:hidden (tras la animación) saca el contenido del
+ * orden de Tab y del árbol de accesibilidad.
+ *
+ * Clases de estado: .collapsed (tarjetas y grupos) / .open (submenús).
+ */
+.collapsible-content,
+.facturas-grupo-contenido,
+.servicios-grupo-cat-contenido,
+.menu-submenu {
+    --vis-delay: 0s;
+    display: grid;
+    grid-template-rows: 1fr;
     opacity: 1;
     visibility: visible;
+    transition: var(--transition-collapse), visibility 0s linear var(--vis-delay);
+}
+
+.collapsible-content.collapsed,
+.facturas-grupo-contenido.collapsed,
+.servicios-grupo-cat-contenido.collapsed,
+.menu-submenu:not(.open) {
+    --vis-delay: var(--dur-collapse);
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Tarjetas: el contenedor no recorta (dropdowns internos) y el interior
+   deja de recortar recién cuando terminó de abrirse (.asentado, lo pone
+   JS en transitionend); al cerrar vuelve a recortar de inmediato. */
+.collapsible-content {
     overflow: visible;
 }
 
-/* Excepción: servicios y estadísticas necesitan overflow visible
-           para que los dropdowns internos no queden recortados */
-#servicios-content:not(.collapsed),
-#estadisticas-content:not(.collapsed) {
-    overflow-y: visible;
-    overflow-x: visible;
+.collapsible-content.asentado:not(.collapsed)>.collapsible-inner {
+    overflow: visible;
 }
 
-/*
-         * PATRÓN COLLAPSIBLE — grupos de facturas y categorías
-         *
-         * Variante simplificada sin visibility: estos contenedores son
-         * listas internas donde el foco ya queda bloqueado por el padre.
-         * Usan max-height fija (2000px) en lugar de none para que la
-         * transición de cierre sea animable (none no se puede animar).
-         */
-.facturas-grupo-contenido,
-.servicios-grupo-cat-contenido {
+/* Grupos de facturas y categorías: lista interna */
+.facturas-grupo-contenido>.collapsible-inner,
+.servicios-grupo-cat-contenido>.collapsible-inner {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-height: 2000px;
-    overflow: hidden;
-    opacity: 1;
-    transition: max-height var(--transition-base) ease-out, opacity var(--transition-fast);
-}
-
-.facturas-grupo-contenido.collapsed,
-.servicios-grupo-cat-contenido.collapsed {
-    max-height: 0;
-    opacity: 0;
 }
 
 /* Submenús del menú de ajustes */
 .menu-submenu {
-    overflow: hidden;
-    max-height: 0;
-    opacity: 0;
     padding-left: 2.5rem;
-    transition: max-height var(--transition-base) ease-out, opacity 0.25s ease-out;
 }
 
-.menu-submenu.open {
-    max-height: 400px;
-    opacity: 1;
-    transition: max-height 0.35s ease-in, opacity 0.25s ease-in;
+/* Al traer un grupo a la vista, que no quede bajo el header fijo */
+.servicios-grupo-cat {
+    scroll-margin-top: calc(var(--app-header-h) + 0.5rem);
 }
 
 /* ============================================================
@@ -1075,15 +1072,6 @@ input[type="number"] {
     pointer-events: none;
 }
 
-#servicios-content.collapsed .servicios-actions,
-#servicios-content.collapsed .servicios-lista,
-#servicios-content.collapsed .search-container {
-    max-height: 0;
-    opacity: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-}
 
 /* Item de servicio */
 .servicio-item {
@@ -2758,6 +2746,17 @@ input[type="number"] {
     transition-duration: 1ms !important;
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
+}
+
+/* Modales: sin escala, solo un fundido corto (como horarios) */
+:root[data-motion="reduce"] .modal-content {
+    transform: none;
+}
+
+:root[data-motion="reduce"] .modal,
+:root[data-motion="reduce"] .modal-content {
+    transition-property: opacity, visibility !important;
+    transition-duration: 0.15s !important;
 }
 
 /* El spinner de sincronización comunica estado: se mantiene girando */
