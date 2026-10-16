@@ -130,13 +130,14 @@ const StorageHelper = (function () {
         return `${key}_${perfilActivo}`;
     }
 
-    function setItem(key, value, useProfile = false) {
+    function setItem(key, value, useProfile = false, { silencioso = false } = {}) {
         try {
             const finalKey = _getKey(key, useProfile);
             const valueToStore = typeof value === 'object' ? JSON.stringify(value) : String(value);
             localStorage.setItem(finalKey, valueToStore);
             return true;
         } catch (e) {
+            if (silencioso) return false;
             console.error(`Error guardando en Storage (${key}):`, e);
             if (e.name === 'QuotaExceededError' || e.code === 22) {
                 notify.mostrarToast('Almacenamiento lleno, no se pudo guardar', 'error');
@@ -895,11 +896,6 @@ class GestionServicios {
         this.modoCalculadoraTipo = 'pendientes';
         this.serviciosSeleccionados = new Set();
         this.servicioContextual = null;
-
-        // Historial undo/redo
-        this.historial = [];
-        this.historialIndex = -1;
-        this.maxHistorial = 20;
 
         // Configuración
         this.mostrandoPagadoMes = StorageHelper.getItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO) === 'true';
@@ -2457,7 +2453,7 @@ class GestionServicios {
         }
 
         this.guardarDatos();
-        this.guardarEstado();
+        this.guardarEstado(`${esEditar ? 'editar' : 'crear'} servicio (${nombre})`);
         this.enModoBusqueda = false;
         this.renderServicios();
         this.cerrarModal(esEditar ? 'modal-editar-servicio' : 'modal-agregar-servicio');
@@ -2490,10 +2486,11 @@ class GestionServicios {
             { titulo: 'Eliminar servicio' }
         );
         if (confirmado) {
+            const eliminado = this.servicios.find(s => s.id === this.servicioActual);
             this.servicios = this.servicios.filter(s => s.id !== this.servicioActual);
 
             this.guardarDatos();
-            this.guardarEstado();
+            this.guardarEstado(`eliminar servicio${eliminado ? ` (${eliminado.nombre})` : ''}`);
             this.enModoBusqueda = false;
             this.renderServicios();
             this.cerrarModal('modal-editar-servicio');
@@ -2611,7 +2608,7 @@ class GestionServicios {
     // SISTEMA UNDO/REDO
     // ========================================
 
-    guardarEstado() { this.historial_mgr.guardarEstado(); }
+    guardarEstado(descripcion = null) { this.historial_mgr.guardarEstado(descripcion); }
     inicializarHistorial() { this.historial_mgr.inicializarHistorial(); }
     deshacer() { this.historial_mgr.deshacer(); }
     rehacer() { this.historial_mgr.rehacer(); }
@@ -2696,7 +2693,8 @@ class GestionServicios {
             this.servicios = this.servicios.map(s => ({ ...s, categoria: '' }));
         }
 
-        this._postGuardado();
+        const etiquetas = { todo: 'todos los datos', servicios: 'servicios', facturas: 'facturas', ingresos: 'ingresos', categorias: 'categorías' };
+        this._postGuardado(`borrar ${etiquetas[tipo] || etiquetas.todo}`);
         this.actualizarBotonesHistorial();
         this.mostrarToast(toasts[tipo] || toasts.todo, 'success');
         document.getElementById('opciones-borrar').classList.remove('open');
@@ -2778,7 +2776,7 @@ class GestionServicios {
 
     // ── Delegación a UtilsService ─────────────────────────────
     _parseDate(str) { return this.utils.parseDate(str); }
-    _postGuardado() { this.utils.postGuardado(); }
+    _postGuardado(descripcion = null) { this.utils.postGuardado(descripcion); }
     _limpiarBusqueda() { this.utils.limpiarBusqueda(); }
     _idsFormFactura(esEditar) { return this.utils.idsFormFactura(esEditar); }
     _toggleSubMenuAjustes(oId, pId) { this.utils.toggleSubMenuAjustes(oId, pId); }
@@ -3056,7 +3054,7 @@ class FacturaService {
         const total = servicio.facturas?.length || 0;
         if (total === 0) { this.app.ui.mostrarToast('No hay facturas para borrar', 'info'); return; }
         const confirmado = await ModalManager.confirmar(
-            `¿Borrar las ${total} factura${total !== 1 ? 's' : ''} de "${servicio.nombre}"? Esta acción no se puede deshacer.`,
+            `¿Borrar las ${total} factura${total !== 1 ? 's' : ''} de "${servicio.nombre}"?`,
             'Borrar',
             '#icon-trash',
             { titulo: 'Borrar facturas' }
@@ -3064,6 +3062,7 @@ class FacturaService {
         if (confirmado) {
             servicio.facturas = [];
             this.app.guardarDatos();
+            this.app.guardarEstado(`borrar facturas (${servicio.nombre})`);
             this.app.renderServicios();
             this.app.ui.mostrarToast(`${total} factura${total !== 1 ? 's' : ''} eliminada${total !== 1 ? 's' : ''}`, 'success');
         }
@@ -3274,7 +3273,7 @@ class FacturaService {
         } else {
             servicio.facturas.push({ id: this.app.utils.generarId(), monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
         }
-        this.app.utils.postGuardado();
+        this.app.utils.postGuardado(`${esEditar ? 'editar' : 'agregar'} factura (${servicio.nombre})`);
         this.app.cerrarModal(esEditar ? 'modal-editar-factura' : 'modal-agregar-factura');
         this.abrirModalLista(servicioSelId);
         this.app.ui.mostrarToast(esEditar ? 'Factura actualizada' : 'Factura agregada', 'success');
@@ -3287,7 +3286,7 @@ class FacturaService {
         if (!servicio) return;
         servicio.facturas = servicio.facturas.filter(f => f.id !== this.app.facturaActual);
         this.app.guardarDatos();
-        this.app.guardarEstado();
+        this.app.guardarEstado(`eliminar factura (${servicio.nombre})`);
         this.app.renderServicios();
         this.app.cerrarModal('modal-editar-factura');
         this.app.ui.mostrarToast('Factura eliminada', 'success');
@@ -3401,7 +3400,7 @@ class IngresoService {
             servicio.facturas.push({ id: this.app.utils.generarId(), monto, tipo, fecha, moneda, pagada: true });
         }
         this.app.guardarDatos();
-        this.app.guardarEstado();
+        this.app.guardarEstado(this.app.ingresoActual ? 'editar ingreso' : 'agregar ingreso');
         this.app.renderServicios();
         this.app.cerrarModal(esEditar ? 'modal-editar-ingreso' : 'modal-agregar-ingreso');
         if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID);
@@ -3413,7 +3412,7 @@ class IngresoService {
         if (!servicio) return;
         servicio.facturas = servicio.facturas.filter(f => f.id !== this.app.ingresoActual);
         this.app.guardarDatos();
-        this.app.guardarEstado();
+        this.app.guardarEstado('eliminar ingreso');
         this.app.renderServicios();
         this.app.cerrarModal('modal-editar-ingreso');
         if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID);
@@ -3569,6 +3568,7 @@ class ContextMenuService {
 
         const hoy = this.app.utils.obtenerFechaLocal();
         let pagadas = 0;
+        let ultimoNombre = '';
 
         ids.forEach(id => {
             const servicio = this.app.servicios.find(s => s.id === id);
@@ -3577,11 +3577,12 @@ class ContextMenuService {
             const idx = servicio.facturas.findIndex(f => f.id === factura.id);
             if (idx === -1) return;
             servicio.facturas[idx] = { ...servicio.facturas[idx], pagada: true, fechaPago: hoy };
+            ultimoNombre = servicio.nombre;
             pagadas++;
         });
 
         if (pagadas === 0) return;
-        this.app.utils.postGuardado();
+        this.app.utils.postGuardado(pagadas === 1 ? `pagar factura (${ultimoNombre})` : `pagar ${pagadas} facturas`);
         if (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) {
             this.app.calculador.desactivarModo(true);
         }
@@ -3666,7 +3667,7 @@ class CategoriaService {
         this.saveCategorias(cats);
         this.app.servicios.forEach(s => { if (s.categoria === nombre) s.categoria = ''; });
         this.app.guardarDatos();
-        this.app.guardarEstado();
+        this.app.guardarEstado(`eliminar categoría (${nombre})`);
         this.poblarSelect('servicio-categoria');
         this.poblarSelect('editar-servicio-categoria');
         this.renderLista();
@@ -3696,7 +3697,7 @@ class CategoriaService {
             const csdTarget = document.getElementById(this.app._categoriaTargetSelect + '-csd');
             if (csdTarget?._customSelect) csdTarget._customSelect.refresh();
         }
-        this.app.guardarEstado();
+        this.app.guardarEstado(`agregar categoría (${nombre})`);
         this.renderLista();
         this.app.mostrarToast('Categoría agregada', 'success');
     }
@@ -4521,9 +4522,9 @@ class UtilsService {
         btn.classList.toggle('activo-usd', m === 'usd');
     }
 
-    postGuardado() {
+    postGuardado(descripcion = null) {
         this.app.guardarDatos();
-        this.app.guardarEstado();
+        this.app.guardarEstado(descripcion);
         this.app.renderServicios();
     }
 
@@ -4725,6 +4726,7 @@ class PerfilService {
         if (!confirmado) return;
         if (perfilId === this.perfilActivo) this.cambiar('default');
         StorageHelper.removeItem(STORAGE_KEYS.DATOS_PERFIL(perfilId));
+        this.app.historial_mgr.eliminarDePerfil(perfilId);
         delete this.perfiles[perfilId];
         this.guardar();
         this.app.ui.mostrarToast('Perfil eliminado', 'success');
@@ -5393,7 +5395,7 @@ class GistService {
         const categoriasAgregadas = this.app.categoria.getCategorias().length;
         this.mergeCategorias(data.categorias); // Mutación real
 
-        this.app.utils.postGuardado();
+        this.app.utils.postGuardado('sincronizar con Gist');
         this.setPerfil({ gistLastSync: new Date().toISOString() });
         this.app._gistDatosPendientes = null;
 
@@ -5418,81 +5420,145 @@ class GistService {
 class HistorialManager {
     constructor(app) {
         this.app = app;
+        this._stack = [];   // [{ estado: { servicios, categorias }, descripcion }]
+        this._index = -1;
+        this.MAX_HISTORIAL = 20;
+        this.TTL_MS = 24 * 60 * 60 * 1000;
     }
 
-    // ── Getters de conveniencia ───────────────────────────────
-    get historial() { return this.app.historial; }
-    set historial(v) { this.app.historial = v; }
-    get historialIndex() { return this.app.historialIndex; }
-    set historialIndex(v) { this.app.historialIndex = v; }
-    get maxHistorial() { return this.app.maxHistorial; }
+    // ── Helpers ───────────────────────────────────────────────
+    _clonar(obj) {
+        try { return structuredClone(obj); }
+        catch (e) { return JSON.parse(JSON.stringify(obj), SecurityAndUtils.reviverJSONSeguro); }
+    }
+
+    _estadoActual() {
+        return this._clonar({
+            servicios: this.app.servicios,
+            categorias: this.app.categoria.getCategorias()
+        });
+    }
+
+    _key() { return STORAGE_KEYS.HISTORIAL(this.app.perfilActivo); }
+
+    _esEntradaValida(e) {
+        return e && typeof e === 'object' && e.estado &&
+            Array.isArray(e.estado.servicios) && Array.isArray(e.estado.categorias);
+    }
+
+    // ── Persistencia ──────────────────────────────────────────
+    // El historial es prescindible: si no entra en el almacenamiento se
+    // guardan menos estados viejos (nunca se descarta el actual) y, si aun
+    // así no entra, se descarta en silencio. La memoria no se toca.
+    _persistir() {
+        let desde = 0;
+        while (this._stack.length > 0) {
+            const ok = StorageHelper.setItem(this._key(), {
+                history: this._stack.slice(desde),
+                currentIndex: this._index - desde,
+                timestamp: Date.now()
+            }, false, { silencioso: true });
+            if (ok) return;
+            if (desde >= this._index) break;
+            desde = Math.min(this._index, desde + Math.max(1, Math.floor((this._stack.length - desde) / 2)));
+        }
+        StorageHelper.removeItem(this._key());
+    }
+
+    _cargar() {
+        const data = StorageHelper.getObject(this._key(), null);
+        if (!data) return false;
+        const vencido = Date.now() - (data.timestamp || 0) > this.TTL_MS;
+        const stack = Array.isArray(data.history) ? data.history : [];
+        const index = Number.isInteger(data.currentIndex) ? data.currentIndex : -1;
+        if (vencido || stack.length === 0 || index < 0 || index >= stack.length ||
+            !stack.every(e => this._esEntradaValida(e))) {
+            StorageHelper.removeItem(this._key());
+            return false;
+        }
+        this._stack = stack.slice(-this.MAX_HISTORIAL);
+        this._index = Math.min(index - (stack.length - this._stack.length), this._stack.length - 1);
+        if (this._index < 0) { this._stack = []; this._index = -1; return false; }
+        return true;
+    }
 
     // ── Inicializar ───────────────────────────────────────────
+    // Restaura el historial guardado del perfil activo. Los datos guardados
+    // son siempre la fuente de verdad: si difieren del estado actual del
+    // historial (cambios que no pasaron por guardarEstado), se agregan como
+    // un estado nuevo en lugar de pisarlos.
     inicializarHistorial() {
-        this.historial = [];
-        this.historialIndex = -1;
-        if (this.app.servicios && this.app.servicios.length >= 0) {
-            this.historial.push({
-                servicios: JSON.parse(JSON.stringify(this.app.servicios)),
-                categorias: JSON.parse(JSON.stringify(this.app.categoria.getCategorias()))
-            });
-            this.historialIndex = 0;
+        this._stack = [];
+        this._index = -1;
+        const actual = this._estadoActual();
+        if (this._cargar()) {
+            const tope = this._stack[this._index].estado;
+            if (JSON.stringify(tope) !== JSON.stringify(actual)) {
+                this._push(actual, null);
+            }
+        } else {
+            this._push(actual, null);
         }
+        this._persistir();
         this.actualizarBotones();
     }
 
     // ── Guardar estado ────────────────────────────────────────
-    guardarEstado() {
-        const nuevoEstado = {
-            servicios: JSON.parse(JSON.stringify(this.app.servicios)),
-            categorias: JSON.parse(JSON.stringify(this.app.categoria.getCategorias()))
-        };
+    _push(estado, descripcion) {
+        if (this._index < this._stack.length - 1) this._stack.splice(this._index + 1);
+        this._stack.push({ estado, descripcion });
+        if (this._stack.length > this.MAX_HISTORIAL) this._stack.shift();
+        this._index = this._stack.length - 1;
+    }
 
-        // Descartar estados futuros si estamos en medio del historial
-        if (this.historialIndex < this.historial.length - 1) {
-            this.historial.splice(this.historialIndex + 1);
-        }
-
-        this.historial.push(nuevoEstado);
-
-        // FIX: cuando se hace shift() el índice no debe incrementarse
-        if (this.historial.length > this.maxHistorial) {
-            this.historial.shift();
-        } else {
-            this.historialIndex++;
-        }
-
+    guardarEstado(descripcion = null) {
+        this._push(this._estadoActual(), descripcion);
+        this._persistir();
         this.actualizarBotones();
     }
 
     // ── Deshacer / Rehacer ────────────────────────────────────
     deshacer() {
-        if (this.historialIndex <= 0) return;
-        this.historialIndex--;
-        this._aplicarEstado(this.historial[this.historialIndex]);
-        this.app.ui.mostrarToast('Acción deshecha', 'success');
+        if (!this.puedeDeshacer()) return;
+        const descripcion = this._stack[this._index].descripcion;
+        this._index--;
+        this._aplicarEstado(this._stack[this._index].estado);
+        this.app.ui.mostrarToast('Deshecho', 'info', undefined, descripcion);
     }
 
     rehacer() {
-        if (this.historialIndex >= this.historial.length - 1) return;
-        this.historialIndex++;
-        this._aplicarEstado(this.historial[this.historialIndex]);
-        this.app.ui.mostrarToast('Acción rehecha', 'success');
+        if (!this.puedeRehacer()) return;
+        this._index++;
+        const { estado, descripcion } = this._stack[this._index];
+        this._aplicarEstado(estado);
+        this.app.ui.mostrarToast('Rehecho', 'info', undefined, descripcion);
     }
 
+    puedeDeshacer() { return this._index > 0; }
+    puedeRehacer() { return this._index < this._stack.length - 1; }
+
     _aplicarEstado(estado) {
-        this.app.servicios = JSON.parse(JSON.stringify(estado.servicios));
-        this.app.categoria.saveCategorias(JSON.parse(JSON.stringify(estado.categorias)));
+        const copia = this._clonar(estado);
+        this.app.servicios = copia.servicios;
+        this.app.categoria.saveCategorias(copia.categorias);
         this.app.guardarDatos();
         this.app.renderServicios();
         this.app.ui.cerrarTodosLosModales();
+        this._persistir();
         this.actualizarBotones();
+    }
+
+    // ── Limpieza ──────────────────────────────────────────────
+    eliminarDePerfil(perfilId) {
+        StorageHelper.removeItem(STORAGE_KEYS.HISTORIAL(perfilId));
     }
 
     // ── Botones UI ────────────────────────────────────────────
     actualizarBotones() {
-        document.getElementById('btn-undo').disabled = this.historialIndex <= 0;
-        document.getElementById('btn-redo').disabled = this.historialIndex >= this.historial.length - 1;
+        const undo = document.getElementById('btn-undo');
+        const redo = document.getElementById('btn-redo');
+        if (undo) undo.disabled = !this.puedeDeshacer();
+        if (redo) redo.disabled = !this.puedeRehacer();
     }
 }
 
@@ -5742,12 +5808,12 @@ class StorageService {
             if (facturasActualizadas > 0) partes.push(this.app.utils.plural(facturasActualizadas, 'actualizada', 'actualizadas'));
             if (ingresosAgregados > 0) partes.push(this.app.utils.plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
             if (categoriasAgregadas > 0) partes.push(this.app.utils.plural(categoriasAgregadas, 'categoría', 'categorías'));
-            this.app.utils.postGuardado();
+            this.app.utils.postGuardado('importar (combinar)');
             this.app.ui.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
         } else {
             this.servicios = datos.servicios;
             this.app.categoria.saveCategorias(cats);
-            this.app.utils.postGuardado();
+            this.app.utils.postGuardado('importar (reemplazar)');
             const cantidad = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).length;
             const facturas = datos.servicios.filter(s => s.id !== this.INGRESOS_ID).reduce((a, s) => a + s.facturas.length, 0);
             const ingresos = datos.servicios.find(s => s.id === this.INGRESOS_ID)?.facturas.length || 0;
