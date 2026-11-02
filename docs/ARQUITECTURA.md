@@ -71,6 +71,7 @@ Todo valor visual sale de `assets/styles/tokens.css`; lo vigilan los tests `Toke
 - Color y sombra: `--c-*`, `--c-*-soft` (fondos de badges), `--text-*`, `--shadow-*`, `--overlay-*`. Nada de `#hex` ni `rgba()` fuera de `tokens.css` (salvo `--muestra-*` de las vistas previas de tema).
 - Espacio: `--space-*` en gap/padding/margin (solo se admiten hairlines de 1px, negativos y huecos de layout ≥ 2rem). Tipografía: `--text-*`, `--fw-*`, `--lh-*`; radios: `--radius-*` (`50%` para círculos).
 - Íconos: `--icon-sm|base|mid|btn` (rem) y `--icon-md|lg` (em, acompañan al texto); el tamaño de un `svg`/`.icon*` nunca va en px (excepciones: caja del `.icon-btn`, ícono grande del estado vacío).
+- Anchos de modal: `--modal-w-sm|md|lg|xl` (420 / 500 / 600 / 800px). Puntos de corte: 768px y 1024px (`@media` no admite `var()`, por eso se repiten literales: no inventar otros).
 - Tiempos y curvas: `--dur-*`, `--ease-*`, `--transition-*`.
 - Sin fallbacks en `var(--token, …)` para tokens definidos. Un token sin uso se borra (salvo escalas reservadas: `--fw-normal`, `--radius-xl`, `--icon-sm`, `--icon-lg`).
 - Token nuevo: se define en `tokens.css` (y se redefine en cada tema si cambia con él) y se usa en el mismo cambio.

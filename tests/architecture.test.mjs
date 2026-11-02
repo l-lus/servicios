@@ -395,3 +395,14 @@ test('Tokens: el tamaño de los íconos (svg / .icon*) sale de --icon-*; solo se
     });
     assert.deepEqual(v, [], 'usar var(--icon-sm|base|mid|btn|md|lg)');
 });
+
+test('Tokens: el ancho máximo de los modales sale de --modal-w-*', () => {
+    const v = cssSinTokens().flatMap(({ f, lineas }) => {
+        let sel = '';
+        return lineas.flatMap((l, i) => {
+            if (l.includes('{')) sel = l.trim();
+            return /modal-content|\.modal-lg/.test(sel) && /^\s*max-width:\s*[\d.]+(px|rem)/.test(l) ? [`${f}:${i + 1}: ${sel} ${l.trim()}`] : [];
+        });
+    });
+    assert.deepEqual(v, [], 'usar var(--modal-w-sm|md|lg|xl)');
+});

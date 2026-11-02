@@ -226,7 +226,7 @@
 
 /* --- Modal ancho --- */
 .modal-lg {
-    max-width: 600px !important;
+    max-width: var(--modal-w-lg) !important;
 }
 
 /* --- Animation delays (card-fade-in) --- */

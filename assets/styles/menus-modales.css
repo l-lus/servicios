@@ -414,7 +414,7 @@ mark.ayuda-resaltado--activa {
 
 @media (min-width: 768px) {
     #modal-ayuda .modal-content {
-        max-width: 700px;
+        max-width: var(--modal-w-xl);
     }
 
     .ayuda-layout {
@@ -998,7 +998,7 @@ form.modal-content {
 
 @media (min-width: 768px) {
     #modal-config > .modal-content {
-        max-width: 800px;
+        max-width: var(--modal-w-xl);
     }
 
     #modal-config .modal-config-cols {
@@ -1133,5 +1133,5 @@ form.modal-content {
 
 /* Un modal sin encabezado propio no necesita separador, y el de confirmación es chico */
 #modal-confirmar .modal-content {
-    max-width: 420px;
+    max-width: var(--modal-w-sm);
 }

@@ -512,7 +512,7 @@ input[type="number"] {
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     width: 100%;
-    max-width: 500px;
+    max-width: var(--modal-w-md);
     max-height: 90vh;
     box-shadow: var(--shadow-modal);
     transform: scale(0.15);

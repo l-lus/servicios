@@ -91,6 +91,11 @@
     --modal-overlay: rgba(0, 0, 0, 0.5);
     --overlay-suave: rgba(0, 0, 0, 0.3);
     --touch-target: 48px;
+    /* Anchos de modal: confirmar < estándar < grande < ayuda/configuración */
+    --modal-w-sm: 420px;
+    --modal-w-md: 500px;
+    --modal-w-lg: 600px;
+    --modal-w-xl: 800px;
     --app-header-h: 60px;
     --lh-normal: 1.35;
     --lh-relaxed: 1.5;
