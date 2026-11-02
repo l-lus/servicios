@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { crudo, html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -65,10 +65,10 @@ export class VistaServicios {
     obtenerEstadoFactura(factura) {
         const tipo = EstadoFacturas.clasificarFactura(factura);
         const vista = {
-            favor: ['<div class="factura-estado-pagado">Saldo a favor</div>', 'factura-monto factura-monto-favor'],
-            pagada: ['<div class="factura-estado-pagado">✓ Pagada</div>', 'factura-monto'],
-            vencida: ['<div class="factura-estado-vencido">⚠ Vencida</div>', 'factura-monto'],
-            pendiente: ['<div class="factura-estado-pendiente">⏱ Pendiente</div>', 'factura-monto'],
+            favor: [html`<div class="factura-estado-pagado">Saldo a favor</div>`, 'factura-monto factura-monto-favor'],
+            pagada: [html`<div class="factura-estado-pagado">✓ Pagada</div>`, 'factura-monto'],
+            vencida: [html`<div class="factura-estado-vencido">⚠ Vencida</div>`, 'factura-monto'],
+            pendiente: [html`<div class="factura-estado-pendiente">⏱ Pendiente</div>`, 'factura-monto'],
         }[tipo];
         return { estadoPago: vista[0], claseMonto: vista[1] };
     }
@@ -115,13 +115,13 @@ export class VistaServicios {
         const servicioIngresos = EstadoApp.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
 
         const pintar = (contenido) => {
-            const fn = () => { montar(lista, crudo(contenido)); };
+            const fn = () => { montar(lista, contenido); };
             if (this.app._animarRender) Anim.diffLista(lista, '.servicio-wrapper', 'data-id', fn);
             else fn();
         };
 
         if (serviciosNormales.length === 0 && !this.app.ui.ingresosHabilitado()) {
-            pintar(`
+            pintar(html`
                   <div class="empty-state">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -145,15 +145,15 @@ export class VistaServicios {
         const generarItemServicio = (servicio) => {
             const { estado, claseEstado, montoTexto, fechaTexto } = this.calcularEstadoServicio(servicio);
             const claseCalculando = this.app.serviciosSeleccionados.has(servicio.id) ? 'calculando' : '';
-            return `
-   <div class="servicio-wrapper" data-id="${this.app.utils.escaparAtributoHTML(servicio.id)}">
-  <div class="servicio-item ${claseEstado} ${claseCalculando}" data-id="${this.app.utils.escaparAtributoHTML(servicio.id)}">
-                      <div class="servicio-nombre">${this.app.utils.escaparHTML(servicio.nombre)}</div>
+            return html`
+   <div class="servicio-wrapper" data-id="${servicio.id}">
+  <div class="servicio-item ${claseEstado} ${claseCalculando}" data-id="${servicio.id}">
+                      <div class="servicio-nombre">${servicio.nombre}</div>
                        <div class="servicio-info">
                           <span class="servicio-monto">${montoTexto}</span>
-                           ${fechaTexto ? `<span class="servicio-fecha">${fechaTexto}</span>` : ''}
+                           ${fechaTexto ? html`<span class="servicio-fecha">${fechaTexto}</span>` : ''}
                        </div>
-                    ${estado ? `<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
+                    ${estado ? html`<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
                    </div>
                </div>
              `;
@@ -174,7 +174,7 @@ export class VistaServicios {
             return a.localeCompare(b);
         });
 
-        let html = '';
+        const partes = [];
 
         // Si solo hay una categoría (o ninguna), no mostrar encabezado de grupo
         if (this.app._vistaEstados) {
@@ -188,7 +188,7 @@ export class VistaServicios {
                 const items = serviciosOrdenados.filter(s => grupo.clases.includes(this.calcularEstadoServicio(s).claseEstado));
                 if (items.length === 0) return;
                 const collapsed = this.app._catColapsadas[`__estado_${grupo.key}`] ? 'collapsed' : '';
-                html += `
+                partes.push(html`
     <div class="servicios-grupo-cat" data-cat="__estado_${grupo.key}">
         <div class="servicios-grupo-cat-header" data-action="toggle-grupo-cat" data-lp="true">
             <div class="servicios-grupo-cat-header-info">
@@ -198,19 +198,19 @@ export class VistaServicios {
             <svg class="icon servicios-grupo-cat-chevron ${collapsed}"><use href="#icon-chevron-down"/></svg>
         </div>
         <div class="servicios-grupo-cat-contenido ${collapsed}">
-            <div class="collapsible-inner">${items.map(generarItemServicio).join('')}</div>
+            <div class="collapsible-inner">${items.map(generarItemServicio)}</div>
         </div>
-    </div>`;
+    </div>`);
             });
         } else if (catKeys.length <= 1 || !this.app._agrupacionActiva) {
-            html = serviciosOrdenados.map(generarItemServicio).join('');
+            partes.push(...serviciosOrdenados.map(generarItemServicio));
         } else {
             catKeys.forEach(cat => {
                 const items = gruposCat[cat];
                 const catLabel = cat || 'Sin categoría';
                 const collapsed = this.app._catColapsadas[cat] ? 'collapsed' : '';
                 const cantidad = items.length;
-                const itemsHTML = items.map(generarItemServicio).join('');
+                const itemsHTML = items.map(generarItemServicio);
 
                 // Calcular el estado de alerta más prioritario de la categoría
                 const prioridad = { 'vencido': 4, 'urgente': 3, 'proximo': 2, 'sin-facturas-mes': 1 };
@@ -223,19 +223,19 @@ export class VistaServicios {
                 });
 
                 // Generar icono indicador si hay alertas
-                let alertaIconHTML = '';
+                let alertaIconHTML = html``;
                 if (mejorAlerta) {
                     const svgPath = (mejorAlerta === 'proximo' || mejorAlerta === 'sin-facturas-mes')
                         ? '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/>'
                         : '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><line x1="12" y1="8" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.2" fill="currentColor"/>';
-                    alertaIconHTML = `<svg class="cat-alerta-icon ${mejorAlerta}" viewBox="0 0 24 24" width="14" height="14">${svgPath}</svg>`;
+                    alertaIconHTML = html`<svg class="cat-alerta-icon ${mejorAlerta}" viewBox="0 0 24 24" width="14" height="14">${crudo(svgPath)}</svg>`;
                 }
 
-                html += `
-    <div class="servicios-grupo-cat" data-cat="${this.app.utils.escaparAtributoHTML(cat)}">
+                partes.push(html`
+    <div class="servicios-grupo-cat" data-cat="${cat}">
         <div class="servicios-grupo-cat-header" data-action="toggle-grupo-cat" data-lp="true">
             <div class="servicios-grupo-cat-header-info">
-                <span class="servicios-grupo-cat-texto">${this.app.utils.escaparHTML(catLabel)}</span>
+                <span class="servicios-grupo-cat-texto">${catLabel}</span>
                 <span class="servicios-grupo-cat-contador">(${cantidad})</span>
             </div>
             <div class="d-flex align-items-center gap-1">
@@ -247,7 +247,7 @@ export class VistaServicios {
             <div class="collapsible-inner">${itemsHTML}</div>
         </div>
     </div>
-                    `;
+                    `);
             });
         }
 
@@ -255,7 +255,7 @@ export class VistaServicios {
         if (this.app.ui.ingresosHabilitado() && (!this.app.terminoBusqueda || 'ingresos'.includes(this.app.terminoBusqueda))) {
             // Línea separadora
             if (serviciosOrdenados.length > 0) {
-                html += `<div class="separator-line"></div>`;
+                partes.push(html`<div class="separator-line"></div>`);
             }
 
             // Crear servicio de ingresos si no existe
@@ -269,22 +269,22 @@ export class VistaServicios {
 
                 const claseCalculandoIngresos = this.app.serviciosSeleccionados.has(ingresos.id) ? 'calculando' : '';
 
-                html += `
-   <div class="servicio-wrapper" data-id="${this.app.utils.escaparAtributoHTML(ingresos.id)}">
-  <div class="servicio-item ${claseEstado} ${claseCalculandoIngresos}" data-id="${this.app.utils.escaparAtributoHTML(ingresos.id)}">
-                          <div class="servicio-nombre">${this.app.utils.escaparHTML(ingresos.nombre)}</div>
+                partes.push(html`
+   <div class="servicio-wrapper" data-id="${ingresos.id}">
+  <div class="servicio-item ${claseEstado} ${claseCalculandoIngresos}" data-id="${ingresos.id}">
+                          <div class="servicio-nombre">${ingresos.nombre}</div>
                            <div class="servicio-info">
                               <span class="servicio-monto">${montoTexto}</span>
-                               ${fechaTexto ? `<span class="servicio-fecha">${fechaTexto}</span>` : ''}
+                               ${fechaTexto ? html`<span class="servicio-fecha">${fechaTexto}</span>` : ''}
                            </div>
-                        ${estado ? `<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
+                        ${estado ? html`<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
                        </div>
                    </div>
-                 `;
+                 `);
             }
         }
 
-        pintar(html);
+        pintar(html`${partes}`);
 
         // Eventos de click en servicios
         lista.querySelectorAll('.servicio-item').forEach(item => {
@@ -465,22 +465,20 @@ export class VistaServicios {
 
     generarHTMLFactura(factura, accion = null) {
         const { estadoPago, claseMonto } = this.obtenerEstadoFactura(factura);
-        const esc = t => this.app.utils.escaparAtributoHTML(t);
-        const dataAccion = accion ? `data-action="factura-click" data-factura-accion="${esc(accion)}" data-factura-id="${esc(factura.id)}"` : '';
         const moneda = factura.moneda === 'usd' ? 'usd' : 'ars';
         const badgeClass = moneda;
         const pagoBadge = factura.pagada
             ? (factura.conCredito
-                ? '<span class="moneda-badge credito">Crédito</span>'
-                : '<span class="moneda-badge contado">Contado</span>')
+                ? html`<span class="moneda-badge credito">Crédito</span>`
+                : html`<span class="moneda-badge contado">Contado</span>`)
             : '';
 
-        return `
-    <div class="factura-item" data-id="${esc(factura.id)}">
-        <div class="factura-info" ${dataAccion}>
+        return html`
+    <div class="factura-item" data-id="${factura.id}">
+        <div class="factura-info" ${accion ? html`data-action="factura-click" data-factura-accion="${accion}" data-factura-id="${factura.id}"` : ''}>
             <div class="${claseMonto}">${this.app.utils.formatearMoneda(factura.monto, moneda)}<span class="moneda-badge ${badgeClass}">${moneda.toUpperCase()}</span>${pagoBadge}</div>
             <div class="factura-fecha">
-                ${this.app.utils.escaparHTML(factura.tipo || 'mensual')} | Vence: ${this.app.utils.formatearFecha(factura.fecha)}
+                ${factura.tipo || 'mensual'} | Vence: ${this.app.utils.formatearFecha(factura.fecha)}
             </div>
             ${estadoPago}
         </div>

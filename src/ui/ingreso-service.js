@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 // ============================================================
 // INGRESO SERVICE — ciclo de vida de ingresos
@@ -20,26 +20,26 @@ export class IngresoService {
         if (!servicio) return;
         const lista = document.getElementById('lista-ingresos-modal');
         if (servicio.facturas.length === 0) {
-            montar(lista, crudo('<div class="empty-state"><p>No hay ingresos registrados</p></div>'));
+            montar(lista, html`<div class="empty-state"><p>No hay ingresos registrados</p></div>`);
         } else {
             const ordenados = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
             const grupos = this.app.factura.agruparPorAno(ordenados);
-            montar(lista, crudo(grupos.map((grupo, index) => {
-                const html = grupo.items.map(ingreso => {
+            montar(lista, html`${grupos.map((grupo, index) => {
+                const itemsHTML = grupo.items.map(ingreso => {
                     const tipo   = ingreso.tipo === 'complementario' ? 'Complementario' : ingreso.tipo === 'transferencia' ? 'Transferencia' : 'Regular';
                     const emoji  = ingreso.tipo === 'complementario' ? '💼' : ingreso.tipo === 'transferencia' ? '🔄' : '💵';
                     const moneda = ingreso.moneda === 'usd' ? 'usd' : 'ars';
-                    const idAttr = this.app.utils.escaparAtributoHTML(ingreso.id);
-                    return `
+                    const idAttr = ingreso.id;
+                    return html`
                 <div class="factura-item" data-id="${idAttr}">
                     <div class="factura-info" data-action="abrir-ingreso" data-ingreso-id="${idAttr}">
                         <div class="factura-monto">${this.app.utils.formatearMoneda(ingreso.monto, moneda)}<span class="moneda-badge ${moneda}">${moneda.toUpperCase()}</span></div>
                         <div class="factura-fecha">${emoji} ${tipo} | Cobrado: ${this.app.utils.formatearFecha(ingreso.fecha)}</div>
                     </div>
                 </div>`;
-                }).join('');
-                return this.app.factura.generarGrupoAno(grupo.ano, grupo.items, html, 'ingreso', index);
-            }).join('')));
+                });
+                return this.app.factura.generarGrupoAno(grupo.ano, grupo.items, itemsHTML, 'ingreso', index);
+            })}`);
         }
         document.getElementById('modal-ingresos-lista').dataset.servicioId = servicioId;
         this.app.ui.abrirModal('modal-ingresos-lista');

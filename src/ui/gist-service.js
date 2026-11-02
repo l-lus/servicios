@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -268,12 +268,12 @@ export class GistService {
                 const detalle = document.getElementById('gist-novedades-detalle');
                 if (detalle) {
                     const chips = [];
-                    if (diff.serviciosAgregados) chips.push(`<div class="gist-novedades-chip"><span>Servicios</span><span class="gist-novedades-chip-count">+${diff.serviciosAgregados}</span></div>`);
-                    if (diff.facturasAgregadas) chips.push(`<div class="gist-novedades-chip"><span>Facturas nuevas</span><span class="gist-novedades-chip-count">+${diff.facturasAgregadas}</span></div>`);
-                    if (diff.facturasActualizadas) chips.push(`<div class="gist-novedades-chip"><span>Actualizadas</span><span class="gist-novedades-chip-count">${diff.facturasActualizadas}</span></div>`);
-                    if (diff.ingresosAgregados) chips.push(`<div class="gist-novedades-chip"><span>Ingresos</span><span class="gist-novedades-chip-count">+${diff.ingresosAgregados}</span></div>`);
-                    if (nuevasCats) chips.push(`<div class="gist-novedades-chip"><span>Categorías</span><span class="gist-novedades-chip-count">+${nuevasCats}</span></div>`);
-                    montar(detalle, crudo(chips.join('')));
+                    if (diff.serviciosAgregados) chips.push(html`<div class="gist-novedades-chip"><span>Servicios</span><span class="gist-novedades-chip-count">+${diff.serviciosAgregados}</span></div>`);
+                    if (diff.facturasAgregadas) chips.push(html`<div class="gist-novedades-chip"><span>Facturas nuevas</span><span class="gist-novedades-chip-count">+${diff.facturasAgregadas}</span></div>`);
+                    if (diff.facturasActualizadas) chips.push(html`<div class="gist-novedades-chip"><span>Actualizadas</span><span class="gist-novedades-chip-count">${diff.facturasActualizadas}</span></div>`);
+                    if (diff.ingresosAgregados) chips.push(html`<div class="gist-novedades-chip"><span>Ingresos</span><span class="gist-novedades-chip-count">+${diff.ingresosAgregados}</span></div>`);
+                    if (nuevasCats) chips.push(html`<div class="gist-novedades-chip"><span>Categorías</span><span class="gist-novedades-chip-count">+${nuevasCats}</span></div>`);
+                    montar(detalle, html`${chips}`);
                 }
 
                 this.app._gistDatosPendientes = data;

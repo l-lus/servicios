@@ -1,4 +1,4 @@
-import { crudo, html, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
 
@@ -64,7 +64,7 @@ export class FacturaService {
         const collapsed = index > 0 ? 'collapsed' : '';
         const cantidad = items.length;
         const labelPlural = cantidad !== 1 ? `${tipoLabel}s` : tipoLabel;
-        return `
+        return html`
     <div class="facturas-grupo-ano">
         <div class="facturas-grupo-header" data-action="toggle-grupo-ano">
             <div class="facturas-grupo-header-info">
@@ -89,14 +89,14 @@ export class FacturaService {
         document.getElementById('modal-facturas-servicio').dataset.servicioId = servicioId;
         if (btnBorrar) btnBorrar.style.display = servicio.facturas.length > 0 ? '' : 'none';
         if (servicio.facturas.length === 0) {
-            montar(lista, crudo('<div class="empty-state"><p>No hay facturas registradas</p></div>'));
+            montar(lista, html`<div class="empty-state"><p>No hay facturas registradas</p></div>`);
         } else {
             const ordenadas = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
             const grupos = this.agruparPorAno(ordenadas);
-            montar(lista, crudo(grupos.map((grupo, index) => {
-                const html = grupo.items.map(f => this.app.vista.generarHTMLFactura(f, 'editar-factura')).join('');
-                return this.generarGrupoAno(grupo.ano, grupo.items, html, 'factura', index);
-            }).join('')));
+            montar(lista, html`${grupos.map((grupo, index) => {
+                const itemsHTML = grupo.items.map(f => this.app.vista.generarHTMLFactura(f, 'editar-factura'));
+                return this.generarGrupoAno(grupo.ano, grupo.items, itemsHTML, 'factura', index);
+            })}`);
         }
         this.app.ui.abrirModal('modal-facturas-servicio');
         const anoGuardado = this.app._anoExpandidoFacturas[servicioId];

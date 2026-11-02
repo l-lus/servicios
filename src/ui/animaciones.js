@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { montar } from '../core/html.js';
 import { Motion } from '../core/movimiento.js';
 
 // ============================================================
@@ -201,14 +201,14 @@ export const Anim = (function () {
     // elementos selValores, cada valor rueda hacia arriba o abajo según
     // aumente o disminuya; si cambia la estructura, hace la mutación
     // completa (fantasma saliente + contenido entrante).
-    function morph(cont, html, selValores) {
+    function morph(cont, contenido, selValores) {
         if (!cont) return;
         if (Motion.reducido() || !cont.offsetParent || !cont.firstElementChild) {
-            montar(cont, crudo(html));
+            montar(cont, contenido);
             return;
         }
         const nuevo = document.createElement('div');
-        montar(nuevo, crudo(html));
+        montar(nuevo, contenido);
 
         // Los style inline los pone JS después de renderizar (la CSP no deja
         // escribirlos en el HTML), así que no cuentan como estructura.
@@ -222,7 +222,7 @@ export const Anim = (function () {
         };
 
         if (firma(cont) !== firma(nuevo)) {
-            mutacion(cont, () => { montar(cont, crudo(html)); });
+            mutacion(cont, () => { montar(cont, contenido); });
             return;
         }
 

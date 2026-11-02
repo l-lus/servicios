@@ -59,15 +59,6 @@ export class UtilsService {
         return fechaLocalISO();
     }
 
-    escaparHTML(texto) {
-        return SecurityAndUtils.escapeHtml(texto);
-    }
-
-    // escapeHtml ya escapa comillas, así que sirve también para atributos
-    escaparAtributoHTML(texto) {
-        return SecurityAndUtils.escapeHtml(texto);
-    }
-
     descargarBlob(contenido, nombreArchivo, tipo = 'text/plain;charset=utf-8') {
         const blob = new Blob([contenido], { type: tipo });
         const url = URL.createObjectURL(blob);

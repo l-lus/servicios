@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ReportesTexto } from '../services/reportes-texto.js';
 import { Calculadora } from '../services/calculadora.js';
@@ -107,26 +107,26 @@ export class CalculadorService {
         const _hayARS = _arsTotal !== 0, _hayUSD = _usdTotal !== 0;
         const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         const _montoHTML = _hayARS ? fmt(_arsTotal, 'ars') : _hayUSD ? fmt(_usdTotal, 'usd') : fmt(0, 'ars');
-        const _montoUSDItem = _hayUSD ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total USD</span><span class="calculador-resultado-valor">${fmt(_usdTotal, 'usd')}</span></div>` : '';
+        const _montoUSDItem = _hayUSD ? html`<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total USD</span><span class="calculador-resultado-valor">${fmt(_usdTotal, 'usd')}</span></div>` : '';
         const _promARS = _arsCount > 0 ? _arsTotal / _arsCount : 0;
         const _promUSD = _usdCount > 0 ? _usdTotal / _usdCount : 0;
         const _promHTML = _hayARS ? fmt(_promARS, 'ars') : _hayUSD ? fmt(_promUSD, 'usd') : fmt(0, 'ars');
-        const _promUSDItem = _hayUSD ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Promedio USD</span><span class="calculador-resultado-valor">${fmt(_promUSD, 'usd')}</span></div>` : '';
-        const _varUSDItem = variacionUSDTexto != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación USD</span><span class="calculador-resultado-valor">${variacionUSDTexto}</span></div>` : '';
-        const generarResultadosHTML = (registros, variacion) => `
+        const _promUSDItem = _hayUSD ? html`<div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Promedio USD</span><span class="calculador-resultado-valor">${fmt(_promUSD, 'usd')}</span></div>` : '';
+        const _varUSDItem = variacionUSDTexto != null ? html`<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación USD</span><span class="calculador-resultado-valor">${variacionUSDTexto}</span></div>` : '';
+        const generarResultadosHTML = (registros, variacion) => html`
 <div class="calculador-resultado-item"><span class="calculador-resultado-label">Facturas</span><span class="calculador-resultado-valor">${registros}</span></div>
 <div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Total</span><span class="calculador-resultado-valor">${_montoHTML}</span></div>
 ${_montoUSDItem}
 <div class="calculador-resultado-item"><span class="calculador-resultado-label">Monto Promedio</span><span class="calculador-resultado-valor">${_promHTML}</span></div>
 ${_promUSDItem}
-${variacion != null ? `<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación</span><span class="calculador-resultado-valor">${variacion}</span></div>` : ''}
+${variacion != null ? html`<div class="calculador-resultado-item"><span class="calculador-resultado-label">Variación</span><span class="calculador-resultado-valor">${variacion}</span></div>` : ''}
 ${_varUSDItem}`;
-        const html = generarResultadosHTML(totalRegistros, variacionTexto);
+        const resultadosHTML = generarResultadosHTML(totalRegistros, variacionTexto);
         if (calculadorCambio) {
-            Anim.morph(resultadosContainer, html, '.calculador-resultado-valor');
+            Anim.morph(resultadosContainer, resultadosHTML, '.calculador-resultado-valor');
             this.app.ultimoEstadoCalculador = estadoCalculador;
         } else {
-            montar(resultadosContainer, crudo(html));
+            montar(resultadosContainer, resultadosHTML);
         }
     }
 

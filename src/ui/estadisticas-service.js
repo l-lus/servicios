@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -42,11 +42,11 @@ export class EstadisticasService {
 
     _buildValorResumen(montoARS, montoUSD, textoVacio) {
         const hayARS = montoARS > 0, hayUSD = montoUSD > 0;
-        if (!hayARS && !hayUSD) return { valorMostrar: `<span class="resumen-valor-vacio">${textoVacio}</span>`, hayARS, hayUSD };
+        if (!hayARS && !hayUSD) return { valorMostrar: html`<span class="resumen-valor-vacio">${textoVacio}</span>`, hayARS, hayUSD };
         let valorMostrar;
         const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         if (hayARS && hayUSD) {
-            valorMostrar = `<div class="resumen-valor">${fmt(montoARS, 'ars')}</div><div class="resumen-valor-usd">${fmt(montoUSD, 'usd')}</div>`;
+            valorMostrar = html`<div class="resumen-valor">${fmt(montoARS, 'ars')}</div><div class="resumen-valor-usd">${fmt(montoUSD, 'usd')}</div>`;
         } else {
             valorMostrar = hayUSD ? fmt(montoUSD, 'usd') : fmt(montoARS, 'ars');
         }
@@ -81,7 +81,7 @@ export class EstadisticasService {
         const estadoActual = { tipo, montoARS, montoUSD, porcentajePagado, colorBorde, fecha: fechaFormateada };
         const debeAnimar = this.app.utils.objetosCambiaron(this.app.ultimoEstadoResumen, estadoActual);
         const { valorMostrar, hayARS, hayUSD } = this._buildValorResumen(montoARS, montoUSD, textoVacio);
-        const resumenHTML = `
+        const resumenHTML = html`
 <div class="resumen-monto" id="resumen-toggle">
 <div class="d-flex justify-content-between align-items-center">
     <div class="resumen-titulo"><svg class="icon"><use href="${icono}" /></svg> ${titulo}</div>
@@ -89,7 +89,7 @@ export class EstadisticasService {
         <svg viewBox="0 0 24 24" class="icon-md" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
     </button>
 </div>
-${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar}</div>`}
+${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMostrar}</div>`}
 <div class="resumen-footer">
     <div class="resumen-progreso"><div class="resumen-progreso-barra" id="resumen-progreso-barra"></div></div>
     <div class="resumen-label">${label}</div>
@@ -98,7 +98,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
 </div>`;
         const contResumen = document.getElementById('resumen-mes');
         if (debeAnimar) Anim.morph(contResumen, resumenHTML, '.resumen-valor, .resumen-valor-usd, .resumen-label');
-        else montar(contResumen, crudo(resumenHTML));
+        else montar(contResumen, resumenHTML);
         const barra = document.getElementById('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
         StorageHelper.setItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO, esPendiente ? 'false' : 'true');
@@ -111,21 +111,21 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
     abrirModalInfoResumen() {
         const { vencenEsteMes, pagadasOtroMes } = ResumenMes.detalle(this.servicios);
         const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
-        const renderFila = ({ servicio, factura, estado, badgeClass }) => `
+        const renderFila = ({ servicio, factura, estado, badgeClass }) => html`
         <div class="info-resumen-fila">
-            <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${this.app.utils.escaparHTML(servicio)}</span><span class="info-resumen-badge ${badgeClass}">${estado}</span></div>
+            <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${servicio}</span><span class="info-resumen-badge ${badgeClass}">${estado}</span></div>
             <span class="info-resumen-monto">${fmt(factura.monto, factura.moneda || 'ars')}</span>
         </div>`;
-        const renderFilaOtroMes = ({ servicio, factura, mesVenc }) => `
+        const renderFilaOtroMes = ({ servicio, factura, mesVenc }) => html`
         <div class="info-resumen-fila">
-            <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${this.app.utils.escaparHTML(servicio)}</span><span class="info-resumen-badge badge-pagada-otro-mes">Venció ${mesVenc}</span></div>
+            <div class="info-resumen-fila-izq"><span class="info-resumen-nombre">${servicio}</span><span class="info-resumen-badge badge-pagada-otro-mes">Venció ${mesVenc}</span></div>
             <span class="info-resumen-monto">${fmt(factura.monto, factura.moneda || 'ars')}</span>
         </div>`;
-        let html = '';
-        if (vencenEsteMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Vencen este mes</div>${vencenEsteMes.map(renderFila).join('')}</div>`;
-        if (pagadasOtroMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes).join('')}</div>`;
-        if (!html) html = '<div class="text-center-muted">Sin movimientos este mes</div>';
-        montar(document.getElementById('modal-info-resumen-body'), crudo(html));
+        const partes = [];
+        if (vencenEsteMes.length > 0) partes.push(html`<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Vencen este mes</div>${vencenEsteMes.map(renderFila)}</div>`);
+        if (pagadasOtroMes.length > 0) partes.push(html`<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes)}</div>`);
+        if (partes.length === 0) partes.push(html`<div class="text-center-muted">Sin movimientos este mes</div>`);
+        montar(document.getElementById('modal-info-resumen-body'), html`${partes}`);
         this.app.ui.abrirModal('modal-info-resumen');
     }
 
@@ -165,25 +165,25 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         const renderizarContenido = () => {
             const hayUSDMes = totalMesUSD > 0, hayARSMes = totalMesARS > 0;
             const montoHTML = hayARSMes ? fmt(totalMesARS, 'ars') : hayUSDMes ? fmt(totalMesUSD, 'usd') : fmt(0, 'ars');
-            const montoUSDItem = hayUSDMes ? `<div class="calculador-resultado-item"><span class="estadistica-label">Monto USD</span><span class="estadistica-valor">${fmt(totalMesUSD, 'usd')}</span></div>` : '';
+            const montoUSDItem = hayUSDMes ? html`<div class="calculador-resultado-item"><span class="estadistica-label">Monto USD</span><span class="estadistica-valor">${fmt(totalMesUSD, 'usd')}</span></div>` : '';
             let ingresosHTML = '';
             if (this.app.ui.ingresosHabilitado()) {
                 const hayIngUSD = totalIngresosUSD > 0, hayIngARS = totalIngresosARS > 0;
                 const ingMontoHTML = hayIngARS ? fmt(totalIngresosARS, 'ars') : hayIngUSD ? fmt(totalIngresosUSD, 'usd') : fmt(0, 'ars');
-                const ingUSDItem = hayIngUSD ? `<div class="calculador-resultado-item"><span class="estadistica-label">Ingresos USD</span><span class="estadistica-valor">${fmt(totalIngresosUSD, 'usd')}</span></div>` : '';
+                const ingUSDItem = hayIngUSD ? html`<div class="calculador-resultado-item"><span class="estadistica-label">Ingresos USD</span><span class="estadistica-valor">${fmt(totalIngresosUSD, 'usd')}</span></div>` : '';
                 let porcentajeIngresosHTML = '';
                 if (hayIngARS && totalMesARS > 0) {
                     const pct = (totalMesARS / totalIngresosARS) * 100;
                     const colorClass = pct < 25 ? 'text-green' : pct < 50 ? 'text-blue' : pct < 75 ? 'text-gold' : 'text-red';
-                    porcentajeIngresosHTML = `<div class="calculador-resultado-item"><span class="estadistica-label">% del ingreso</span><span class="estadistica-valor ${colorClass}">${pct.toFixed(1)}%</span></div>`;
+                    porcentajeIngresosHTML = html`<div class="calculador-resultado-item"><span class="estadistica-label">% del ingreso</span><span class="estadistica-valor ${colorClass}">${pct.toFixed(1)}%</span></div>`;
                 }
-                ingresosHTML = `<div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="ingresos"><span class="estadistica-label">Ingresos</span><span class="estadistica-valor">${ingMontoHTML}</span></div>${ingUSDItem}${porcentajeIngresosHTML}`;
+                ingresosHTML = html`<div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="ingresos"><span class="estadistica-label">Ingresos</span><span class="estadistica-valor">${ingMontoHTML}</span></div>${ingUSDItem}${porcentajeIngresosHTML}`;
             }
-            const itemsHTML = `
+            const itemsHTML = html`
     <div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="facturas"><span class="estadistica-label">Monto en facturas</span><span class="estadistica-valor">${montoHTML}</span></div>
     ${montoUSDItem}
-    ${totalPagadoMesARS > 0 ? `<div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="pagado-monto"><span class="estadistica-label">Monto pagado</span><span class="estadistica-valor">${fmt(totalPagadoMesARS, 'ars')}</span></div>` : ''}
-    ${totalPagadoMesUSD > 0 ? `<div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="pagado-monto"><span class="estadistica-label">Monto USD (Pagado)</span><span class="estadistica-valor">${fmt(totalPagadoMesUSD, 'usd')}</span></div>` : ''}
+    ${totalPagadoMesARS > 0 ? html`<div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="pagado-monto"><span class="estadistica-label">Monto pagado</span><span class="estadistica-valor">${fmt(totalPagadoMesARS, 'ars')}</span></div>` : ''}
+    ${totalPagadoMesUSD > 0 ? html`<div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="pagado-monto"><span class="estadistica-label">Monto USD (Pagado)</span><span class="estadistica-valor">${fmt(totalPagadoMesUSD, 'usd')}</span></div>` : ''}
     <div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="facturas"><span class="estadistica-label">Facturas</span><span class="estadistica-valor">${cantidadFacturasMes}</span></div>
     <div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="pendientes"><span class="estadistica-label">Pendientes</span><span class="estadistica-valor">${cantidadPendientes}</span></div>
     <div class="calculador-resultado-item" data-action="debug-estadisticas" data-tipo="pagadas"><span class="estadistica-label">Pagadas</span><span class="estadistica-valor">${cantidadPagadas}</span></div>
@@ -192,18 +192,18 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
             const lista = document.querySelector('#estadisticas-mensual-container .estadisticas-lista');
             if (!lista) return;
             if (estadoCambio) Anim.morph(lista, itemsHTML, '.estadistica-valor');
-            else montar(lista, crudo(itemsHTML));
+            else montar(lista, itemsHTML);
         };
 
         const hayDatos = this.servicios.length > 0 && this.servicios.some(s => s.facturas?.length > 0);
         if (!yaExisteSelector || !hayDatos) {
-            montar(document.getElementById('estadisticas-mensual-container'), crudo(`
+            montar(document.getElementById('estadisticas-mensual-container'), html`
 <div class="calculador-campo"><label class="calculador-label">Mes</label>
 <div class="custom-select-wrapper" id="select-mes-estadisticas-csd"><div class="custom-select-trigger"><span class="csd-label"></span><svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div><div class="custom-select-dropdown"></div></div>
 <select id="select-mes-estadisticas" class="select-mes-oculto"></select></div>
-<div id="estadisticas-categorias-tags"></div><div class="estadisticas-lista"></div>`));
+<div id="estadisticas-categorias-tags"></div><div class="estadisticas-lista"></div>`);
             const select = document.getElementById('select-mes-estadisticas');
-            montar(select, crudo(this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado)));
+            montar(select, this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado));
             const wrapper = document.getElementById('select-mes-estadisticas-csd');
             const cs = new CustomSelect(wrapper, select, () => this.actualizarEstadisticas());
             wrapper._customSelect = cs;
@@ -214,7 +214,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
             const selectActual = document.getElementById('select-mes-estadisticas');
             if (selectActual) {
                 const valorActual = selectActual.value;
-                montar(selectActual, crudo(this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado)));
+                montar(selectActual, this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado));
                 if (Array.from(selectActual.options).some(opt => opt.value === valorActual)) selectActual.value = valorActual;
                 const csd = document.getElementById('select-mes-estadisticas-csd');
                 if (csd?._customSelect) csd._customSelect.refresh();
@@ -232,8 +232,8 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         const catsUsadas = cats.filter(c => this.servicios.some(s => s.id !== this.app.SERVICIO_INGRESOS_ID && s.categoria === c));
         if (catsUsadas.length === 0) { container.replaceChildren(); return; }
         const activa = this.app._estadisticaCategoriaActiva || null;
-        const tagsHTML = catsUsadas.map(c => `<button class="est-cat-tag${c === activa ? ' est-cat-tag--activa' : ''}" data-cat="${this.app.utils.escaparAtributoHTML(c)}">${this.app.utils.escaparHTML(c)}</button>`).join('');
-        montar(container, crudo(`<div class="est-cat-tags-row">${tagsHTML}</div>`));
+        const tagsHTML = catsUsadas.map(c => html`<button class="est-cat-tag${c === activa ? ' est-cat-tag--activa' : ''}" data-cat="${c}">${c}</button>`);
+        montar(container, html`<div class="est-cat-tags-row">${tagsHTML}</div>`);
         container.querySelectorAll('.est-cat-tag').forEach(btn => {
             btn.addEventListener('click', () => {
                 const cat = btn.dataset.cat;
@@ -281,14 +281,14 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         const serviciosActivos = this.servicios
             .filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID)
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-        let html = '<option value="">Seleccionar servicio...</option>';
+        const opciones = [html`<option value="">Seleccionar servicio...</option>`];
         serviciosActivos.forEach(s => {
-            html += `<option value="${this.app.utils.escaparAtributoHTML(s.id)}" ${s.id === valorActual ? 'selected' : ''}>${this.app.utils.escaparHTML(s.nombre)}</option>`;
+            opciones.push(html`<option value="${s.id}" ${s.id === valorActual ? 'selected' : ''}>${s.nombre}</option>`);
         });
         if (this.app.ui.ingresosHabilitado() && this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID)) {
-            html += `<option value="${this.app.SERVICIO_INGRESOS_ID}" ${this.app.SERVICIO_INGRESOS_ID === valorActual ? 'selected' : ''}>Ingresos</option>`;
+            opciones.push(html`<option value="${this.app.SERVICIO_INGRESOS_ID}" ${this.app.SERVICIO_INGRESOS_ID === valorActual ? 'selected' : ''}>Ingresos</option>`);
         }
-        montar(select, crudo(html));
+        montar(select, html`${opciones}`);
         const csd = document.getElementById('calculador-servicio-csd');
         if (csd?._customSelect) csd._customSelect.refresh();
         if (valorActual && !this.servicios.find(s => s.id === valorActual)) {
@@ -332,13 +332,13 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         const mesesOrdenados = Array.from(mesesConFacturas).sort((a, b) => b.localeCompare(a));
         if (mesesOrdenados.length === 0) {
             const clave = `${añoSeleccionado}-${String(mesSeleccionado + 1).padStart(2, '0')}`;
-            return `<option value="${clave}">${meses[mesSeleccionado]} ${añoSeleccionado}</option>`;
+            return html`<option value="${clave}">${meses[mesSeleccionado]} ${añoSeleccionado}</option>`;
         }
-        return mesesOrdenados.map(clave => {
+        return html`${mesesOrdenados.map(clave => {
             const [año, mes] = clave.split('-');
             const esSeleccionado = parseInt(año) === añoSeleccionado && parseInt(mes) - 1 === mesSeleccionado;
-            return `<option value="${clave}" ${esSeleccionado ? 'selected' : ''}>${meses[parseInt(mes) - 1]} ${año}</option>`;
-        }).join('');
+            return html`<option value="${clave}" ${esSeleccionado ? 'selected' : ''}>${meses[parseInt(mes) - 1]} ${año}</option>`;
+        })}`;
     }
 
     abrirDebugEstadisticas(tipo) {
@@ -431,23 +431,23 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
 
         const lista = document.getElementById('modal-debug-lista');
         if (items.length === 0) {
-            montar(lista, crudo(`<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`));
+            montar(lista, html`<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`);
         } else {
-            montar(lista, crudo(items.map(({ servicio, factura }) => {
+            montar(lista, html`${items.map(({ servicio, factura }) => {
                 const moneda = factura.moneda || 'ars';
                 const estadoBadge = factura.pagada
-                    ? `<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.app.utils.formatearFecha(factura.fechaPago) : ''}</span>`
-                    : `<span class="debug-badge debug-badge-warning">Pendiente</span>`;
-                return `
+                    ? html`<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.app.utils.formatearFecha(factura.fechaPago) : ''}</span>`
+                    : html`<span class="debug-badge debug-badge-warning">Pendiente</span>`;
+                return html`
     <div class="debug-card">
-        <div class="debug-card-title">${this.app.utils.escaparHTML(servicio.nombre)}</div>
+        <div class="debug-card-title">${servicio.nombre}</div>
         <div class="d-flex justify-content-between align-items-center text-muted text-sm">
             <span>Vence: ${this.app.utils.formatearFecha(factura.fecha)}</span>
             <span>${this.app.utils.formatearMoneda(factura.monto, moneda)}</span>
         </div>
         <div class="mt-1">${estadoBadge}</div>
     </div>`;
-            }).join('')));
+            })}`);
         }
 
         this.app.ui.abrirModal('modal-debug-estadisticas');

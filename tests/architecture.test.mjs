@@ -279,3 +279,20 @@ test('Arquitectura CSS: las 5 hojas de assets/styles/ se cargan en orden de casc
     const links = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="\.\/([^"]+)"/g)].map(m => m[1]);
     assert.deepEqual(links, esperado, 'orden de cascada de las hojas CSS en index.html');
 });
+
+test('HTML seguro: ninguna plantilla usa crudo() con datos; solo constantes del código (lista blanca)', () => {
+    // crudo() marca HTML como confiable sin escapar: solo para constantes fijas. Cada uso nuevo debe revisarse y agregarse acá.
+    const permitidos = { 'src/ui/vista-servicios.js': 1 };   // ícono SVG de alerta de categoría (path fijo)
+    const usos = Object.fromEntries(srcFiles
+        .filter(f => f !== 'src/core/html.js')
+        .map(f => [f, (fs.readFileSync(f, 'utf8').match(/(?<![\w$.])crudo\(/g) || []).length])
+        .filter(([, n]) => n > 0));
+    assert.deepEqual(usos, permitidos);
+});
+
+test('HTML seguro: no quedan escapes manuales (escaparHTML / escapeHtml) fuera de core/', () => {
+    const violaciones = srcFiles
+        .filter(f => !f.startsWith('src/core/'))
+        .filter(f => /escaparHTML|escaparAtributoHTML|escapeHtml/.test(fs.readFileSync(f, 'utf8')));
+    assert.deepEqual(violaciones, [], 'Usá html`...`: escapa cada interpolación');
+});

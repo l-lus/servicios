@@ -1,4 +1,4 @@
-import { crudo, html, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -26,7 +26,7 @@ export class CategoriaService {
         const sel = document.getElementById(selectId);
         if (!sel) return;
         const cats = this.getCategorias();
-        montar(sel, crudo(`<option value="">Sin categoría</option>`));
+        montar(sel, html`<option value="">Sin categoría</option>`);
         cats.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -63,7 +63,7 @@ export class CategoriaService {
         if (!lista) return;
         const cats = this.getCategorias();
         if (cats.length === 0) {
-            montar(lista, crudo(`<span class="sin-categorias-text">Sin categorías definidas</span>`));
+            montar(lista, html`<span class="sin-categorias-text">Sin categorías definidas</span>`);
             return;
         }
         montar(lista, html`${cats.map(c => html`
