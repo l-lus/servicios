@@ -1085,3 +1085,53 @@ form.modal-content {
 #tarjetas-columnas[hidden] {
     display: none;
 }
+
+/* ============================================================
+           TODOS LOS MODALES: encabezado y pie fijos, el centro se desplaza
+        ============================================================ */
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow: hidden;
+}
+
+.modal-content > :is(.modal-header, .modal-panel-header, .modal-facturas-header, .form-actions, .form-actions2, .modal-footer, .modal-facturas-footer, .modal-panel-footer) {
+    flex-shrink: 0;
+    background: var(--bg-card);
+    z-index: 2;
+}
+
+.modal-content > :is(.modal-header, .modal-panel-header, .modal-facturas-header) {
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-content > :is(.form-actions, .form-actions2, .modal-footer, .modal-facturas-footer, .modal-panel-footer) {
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border);
+}
+
+.modal-content > :is(.modal-body, .modal-panel-body, .modal-form-body, .facturas-lista, .info-content, .atajos-opciones, .temas-lista) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: var(--space-xs);
+}
+
+.modal-content > .atajos-opciones {
+    max-height: none;
+}
+
+.modal-content > .info-content {
+    max-height: none;
+}
+
+/* Un modal sin encabezado propio no necesita separador, y el de confirmación es chico */
+#modal-confirmar .modal-content {
+    max-width: 420px;
+}

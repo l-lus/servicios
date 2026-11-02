@@ -980,103 +980,228 @@
 }
 
 /* ============================================================
-           CALENDARIO DE VENCIMIENTOS
+           CALENDARIO DE VENCIMIENTOS (mismo diseño que el calendario de Horarios)
         ============================================================ */
-.cal-nav {
+.calendario-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-md);
+    margin-top: var(--space-sm);
+    min-height: var(--touch-target);
 }
 
-.cal-titulo {
-    flex: 1;
-    padding: var(--space-xs) var(--space-sm);
-    border: none;
-    background: transparent;
-    color: var(--text-main);
-    font-size: var(--text-md);
+.calendario-titulo {
+    padding-left: var(--space-lg);
+    font-size: var(--text-base);
     font-weight: var(--fw-semibold);
+    color: var(--text-main);
     cursor: pointer;
 }
 
-.cal-titulo::first-letter {
-    text-transform: uppercase;
+#calendario-nav-botones {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
 }
 
-.cal-flecha-izq {
+#calendario-nav-botones button {
+    flex-shrink: 0;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    padding: var(--space-xs);
+    border: none;
+    background: none;
+    transition: filter var(--transition-ui);
+}
+
+#calendario-nav-botones .btn-hoy-calendario {
+    width: auto;
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--text-base);
+    font-weight: var(--fw-semibold);
+}
+
+.icon-rotate-90 {
     transform: rotate(90deg);
 }
 
-.cal-flecha-der {
+.icon-rotate-neg90 {
     transform: rotate(-90deg);
 }
 
-.cal-grilla {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.cal-semana {
+.calendario-grid {
+    position: relative;
+    isolation: isolate;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: var(--space-xs);
+    margin-top: var(--space-md);
+    -webkit-user-select: none;
+    user-select: none;
 }
 
-.cal-cabecera {
+/* Banda de la semana actual: absoluta dentro de la fila de la grilla, detrás de las celdas */
+.calendario-semana-actual {
+    position: absolute;
+    inset: 6px -6px;
+    border-radius: var(--radius-full);
+    background: var(--input-bg);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.calendario-dia-nombre {
+    padding: var(--space-xs) 0;
     text-align: center;
     font-size: var(--text-sm);
-    color: var(--text-muted);
-    font-weight: var(--fw-medium);
+    font-weight: var(--fw-semibold);
+    color: var(--text-main);
 }
 
-.cal-vacio {
-    aspect-ratio: 1;
-}
-
-.cal-dia {
+.calendario-dia {
     --cal-color: transparent;
+    --cal-dia-tam: var(--text-sm);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     aspect-ratio: 1;
-    padding: 0;
-    border: 2px solid transparent;
-    border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--cal-color) 22%, transparent);
-    color: var(--text-main);
-    font-size: var(--text-base);
+    border-radius: 50%;
+    font-size: var(--cal-dia-tam);
+    font-weight: var(--fw-medium);
+    color: var(--text-muted);
+    transition: opacity var(--dur-fast), background-color var(--dur-anim), box-shadow var(--dur-anim), color var(--dur-anim), padding var(--dur-anim);
+}
+
+.calendario-dia.vacio {
+    visibility: hidden;
+}
+
+.calendario-dia.cursor-pointer {
     cursor: pointer;
-    transition: transform var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 
-.cal-dia:hover {
-    transform: scale(1.06);
-}
-
-.cal-dia--hoy {
-    border-color: var(--text-main);
+/* Hoy se marca con el número más grande (con o sin facturas) y, sin facturas, con el color del texto en vez del atenuado */
+.calendario-dia.hoy {
+    --cal-dia-tam: calc(var(--text-sm) * 1.25);
     font-weight: var(--fw-bold);
 }
 
-.cal-dia-cantidad {
+.calendario-dia.hoy.dia-sin-factura {
+    color: var(--text-main);
+}
+
+.calendario-dia.dia-sin-factura.no-laborable {
+    opacity: 0.5;
+}
+
+/* Un día con facturas: disco algo más oscuro que el color del día y, separado por un hueco, un aro fino del mismo color */
+.calendario-dia[data-n] {
+    padding: 4px;
+    background-clip: content-box;
+    color: var(--text-main);
+    background-color: color-mix(in srgb, var(--cal-color) 80%, var(--bg-card));
+    box-shadow: inset 0 0 0 1.5px var(--cal-color);
+}
+
+.dia-vencido { --cal-color: var(--c-red); }
+.dia-urgente { --cal-color: var(--c-orange); }
+.dia-proximo { --cal-color: var(--c-gold); }
+.dia-lejano { --cal-color: var(--c-blue); }
+.dia-pagado { --cal-color: var(--c-green); }
+.dia-favor { --cal-color: var(--c-purple); }
+
+/* Con 2 o más facturas el día lleva un puntito de aviso arriba a la derecha */
+.calendario-dia[data-n]:not([data-n="1"])::after {
+    content: '';
     position: absolute;
-    top: 2px;
-    right: 4px;
-    font-size: var(--text-xs);
-    line-height: 1;
+    top: calc(6% - 2.5px);
+    right: calc(6% - 2.5px);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: var(--text-main);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+}
+
+/* Selector de meses (al tocar el título) */
+#calendario-selector-meses {
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    align-content: start;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+.btn-mes-calendario {
+    height: var(--touch-target);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+}
+
+.btn-mes-calendario.activo {
+    border-color: var(--c-active);
+    background: var(--c-blue);
+    color: var(--c-white);
+}
+
+.selector-meses-anio-header {
+    grid-column: 1 / -1;
+    margin-bottom: var(--space-2xs);
+    padding: var(--space-xsm) var(--space-xs) var(--space-2xs);
+    border-bottom: 1px solid var(--border);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-bold);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: var(--text-muted);
 }
 
-.cal-dia--vencido { --cal-color: var(--c-red); }
-.cal-dia--urgente { --cal-color: var(--c-orange); }
-.cal-dia--proximo { --cal-color: var(--c-gold); }
-.cal-dia--lejano { --cal-color: var(--c-blue); }
-.cal-dia--pagado { --cal-color: var(--c-green); }
-.cal-dia--favor { --cal-color: var(--c-purple); }
+/* Entrada inicial (una sola vez al abrir): pop escalonado en los días con facturas, el número sube un instante después y el remate cierra la secuencia */
+.calendario-grid {
+    --cal-fin: calc(var(--dur-cal-espera) + var(--cal-n, 0) * var(--cal-paso, 0ms) + var(--dur-cal-entrada));
+}
+
+.calendario-dia.cal-entrada {
+    animation-name: calendarioEntradaDia;
+    animation-duration: var(--dur-cal-entrada);
+    animation-timing-function: var(--ease-pop);
+    animation-delay: calc(var(--dur-cal-espera) + var(--i, 0) * var(--cal-paso, 0ms));
+    animation-fill-mode: backwards;
+}
+
+.calendario-dia.cal-entrada .calendario-dia-num {
+    display: inline-block;
+    animation-name: calendarioEntradaNumero;
+    animation-duration: var(--dur-cal-numero);
+    animation-timing-function: ease-out;
+    animation-delay: calc(var(--dur-cal-espera) + var(--i, 0) * var(--cal-paso, 0ms) + 100ms);
+    animation-fill-mode: backwards;
+}
+
+.calendario-dia.cal-entrada-remate {
+    animation-name: calendarioEntradaDia;
+    animation-duration: var(--dur-cal-entrada);
+    animation-timing-function: var(--ease-pop);
+    animation-delay: var(--cal-fin);
+    animation-fill-mode: backwards;
+}
+
+/* Destello de "hoy" al tocar el botón Hoy */
+.calendario-dia.hoy.campo-flash {
+    animation: calendario-hoy-flash 500ms ease-in-out 2;
+}
+
+.calendario-dia.hoy.campo-flash[data-n] {
+    z-index: 2;
+    animation: calendario-hoy-pulso 600ms ease-in-out 2;
+}
 
 .cal-leyenda {
     display: flex;
@@ -1106,6 +1231,31 @@
 .cal-alerta {
     color: var(--c-red);
     font-weight: var(--fw-semibold);
+}
+
+@keyframes calendarioEntradaDia {
+    from { opacity: 0; transform: scale(0.55); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes calendarioEntradaNumero {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes calendario-hoy-flash {
+    0%, 60%, 100% { outline: 2px solid transparent; outline-offset: 1px; }
+    20%, 40% { outline: 2px solid var(--text-main); outline-offset: 1px; }
+}
+
+@keyframes calendario-hoy-pulso {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent) brightness(1); }
+    50% { transform: scale(1.16); filter: drop-shadow(0 0 3px var(--cal-color)) drop-shadow(0 0 7px var(--cal-color)) brightness(1.3); }
+}
+
+:root[data-motion="reduce"] .calendario-dia.cal-entrada,
+:root[data-motion="reduce"] .calendario-dia.cal-entrada .calendario-dia-num {
+    animation: none;
 }
 
 .cal-item {

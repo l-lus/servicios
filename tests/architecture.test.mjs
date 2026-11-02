@@ -320,7 +320,7 @@ test('Tokens: toda variable CSS usada está definida (en tokens.css o en la prop
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
     const usadas = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(m => m[1]));
     // Las asigna JS con style.setProperty (la CSP no admite style en línea)
-    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y']);
+    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i']);
     const sinDefinir = [...usadas].filter(v => !definidas.has(v) && !dinamicas.has(v)).sort();
     assert.deepEqual(sinDefinir, [], 'Variables usadas sin definir');
 });

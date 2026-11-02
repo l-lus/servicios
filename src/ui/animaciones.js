@@ -318,7 +318,78 @@ export const Anim = (function () {
         }, getCSSdur('--dur-collapse') + 20);
     }
 
+    // ── Deslizamiento horizontal (cambio de mes del calendario): el contenido viejo sale y el nuevo entra desde el costado ──
+    const _slideEstado = new WeakMap();
+
+    function _limpiarClonVisual(clon) {
+        clon.removeAttribute('id');
+        clon.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+        return clon;
+    }
+
+    function _finalizarSlidePendiente(el) {
+        const estado = _slideEstado.get(el);
+        if (!estado) return;
+        clearTimeout(estado.timeout);
+        el.style.display = '';
+        estado.wrapper.parentNode?.insertBefore(el, estado.wrapper);
+        estado.wrapper.remove();
+        _slideEstado.delete(el);
+    }
+
+    /** `delta` > 0: el nuevo contenido entra por la derecha; < 0: por la izquierda. `mutarFn` cambia el contenido de `el`. */
+    function slide(el, delta, mutarFn) {
+        if (!el) { mutarFn(); return; }
+        _finalizarSlidePendiente(el);
+        if (Motion.reducido() || !el.offsetParent) { mutarFn(); return; }
+
+        const rectViejo = el.getBoundingClientRect();
+        const anchoViejo = rectViejo.width, altoViejo = rectViejo.height;
+        const margenTop = getComputedStyle(el).marginTop;
+
+        const snapViejo = _limpiarClonVisual(el.cloneNode(true));
+        snapViejo.style.cssText = `position:absolute;top:0;left:0;width:${anchoViejo}px;pointer-events:none;`;
+
+        el.style.visibility = 'hidden';
+        mutarFn();
+
+        const rectNuevo = el.getBoundingClientRect();
+        const anchoNuevo = rectNuevo.width, altoNuevo = rectNuevo.height;
+        const snapNuevo = _limpiarClonVisual(el.cloneNode(true));
+        snapNuevo.style.cssText = `position:absolute;top:0;width:${anchoNuevo}px;pointer-events:none;left:${delta > 0 ? anchoViejo : -anchoNuevo}px;`;
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `position:relative;overflow:hidden;pointer-events:none;width:${anchoViejo}px;height:calc(${altoViejo}px + ${margenTop});`;
+        wrapper.append(snapViejo, snapNuevo);
+
+        el.parentNode.insertBefore(wrapper, el);
+        el.style.display = 'none';
+        el.style.visibility = '';
+
+        void wrapper.offsetHeight;
+        const dur = getCSSdur('--dur-calendario');
+        const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+        snapViejo.style.transition = `transform ${dur}ms ${easing}`;
+        snapNuevo.style.transition = `transform ${dur}ms ${easing}`;
+        if (Math.abs(altoNuevo - altoViejo) > 0.5) {
+            wrapper.style.transition = `height ${dur}ms ${easing}`;
+            wrapper.style.height = `calc(${altoNuevo}px + ${margenTop})`;
+        }
+        const tx = `${delta > 0 ? -anchoViejo : anchoViejo}px`;
+        snapViejo.style.transform = `translateX(${tx})`;
+        snapNuevo.style.transform = `translateX(${tx})`;
+
+        const timeout = setTimeout(() => {
+            el.style.display = '';
+            wrapper.parentNode?.insertBefore(el, wrapper);
+            wrapper.remove();
+            _slideEstado.delete(el);
+        }, dur + 20);
+        _slideEstado.set(el, { timeout, wrapper });
+    }
+
     return {
+        slide,
         aArray, getCSSdur, durSiAnima, esperar, esperarAnim, estaColapsado,
         mutacion, fantasmaSiVisible, marcarNuevo, valor, diffLista, morph,
         initColapsables, scrollAlExpandir

@@ -24,7 +24,7 @@ export const CalendarioVencimientos = {
     },
 
     /**
-     * Grilla de un mes (semanas de lunes a domingo). Cada celda es `null` (relleno) o
+     * Grilla de un mes (semanas de domingo a sábado, como en Horarios). Cada celda es `null` (relleno) o
      * { fecha, dia, esHoy, facturas: [{ servicio, factura, clase }], clase, total: { ars, usd } }.
      * `resumen` cuenta lo que vence en el mes: { facturas, pagadas, pendientes, vencidas, total, pendiente }.
      */
@@ -54,7 +54,7 @@ export const CalendarioVencimientos = {
 
         const hoyISO = fechaLocalISO(hoy);
         const diasEnMes = new Date(anio, mes + 1, 0).getDate();
-        const primerDia = (new Date(anio, mes, 1).getDay() + 6) % 7;   // lunes = 0
+        const primerDia = new Date(anio, mes, 1).getDay();   // domingo = 0
         const celdas = Array(primerDia).fill(null);
         for (let dia = 1; dia <= diasEnMes; dia++) {
             const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;

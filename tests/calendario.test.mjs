@@ -24,14 +24,15 @@ test('claseVencimiento: coincide con los umbrales de la lista (vencido, urgente 
     }
 });
 
-test('construirMes: semanas de lunes a domingo, relleno, hoy y largo del mes', () => {
+test('construirMes: semanas de domingo a sábado, relleno, hoy y largo del mes', () => {
     const m = C.construirMes([], { anio: 2026, mes: 10 }, HOY);   // noviembre 2026 empieza en domingo
-    assert.equal(m.semanas.length, 6);
+    assert.equal(m.semanas.length, 5);
     assert.ok(m.semanas.every(s => s.length === 7));
-    assert.deepEqual(m.semanas[0].map(c => c && c.dia), [null, null, null, null, null, null, 1]);
+    assert.deepEqual(m.semanas[0].map(c => c && c.dia), [1, 2, 3, 4, 5, 6, 7]);
+    assert.deepEqual(C.construirMes([], { anio: 2026, mes: 11 }, HOY).semanas[0].map(c => c && c.dia), [null, null, 1, 2, 3, 4, 5], 'diciembre de 2026 empieza en martes');
     assert.equal(m.semanas.flat().filter(Boolean).length, 30);
     assert.deepEqual(m.semanas.flat().filter(c => c?.esHoy).map(c => c.dia), [15]);
-    assert.equal(C.construirMes([], { anio: 2027, mes: 1 }, HOY).semanas.length, 4, 'febrero de 2027 empieza en lunes: 4 semanas exactas');
+    assert.equal(C.construirMes([], { anio: 2026, mes: 1 }, HOY).semanas.length, 4, 'febrero de 2026 empieza en domingo: 4 semanas exactas');
 });
 
 test('construirMes: facturas por día, clase más urgente, totales y resumen', () => {
