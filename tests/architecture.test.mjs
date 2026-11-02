@@ -331,3 +331,48 @@ test('Tokens: la fuente Inter está declarada, existe en disco y se precachea', 
     assert.ok(fs.existsSync('assets/fonts/inter-latin.woff2'));
     assert.match(fs.readFileSync('sw.js', 'utf8'), /assets\/fonts\/inter-latin\.woff2/);
 });
+
+// ─── Tokens de diseño: lo que ya existe como token no se vuelve a escribir a mano ───
+const CSS_DIR = 'assets/styles';
+const cssSinTokens = () => fs.readdirSync(CSS_DIR)
+    .filter(f => f.endsWith('.css') && f !== 'tokens.css')
+    .map(f => ({ f, lineas: fs.readFileSync(`${CSS_DIR}/${f}`, 'utf8').replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, '')).split('\n') }));
+
+function violacionesCss(regex, { permitir = () => false } = {}) {
+    return cssSinTokens().flatMap(({ f, lineas }) => lineas
+        .map((l, i) => [i + 1, l])
+        .filter(([, l]) => regex.test(l) && !permitir(l))
+        .map(([n, l]) => `${f}:${n}: ${l.trim()}`));
+}
+
+test('Tokens: z-index solo con var(--z-*) (la escala vive en tokens.css)', () => {
+    assert.deepEqual(violacionesCss(/z-index:\s*-?\d/), []);
+});
+
+test('Tokens: sin colores ni sombras con valores fijos fuera de tokens.css (salvo las muestras de tema)', () => {
+    const v = violacionesCss(/#[0-9a-fA-F]{3,8}\b|\brgba?\(/, { permitir: l => /^\s*--muestra-/.test(l) });
+    assert.deepEqual(v, [], 'usar un token (--c-*, --text-*, --shadow-*, --overlay-*) o agregarlo a tokens.css');
+});
+
+test('Tokens: sin font-size, font-weight ni border-radius numéricos (salvo 50% y 0)', () => {
+    const v = violacionesCss(/(font-size|font-weight):\s*[\d.]|border-radius:\s*(?!0\b|50%)[\d.]/);
+    assert.deepEqual(v, []);
+});
+
+test('Tokens: sin fallbacks en var() de tokens definidos (un fallback distinto del token engaña)', () => {
+    const tokens = fs.readFileSync(`${CSS_DIR}/tokens.css`, 'utf8');
+    const definidos = new Set([...tokens.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
+    const v = violacionesCss(/var\(--[\w-]+\s*,/, { permitir: l => [...l.matchAll(/var\((--[\w-]+)\s*,/g)].every(m => !definidos.has(m[1])) });
+    assert.deepEqual(v, []);
+});
+
+test('Tokens: todo token definido en tokens.css se usa (en CSS, JS o HTML) o es parte de una escala reservada', () => {
+    const tokens = fs.readFileSync(`${CSS_DIR}/tokens.css`, 'utf8');
+    const definidos = [...new Set([...tokens.matchAll(/^\s*(--[\w-]+)\s*:/gm)].map(m => m[1]))];
+    const todo = fs.readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`${CSS_DIR}/${f}`, 'utf8')).join('\n')
+        + srcFiles.map(f => fs.readFileSync(f, 'utf8')).join('\n') + fs.readFileSync('index.html', 'utf8');
+    // Escalas completas que se dejan definidas aunque hoy no se usen todos los escalones
+    const reservados = new Set(['--fw-normal', '--radius-xl', '--icon-sm', '--icon-md', '--icon-lg']);
+    const sinUso = definidos.filter(t => !reservados.has(t) && !new RegExp(`${t}(?![\\w-])`).test(todo.replace(new RegExp(`^\\s*${t}\\s*:.*$`, 'gm'), '')));
+    assert.deepEqual(sinUso, [], 'borrar el token o usarlo');
+});

@@ -12,7 +12,7 @@
     height: 100dvh;
     padding: var(--space-lg);
     background: var(--bg-card);
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-panel-lateral);
     overscroll-behavior: contain;
     transition: right var(--transition-base);
 }

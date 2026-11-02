@@ -50,9 +50,7 @@
     --c-blue: rgba(76, 114, 172, 0.8);
     --c-green: rgba(76, 172, 140, 0.8);
     --c-green-bg: rgba(96, 172, 148, 0.1);
-    --c-red-bg: rgba(172, 90, 76, 0.1);
     --c-active: var(--c-blue);
-    --c-blue-bg: rgba(76, 114, 172, 0.1);
     --c-green-soft: rgba(76, 172, 140, 0.2);
     --c-gold-soft: rgba(172, 155, 76, 0.2);
     --c-blue-soft: rgba(76, 114, 172, 0.2);
@@ -91,7 +89,6 @@
     --overlay-suave: rgba(0, 0, 0, 0.3);
     --touch-target: 48px;
     --app-header-h: 60px;
-    --lh-tight: 1.2;
     --lh-normal: 1.35;
     --lh-relaxed: 1.5;
     /* Escala de apilado. Locales (dentro de un componente): fondo < sobre < sticky < animando < elevado.
@@ -116,6 +113,10 @@
 
     /* Propios de Servicios */
     --text-inv: #ffffff;
+    --shadow-chip: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-punto: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-panel-lateral: -2px 0 10px rgba(0, 0, 0, 0.1);
+    --text-shadow-fuerte: 0 0 8px rgba(0, 0, 0, 0.8);
     --shadow-float: 0 4px 16px rgba(0, 0, 0, 0.3);
     --shadow-modal: 0 10px 40px rgba(0, 0, 0, 0.3);
     --dur-pop: 0.35s;
