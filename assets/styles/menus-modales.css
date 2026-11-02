@@ -45,7 +45,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    padding: 1rem 0;
+    padding: var(--space-lg) 0;
     cursor: pointer;
     color: var(--text-main);
     transition: color var(--transition-fast);
@@ -78,7 +78,7 @@
 }
 
 .menu-version {
-    padding: 0.5rem 0;
+    padding: var(--space-sm) 0;
     font-size: var(--text-sm);
     color: var(--text-muted);
     text-align: center;
@@ -129,7 +129,7 @@
 .moneda-badge {
     display: inline-block;
     margin-left: var(--space-xsm);
-    padding: 0.1rem 0.35rem;
+    padding: var(--space-2xs) var(--space-xsm);
     border-radius: var(--radius-xs);
     font-size: var(--text-xs);
     font-weight: var(--fw-bold);
@@ -161,7 +161,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-xsm);
-    padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+    padding: var(--space-xsm) var(--space-md) var(--space-xsm) var(--space-sm);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--input-bg);

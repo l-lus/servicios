@@ -376,3 +376,9 @@ test('Tokens: todo token definido en tokens.css se usa (en CSS, JS o HTML) o es 
     const sinUso = definidos.filter(t => !reservados.has(t) && !new RegExp(`${t}(?![\\w-])`).test(todo.replace(new RegExp(`^\\s*${t}\\s*:.*$`, 'gm'), '')));
     assert.deepEqual(sinUso, [], 'borrar el token o usarlo');
 });
+
+test('Tokens: espaciado (gap/padding/margin) con la escala --space-*; solo quedan hairlines de 1px, negativos y huecos de layout >= 2rem', () => {
+    const v = violacionesCss(/(?:^|[{;])\s*(gap|row-gap|column-gap|padding|margin)[\w-]*:[^;]*(?<![\w.-])(?!1px\b)(0?\.\d+|[0-1](\.\d+)?)(rem|px)\b/,
+        { permitir: l => /0\.875rem/.test(l) && /padding:/.test(l) });
+    assert.deepEqual(v, [], 'usar var(--space-*) (xs, sm, md, lg…) o agregar el escalón a tokens.css');
+});

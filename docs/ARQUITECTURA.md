@@ -64,3 +64,12 @@ Header (perfil) → modal Perfiles → modal Ajustes → cada opción. `ModalMan
 
 ## Disposición de tarjetas
 PC: dos columnas libres (`{ izq, der }`). Celular: una lista independiente. Lógica pura en `services/orden-cards.js`; UI en `ui/orden-tarjetas.js`.
+
+## Tokens de diseño (CSS)
+Todo valor visual sale de `assets/styles/tokens.css`; lo vigilan los tests `Tokens:` de `tests/architecture.test.mjs`.
+- Apilado: `--z-*` (locales: fondo < sobre < sticky < animando < elevado; globales: header < agregar-overlay < agregar < ajustes < modal < menu < calc < toast). Nada de `z-index` numérico.
+- Color y sombra: `--c-*`, `--c-*-soft` (fondos de badges), `--text-*`, `--shadow-*`, `--overlay-*`. Nada de `#hex` ni `rgba()` fuera de `tokens.css` (salvo `--muestra-*` de las vistas previas de tema).
+- Espacio: `--space-*` en gap/padding/margin (solo se admiten hairlines de 1px, negativos y huecos de layout ≥ 2rem). Tipografía: `--text-*`, `--fw-*`, `--lh-*`; radios: `--radius-*` (`50%` para círculos).
+- Tiempos y curvas: `--dur-*`, `--ease-*`, `--transition-*`.
+- Sin fallbacks en `var(--token, …)` para tokens definidos. Un token sin uso se borra (salvo escalas reservadas: `--fw-normal`, `--radius-xl`, `--icon-*`).
+- Token nuevo: se define en `tokens.css` (y se redefine en cada tema si cambia con él) y se usa en el mismo cambio.
