@@ -1,3 +1,4 @@
+import { BienvenidaModal } from './bienvenida-modal.js';
 import { CalendarioVista } from './calendario-vista.js';
 import { ReporteModal } from './reporte-modal.js';
 import { RespaldoModal } from './respaldo-modal.js';
@@ -143,6 +144,7 @@ export class GestionServicios {
         this.respaldo = new RespaldoModal(this);
         this.reporte = new ReporteModal(this);
         this.calendario = new CalendarioVista(this);
+        this.bienvenida = new BienvenidaModal(this);
         this.vista = new VistaServicios(this);
         this.listeners = new ListenersApp(this);
         this.servicio = new ServicioService(this);
@@ -152,6 +154,7 @@ export class GestionServicios {
 
         this.init();
         this.gistAutoSyncInit();
+        this.bienvenida.chequearYMostrar();
     }
 
     // ========================================
@@ -237,14 +240,7 @@ export class GestionServicios {
             this.vista.aplicarOrden();
         });
 
-        document.getElementById('select-vista').addEventListener('change', (e) => {
-            const val = e.target.value;
-            this._vistaEstados = val === 'estados';
-            this._agrupacionActiva = val === 'categorias';
-            StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this._agrupacionActiva ? 'on' : 'off');
-            StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS, this._vistaEstados ? 'true' : 'false');
-            this.vista.renderServicios();
-        });
+        document.getElementById('select-vista').addEventListener('change', (e) => this.vista.cambiarVista(e.target.value));
 
         // Listeners para sincronizar botón toggle de monto con el input
         document.getElementById('factura-monto').addEventListener('input', (e) => {

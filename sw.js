@@ -2,7 +2,7 @@
 // así que solo se tocan las cachés que empiezan con CACHE_PREFIX
 // (CACHE_NAME tiene que empezar con ese prefijo).
 const CACHE_PREFIX = 'SERVICIOS-';
-const CACHE_NAME = `${CACHE_PREFIX}v261101.2317`;
+const CACHE_NAME = `${CACHE_PREFIX}v261101.2318`;
 
 const urlsToCache = [
   './',
@@ -35,6 +35,7 @@ const urlsToCache = [
   './src/ui/animaciones.js',
   './src/ui/aviso-actualizacion.js',
   './src/ui/ayuda-buscador.js',
+  './src/ui/bienvenida-modal.js',
   './src/ui/calculador-service.js',
   './src/ui/calendario-vista.js',
   './src/ui/categoria-service.js',

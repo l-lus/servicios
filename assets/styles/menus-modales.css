@@ -628,3 +628,26 @@ mark.ayuda-resaltado--activa {
 #reporte-secciones[hidden] {
     display: none;
 }
+
+/* Asistente de bienvenida */
+.bienvenida-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+}
+
+.bienvenida-texto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    font-size: var(--text-base);
+}
+
+.bienvenida-vistas {
+    margin-top: var(--space-sm);
+}
+
+.bienvenida-cuerpo .temas-lista {
+    padding-bottom: 0;
+}

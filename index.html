@@ -896,6 +896,42 @@
         </div>
     </div>
 
+    <div class="modal" id="modal-bienvenida" role="dialog" aria-modal="true" aria-labelledby="modal-bienvenida-titulo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-bienvenida-titulo">¡Bienvenido a Servicios!</h3>
+                <p class="text-muted">Cargá tus servicios y sus facturas, y mirá qué vence y cuándo. Podés cambiar todo esto después desde Ajustes.</p>
+            </div>
+            <div class="modal-body d-flex flex-column gap-3 bienvenida-cuerpo">
+                <div class="bienvenida-fila">
+                    <div class="bienvenida-texto">
+                        <strong>Registrar ingresos</strong>
+                        <span class="text-muted">Para ver qué parte de lo que cobrás se va en facturas.</span>
+                    </div>
+                    <button type="button" class="toggle-switch" id="bienvenida-ingresos" role="switch" aria-pressed="false" aria-label="Registrar ingresos"><span class="toggle-thumb"></span></button>
+                </div>
+                <div>
+                    <strong>Mostrar la lista</strong>
+                    <div class="respaldo-tipos bienvenida-vistas" role="group" aria-label="Forma de la lista">
+                        <button type="button" class="respaldo-tipo bienvenida-vista" data-vista="todo" aria-pressed="true">Lista</button>
+                        <button type="button" class="respaldo-tipo bienvenida-vista" data-vista="categorias" aria-pressed="false">Categorías</button>
+                        <button type="button" class="respaldo-tipo bienvenida-vista" data-vista="estados" aria-pressed="false">Estados</button>
+                    </div>
+                </div>
+                <div>
+                    <strong>Tema</strong>
+                    <div class="temas-lista" id="bienvenida-temas"></div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="btn-bienvenida-agregar">
+                    <svg class="icon"><use href="#icon-calendar" /></svg> Agregar mi primer servicio
+                </button>
+                <button type="button" class="btn-secondary" id="btn-bienvenida-omitir">Empezar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="modal-calendario-dia" role="dialog" aria-modal="true" aria-labelledby="calendario-dia-titulo">
         <div class="modal-content">
             <div class="modal-header">

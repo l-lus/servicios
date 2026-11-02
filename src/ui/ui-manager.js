@@ -50,13 +50,19 @@ export class UIManager {
     }
 
     toggleIngresos() {
-        const nuevoEstado = !this.ingresosHabilitado();
+        this.setIngresos(!this.ingresosHabilitado());
+    }
+
+    /** Activa o desactiva el registro de ingresos (`silencioso`: sin aviso ni cierre del menú, para el asistente inicial). */
+    setIngresos(nuevoEstado, { silencioso = false } = {}) {
         StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, nuevoEstado.toString());
         const indicator = document.getElementById('ingresos-indicator');
         if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
         this.app.vista.renderServicios();
-        this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
-        this.cerrarMenuAjustes();
+        if (!silencioso) {
+            this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
+            this.cerrarMenuAjustes();
+        }
         this.app.estadisticas.actualizarSelectServicios();
         const selectServicio = document.getElementById('calculador-servicio');
         if (!nuevoEstado && selectServicio?.value === this.app.SERVICIO_INGRESOS_ID) {

@@ -342,6 +342,15 @@ export class VistaServicios {
         return EstadoFacturas.ordenar(servicios, this.app.ordenActual);
     }
 
+    /** Forma de la lista: 'todo' (plana), 'categorias' (agrupada) o 'estados' (agrupada por estado). */
+    cambiarVista(valor) {
+        this.app._vistaEstados = valor === 'estados';
+        this.app._agrupacionActiva = valor === 'categorias';
+        StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this.app._agrupacionActiva ? 'on' : 'off');
+        StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS, this.app._vistaEstados ? 'true' : 'false');
+        this.renderServicios();
+    }
+
     aplicarOrden() {
         const select = document.getElementById('select-orden');
         this.app.ordenActual = select.value;

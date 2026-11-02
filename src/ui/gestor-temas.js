@@ -35,7 +35,7 @@ function aplicarTema(tema) {
     if (indicador) indicador.textContent = etiquetaTema(_actual);
     const icono = document.getElementById('icon-tema-use');
     if (icono) icono.setAttribute('href', _actual === 'light' ? '#icon-moon' : '#icon-sun');
-    document.querySelectorAll('#temas-lista .tema-opcion').forEach(b => {
+    document.querySelectorAll('.tema-opcion').forEach(b => {
         b.setAttribute('aria-pressed', String(b.dataset.tema === _actual));
     });
     sincronizarBarraDelSistema();
@@ -48,8 +48,8 @@ function elegirTema(tema) {
 }
 
 /** Dibuja las muestras del selector (una por tema). */
-function renderSelector() {
-    const lista = document.getElementById('temas-lista');
+function renderSelector(idLista = 'temas-lista') {
+    const lista = document.getElementById(idLista);
     if (!lista) return;
     montar(lista, html`${TEMAS.map(t => html`
         <button type="button" class="tema-opcion" data-tema="${t.id}" aria-pressed="${t.id === _actual}">
@@ -73,5 +73,5 @@ export const GestorTemas = {
     elegirTema,
     renderSelector,
     actual: () => _actual,
-    cargar() { renderSelector(); aplicarTema(temaGuardado()); },
+    cargar() { renderSelector(); renderSelector('bienvenida-temas'); aplicarTema(temaGuardado()); },
 };
