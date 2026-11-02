@@ -300,9 +300,8 @@ export class ListenersApp {
         // ---- Listeners migrados desde inline handlers en el HTML ----
 
         // btn-reporte-estadisticas
-        document.getElementById('btn-reporte-estadisticas').addEventListener('click', () => {
-            this.app.calculador.generarReporte();
-        });
+        document.getElementById('btn-reporte-estadisticas').addEventListener('click', () => this.app.reporte.abrir());
+        this.app.reporte.bindEventos();
 
         // Modal info-resumen (botón header + botón footer)
         document.getElementById('btn-cerrar-modal-info-resumen').addEventListener('click', () => {

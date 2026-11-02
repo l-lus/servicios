@@ -598,3 +598,33 @@ mark.ayuda-resaltado--activa {
 #respaldo-campos-rango[hidden] {
     display: none;
 }
+
+/* Reporte: formatos en dos columnas y secciones como interruptores */
+.reporte-formatos {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.reporte-seccion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--transition-ui), color var(--transition-ui);
+}
+
+.reporte-seccion[aria-pressed="true"] {
+    border-color: var(--c-blue);
+    color: var(--text-main);
+}
+
+#reporte-secciones[hidden] {
+    display: none;
+}

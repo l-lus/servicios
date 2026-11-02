@@ -282,7 +282,10 @@ test('Arquitectura CSS: las 5 hojas de assets/styles/ se cargan en orden de casc
 
 test('HTML seguro: ninguna plantilla usa crudo() con datos; solo constantes del código (lista blanca)', () => {
     // crudo() marca HTML como confiable sin escapar: solo para constantes fijas. Cada uso nuevo debe revisarse y agregarse acá.
-    const permitidos = { 'src/ui/vista-servicios.js': 1 };   // ícono SVG de alerta de categoría (path fijo)
+    const permitidos = {
+        'src/ui/vista-servicios.js': 1,       // ícono SVG de alerta de categoría (path fijo)
+        'src/services/reporte-html.js': 1,    // hoja de estilos constante del reporte
+    };
     const usos = Object.fromEntries(srcFiles
         .filter(f => f !== 'src/core/html.js')
         .map(f => [f, (fs.readFileSync(f, 'utf8').match(/(?<![\w$.])crudo\(/g) || []).length])

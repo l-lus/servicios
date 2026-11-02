@@ -24,6 +24,7 @@ export const ModalManager = (function () {
         'modal-gist': () => document.getElementById('btn-gist-cerrar')?.click(),
         'modal-gist-novedades': () => document.getElementById('gist-novedades-ignorar-btn')?.click(),
         'modal-resumen-merge': () => document.getElementById('btn-resumen-merge-cancelar')?.click(),
+        'modal-reporte': () => document.getElementById('btn-reporte-cancelar')?.click(),
         'modal-respaldo': () => document.getElementById('btn-respaldo-cancelar')?.click(),
         'modal-debug-estadisticas': () => document.getElementById('btn-cerrar-modal-debug')?.click(),
         // 'menu-ajustes' y 'menu-agregar' los registra la app con registrarAccionVolver

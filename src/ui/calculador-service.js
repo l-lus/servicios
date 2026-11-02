@@ -1,6 +1,5 @@
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
-import { ReportesTexto } from '../services/reportes-texto.js';
 import { Calculadora } from '../services/calculadora.js';
 import { Anim } from './animaciones.js';
 
@@ -128,40 +127,5 @@ ${_varUSDItem}`;
         } else {
             montar(resultadosContainer, resultadosHTML);
         }
-    }
-
-    // ── Reportes ──────────────────────────────────────────────
-    generarReporte() {
-        if (this.app.tipoEstadisticaActual === 'individual') {
-            this._generarReporteIndividual(); return;
-        }
-        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-        const selectMes = document.getElementById('select-mes-estadisticas');
-        let mesSeleccionado, añoSeleccionado;
-        if (selectMes?.value) {
-            const [año, mes] = selectMes.value.split('-');
-            añoSeleccionado = parseInt(año); mesSeleccionado = parseInt(mes) - 1;
-        } else {
-            mesSeleccionado = hoy.getMonth(); añoSeleccionado = hoy.getFullYear();
-        }
-        const categoriaActiva = this.app._estadisticaCategoriaActiva || null;
-        const { texto, nombreArchivo } = ReportesTexto.mensual({
-            servicios: this.servicios, mes: mesSeleccionado, anio: añoSeleccionado, categoria: categoriaActiva,
-            ingresosHabilitado: this.app.ui.ingresosHabilitado(),
-        });
-        this.app.utils.descargarBlob(texto, nombreArchivo);
-        this.app.ui.mostrarToast('Reporte generado', 'success');
-    }
-
-    _generarReporteIndividual() {
-        const servicioId = document.getElementById('calculador-servicio')?.value;
-        const desde = document.getElementById('calculador-desde')?.value;
-        const hasta = document.getElementById('calculador-hasta')?.value;
-        if (!servicioId) { this.app.ui.mostrarToast('Seleccioná un servicio primero', 'info'); return; }
-        const servicio = this.servicios.find(s => s.id === servicioId);
-        if (!servicio) return;
-        const { texto, nombreArchivo } = ReportesTexto.individual({ servicio, desde, hasta });
-        this.app.utils.descargarBlob(texto, nombreArchivo);
-        this.app.ui.mostrarToast('Reporte generado', 'success');
     }
 }

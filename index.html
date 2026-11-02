@@ -855,6 +855,33 @@
         </div>
     </div>
 
+    <div class="modal" id="modal-reporte" role="dialog" aria-modal="true" aria-labelledby="modal-reporte-titulo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-reporte-titulo"><svg class="icon"><use href="#icon-download" /></svg> Reporte</h3>
+                <p class="text-muted" id="reporte-contexto"></p>
+            </div>
+            <div class="modal-body d-flex flex-column gap-3">
+                <div class="respaldo-tipos reporte-formatos" role="group" aria-label="Formato">
+                    <button type="button" class="respaldo-tipo reporte-formato" data-formato="html" aria-pressed="true">HTML</button>
+                    <button type="button" class="respaldo-tipo reporte-formato" data-formato="texto" aria-pressed="false">Texto</button>
+                </div>
+                <div id="reporte-secciones">
+                    <p class="text-muted mb-2">Secciones a incluir</p>
+                    <div class="d-flex flex-column gap-2" id="reporte-secciones-lista"></div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="btn-reporte-generar">
+                    <svg class="icon"><use href="#icon-download" /></svg> Generar
+                </button>
+                <button type="button" class="btn-secondary" id="btn-reporte-cancelar">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="modal-respaldo" role="dialog" aria-modal="true" aria-labelledby="modal-respaldo-titulo">
         <div class="modal-content">
             <div class="modal-header">
