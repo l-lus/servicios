@@ -41,16 +41,16 @@ export class CategoriaService {
     abrirModal(targetSelectId) {
         this.app._categoriaTargetSelect = targetSelectId;
         this.app._modalServicioOrigen = document.querySelector('.modal.active')?.id || null;
-        if (this.app._modalServicioOrigen) this\.app.ui.cerrarModal(this.app._modalServicioOrigen);
+        if (this.app._modalServicioOrigen) this.app.ui.cerrarModal(this.app._modalServicioOrigen);
         document.getElementById('nueva-categoria-nombre').value = '';
         this.renderLista();
-        this\.app.ui.abrirModal('modal-nueva-categoria');
+        this.app.ui.abrirModal('modal-nueva-categoria');
     }
 
     cerrarModal() {
-        this\.app.ui.cerrarModal('modal-nueva-categoria');
+        this.app.ui.cerrarModal('modal-nueva-categoria');
         if (this.app._modalServicioOrigen) {
-            this\.app.ui.abrirModal(this.app._modalServicioOrigen);
+            this.app.ui.abrirModal(this.app._modalServicioOrigen);
             this.app._modalServicioOrigen = null;
         }
     }
@@ -66,10 +66,10 @@ export class CategoriaService {
         }
         lista.innerHTML = cats.map(c => `
         <span class="categoria-tag">
-            <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${this\.app.utils.escaparAtributoHTML(c)}" title="Eliminar">
+            <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${this.app.utils.escaparAtributoHTML(c)}" title="Eliminar">
                 <svg class="icon"><use href="#icon-cancel" /></svg>
             </button>
-            ${this\.app.utils.escaparHTML(c)}
+            ${this.app.utils.escaparHTML(c)}
         </span>`).join('');
     }
 
@@ -78,12 +78,12 @@ export class CategoriaService {
         const cats = this.getCategorias().filter(c => c !== nombre);
         this.saveCategorias(cats);
         this.app.servicios.forEach(s => { if (s.categoria === nombre) s.categoria = ''; });
-        this\.app.storage.guardarDatos();
+        this.app.storage.guardarDatos();
         this.app.guardarEstado(`eliminar categoría (${nombre})`);
         this.poblarSelect('servicio-categoria');
         this.poblarSelect('editar-servicio-categoria');
         this.renderLista();
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
         this.app.toastConDeshacer('Categoría eliminada');
     }
 

@@ -124,7 +124,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         if (pagadasOtroMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes).join('')}</div>`;
         if (!html) html = '<div class="text-center-muted">Sin movimientos este mes</div>';
         document.getElementById('modal-info-resumen-body').innerHTML = html;
-        this\.app.ui.abrirModal('modal-info-resumen');
+        this.app.ui.abrirModal('modal-info-resumen');
     }
 
     toggleResumen() {
@@ -267,7 +267,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         } else {
             mensualContainer.classList.add('hidden'); mensualContainer.classList.remove('visible');
             individualContainer.classList.add('visible'); individualContainer.classList.remove('hidden');
-            this\.app.calculador.calcularPeriodo();
+            this.app.calculador.calcularPeriodo();
         }
     }
 
@@ -290,8 +290,8 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         const csd = document.getElementById('calculador-servicio-csd');
         if (csd?._customSelect) csd._customSelect.refresh();
         if (valorActual && !this.servicios.find(s => s.id === valorActual)) {
-            select.value = ''; this\.app.calculador.calcularPeriodo();
-        } else if (valorActual) { this\.app.calculador.calcularPeriodo(); }
+            select.value = ''; this.app.calculador.calcularPeriodo();
+        } else if (valorActual) { this.app.calculador.calcularPeriodo(); }
     }
 
     inicializarCalculador() {
@@ -300,20 +300,20 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         this.actualizarSelectServicios();
         const csdWrapper = document.getElementById('calculador-servicio-csd');
         if (csdWrapper && !csdWrapper._customSelect) {
-            csdWrapper._customSelect = new CustomSelect(csdWrapper, selectServicio, () => this\.app.calculador.calcularPeriodo());
+            csdWrapper._customSelect = new CustomSelect(csdWrapper, selectServicio, () => this.app.calculador.calcularPeriodo());
         }
         const inputDesde = document.getElementById('calculador-desde');
         const inputHasta = document.getElementById('calculador-hasta');
-        selectServicio.addEventListener('change', () => this\.app.calculador.calcularPeriodo());
-        inputDesde.addEventListener('change', () => this\.app.calculador.calcularPeriodo());
-        inputHasta.addEventListener('change', () => this\.app.calculador.calcularPeriodo());
+        selectServicio.addEventListener('change', () => this.app.calculador.calcularPeriodo());
+        inputDesde.addEventListener('change', () => this.app.calculador.calcularPeriodo());
+        inputHasta.addEventListener('change', () => this.app.calculador.calcularPeriodo());
         document.getElementById('btn-calculador-desde-hoy').addEventListener('click', () => {
             inputDesde.value = inputDesde.value ? '' : this.app.utils.obtenerFechaLocal();
-            this\.app.calculador.calcularPeriodo();
+            this.app.calculador.calcularPeriodo();
         });
         document.getElementById('btn-calculador-hasta-hoy').addEventListener('click', () => {
             inputHasta.value = inputHasta.value ? '' : this.app.utils.obtenerFechaLocal();
-            this\.app.calculador.calcularPeriodo();
+            this.app.calculador.calcularPeriodo();
         });
     }
 
@@ -337,5 +337,117 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
             const esSeleccionado = parseInt(año) === añoSeleccionado && parseInt(mes) - 1 === mesSeleccionado;
             return `<option value="${clave}" ${esSeleccionado ? 'selected' : ''}>${meses[parseInt(mes) - 1]} ${año}</option>`;
         }).join('');
+    }
+
+    abrirDebugEstadisticas(tipo) {
+        const selectMes = document.getElementById('select-mes-estadisticas');
+        let mesSeleccionado, añoSeleccionado;
+        if (selectMes && selectMes.value) {
+            const [año, mes] = selectMes.value.split('-');
+            añoSeleccionado = parseInt(año);
+            mesSeleccionado = parseInt(mes) - 1;
+        } else {
+            const hoy = new Date();
+            mesSeleccionado = hoy.getMonth();
+            añoSeleccionado = hoy.getFullYear();
+        }
+
+        const categoriaActiva = this.app._estadisticaCategoriaActiva || null;
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+
+        const titulos = {
+            'facturas': 'Facturas del mes',
+            'pendientes': 'Pendientes',
+            'pagadas': 'Pagadas este mes',
+            'vencidas': 'Vencidas',
+            'pagado-monto': 'Monto pagado',
+            'ingresos': 'Ingresos',
+        };
+
+        document.getElementById('modal-debug-titulo').textContent = titulos[tipo] || 'Detalle';
+
+        let items = [];
+
+        this.app.servicios.forEach(servicio => {
+            if (categoriaActiva && servicio.id !== this.app.SERVICIO_INGRESOS_ID) {
+                if ((servicio.categoria || '') !== categoriaActiva) return;
+            }
+
+            servicio.facturas.forEach(factura => {
+                const fechaVenc = this.app.utils.parseDate(factura.fecha);
+                fechaVenc.setHours(0, 0, 0, 0);
+                const esDelMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
+                const esServicioIngresos = servicio.id === this.app.SERVICIO_INGRESOS_ID;
+                const moneda = factura.moneda || 'ars';
+
+                let incluir = false;
+
+                switch (tipo) {
+                    case 'facturas':
+                        // Igual que cantidadFacturasMes: del mes, positivas, no ingresos
+                        incluir = esDelMes && !esServicioIngresos && factura.monto >= 0;
+                        break;
+
+                    case 'pendientes':
+                        // Igual que cantidadPendientes: del mes, no pagadas, no vencidas
+                        incluir = esDelMes && !esServicioIngresos && !factura.pagada
+                            && factura.monto > 0 && fechaVenc >= hoy;
+                        break;
+
+                    case 'vencidas':
+                        // Igual que cantidadVencidas: del mes, no pagadas, fecha pasada
+                        incluir = esDelMes && !esServicioIngresos && !factura.pagada
+                            && factura.monto > 0 && fechaVenc < hoy;
+                        break;
+
+                    case 'pagadas':
+                        // Igual que cantidadPagadas: pagada, fechaPago en el mes seleccionado
+                        if (factura.pagada && factura.monto >= 0 && factura.fechaPago && !esServicioIngresos) {
+                            const fp = this.app.utils.parseDate(factura.fechaPago);
+                            incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
+                        }
+                        break;
+
+                    case 'pagado-monto':
+                        // Igual que totalPagadoMesARS/USD: pagada, fechaPago en el mes, no crédito (salvo cat activa)
+                        if (factura.pagada && factura.monto > 0 && factura.fechaPago && !esServicioIngresos
+                            && (!factura.conCredito || categoriaActiva)) {
+                            const fp = this.app.utils.parseDate(factura.fechaPago);
+                            incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
+                        }
+                        break;
+
+                    case 'ingresos':
+                        // Igual que totalIngresosARS/USD: del mes, servicio ingresos
+                        incluir = esDelMes && esServicioIngresos;
+                        break;
+                }
+
+                if (incluir) items.push({ servicio, factura });
+            });
+        });
+
+        const lista = document.getElementById('modal-debug-lista');
+        if (items.length === 0) {
+            lista.innerHTML = `<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`;
+        } else {
+            lista.innerHTML = items.map(({ servicio, factura }) => {
+                const moneda = factura.moneda || 'ars';
+                const estadoBadge = factura.pagada
+                    ? `<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.app.utils.formatearFecha(factura.fechaPago) : ''}</span>`
+                    : `<span class="debug-badge debug-badge-warning">Pendiente</span>`;
+                return `
+    <div class="debug-card">
+        <div class="debug-card-title">${this.app.utils.escaparHTML(servicio.nombre)}</div>
+        <div class="d-flex justify-content-between align-items-center text-muted text-sm">
+            <span>Vence: ${this.app.utils.formatearFecha(factura.fecha)}</span>
+            <span>${this.app.utils.formatearMoneda(factura.monto, moneda)}</span>
+        </div>
+        <div class="mt-1">${estadoBadge}</div>
+    </div>`;
+            }).join('');
+        }
+
+        this.app.ui.abrirModal('modal-debug-estadisticas');
     }
 }

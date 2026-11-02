@@ -88,14 +88,14 @@ export class UIManager {
         StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, nuevoEstado.toString());
         const indicator = document.getElementById('ingresos-indicator');
         if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
         this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
         this.cerrarMenuAjustes();
         this.app.estadisticas.actualizarSelectServicios();
         const selectServicio = document.getElementById('calculador-servicio');
         if (!nuevoEstado && selectServicio?.value === this.app.SERVICIO_INGRESOS_ID) {
             selectServicio.value = '';
-            this\.app.calculador.calcularPeriodo();
+            this.app.calculador.calcularPeriodo();
         }
     }
 
@@ -177,12 +177,12 @@ export class UIManager {
     abrirModalFacturaRapida() {
         if (this.app.servicios.length === 0) {
             this.mostrarToast('Primero debes crear un servicio', 'error');
-            this.app.abrirModalServicio();
+            this.app.servicio.abrirModalServicio();
             return;
         }
         const primero = [...this.app.servicios]
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))[0];
-        this\.app.factura.abrirModal(primero.id, null, 'menu');
+        this.app.factura.abrirModal(primero.id, null, 'menu');
     }
 
     // ── Cotización dólar ──────────────────────────────────────
@@ -211,5 +211,37 @@ export class UIManager {
     // ── Toast ─────────────────────────────────────────────────
     mostrarToast(mensaje, tipo = 'success', duracion = 3000, detalle = null, accion = null) {
         ToastManager.mostrarToast(mensaje, tipo, duracion, detalle, accion);
+    }
+
+    volverDesdeModalActivo() {
+        // 1. Context menu abierto tiene prioridad máxima
+        const ctxMenu = document.getElementById('ctx-menu-servicio');
+        if (ctxMenu && (ctxMenu.classList.contains('active') || ctxMenu.classList.contains('show'))) {
+            ModalManager.ejecutarAccionCierre('ctx-menu-servicio');
+            return;
+        }
+
+        // 2. Modales en pantalla (el superior en orden DOM)
+        const modales = Array.from(document.querySelectorAll('.modal.show, .modal.active'));
+        if (modales.length > 0) {
+            const topModal = modales[modales.length - 1];
+            ModalManager.ejecutarAccionCierre(topModal.id);
+            return;
+        }
+
+        // 3. Paneles laterales
+        const menuAjustes = document.getElementById('menu-ajustes');
+        if (menuAjustes && (menuAjustes.classList.contains('active') || menuAjustes.classList.contains('show'))) {
+            ModalManager.ejecutarAccionCierre('menu-ajustes');
+            return;
+        }
+
+        const menuAgregar = document.getElementById('menu-agregar');
+        if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
+            ModalManager.ejecutarAccionCierre('menu-agregar');
+            return;
+        }
+
+        this.cerrarTodosLosModales();
     }
 }

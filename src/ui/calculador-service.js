@@ -25,7 +25,7 @@ export class CalculadorService {
         this.seleccionados.clear();
         document.getElementById('btn-agregar-servicio').classList.add('modo-calculadora');
         this.actualizar();
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
         if (!silencioso) {
             const flotante = document.getElementById('calculadora-flotante');
             flotante.classList.add('visible');
@@ -51,7 +51,7 @@ export class CalculadorService {
         this.seleccionados.clear();
         document.getElementById('btn-agregar-servicio').classList.remove('modo-calculadora');
         this.actualizar();
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
         document.getElementById('calculadora-flotante').classList.remove('visible');
         if (!silencioso) this.app.ui.mostrarToast('Calculadora Desactivada', 'info');
     }
@@ -65,7 +65,7 @@ export class CalculadorService {
             this.seleccionados.add(servicioId);
         }
         this.actualizar();
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
     }
 
     actualizar() {

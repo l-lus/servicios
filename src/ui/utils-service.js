@@ -123,9 +123,9 @@ export class UtilsService {
     }
 
     postGuardado(descripcion = null) {
-        this\.app.storage.guardarDatos();
+        this.app.storage.guardarDatos();
         this.app.guardarEstado(descripcion);
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
     }
 
     limpiarBusqueda() {
@@ -141,7 +141,7 @@ export class UtilsService {
             this.app._catColapsadas = this.app._catColapsadasAntesBusqueda;
             this.app._catColapsadasAntesBusqueda = null;
         }
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
         setTimeout(() => { this.app.enModoBusqueda = false; }, 100);
     }
 

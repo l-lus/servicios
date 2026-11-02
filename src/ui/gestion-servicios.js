@@ -1,3 +1,6 @@
+import { ListenersApp } from './listeners-app.js';
+import { ServicioService } from './servicio-service.js';
+import { VistaServicios } from './vista-servicios.js';
 import { EventosApp } from '../core/eventos.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -110,6 +113,8 @@ export class GestionServicios {
         this.ingresoActual         = null;
         this.ingresoDesdeMenu      = false;
         this.perfilEditando        = null;
+        this._lpTimer              = null;
+        this._lpFired              = false;
         this._categoriaTargetSelect = null;
         this._modalServicioOrigen  = null;
         this._calcTotalARS         = 0;
@@ -129,6 +134,9 @@ export class GestionServicios {
         this.gist = new GistService(this);
         this.historial_mgr = new HistorialManager(this);
         this.storage = new StorageService(this);
+        this.vista = new VistaServicios(this);
+        this.listeners = new ListenersApp(this);
+        this.servicio = new ServicioService(this);
 
         // Cargar datos del perfil activo - NUEVO (debe ir después de instanciar this.storage)
         this.storage.cargarDatosPerfilActivo();
@@ -146,8 +154,8 @@ export class GestionServicios {
         Anim.initColapsables();
         this.ui.cargarTema();
         this.estadisticas.actualizarResumenMes();
-        this.renderServicios();
-        this.setupEventListeners();
+        this.vista.renderServicios();
+        this.listeners.setupEventListeners();
         this.historial_mgr.actualizarBotones();
         this.ui.cargarCotizacionDolar();
 
@@ -195,7 +203,7 @@ export class GestionServicios {
         // Restaurar estado de servicios colapsados
         const serviciosState = StorageHelper.getItem(STORAGE_KEYS.SERVICIOS_COLLAPSE) || 'semi-collapsed';
         this.serviciosCollapseState = serviciosState;
-        this.aplicarEstadoServicios(serviciosState);
+        this.vista.aplicarEstadoServicios(serviciosState);
 
         // Botón ordenar
         document.getElementById('btn-sort').addEventListener('click', () => {
@@ -216,7 +224,7 @@ export class GestionServicios {
         });
 
         document.getElementById('select-orden').addEventListener('change', () => {
-            this.aplicarOrden();
+            this.vista.aplicarOrden();
         });
 
         document.getElementById('select-vista').addEventListener('change', (e) => {
@@ -225,16 +233,16 @@ export class GestionServicios {
             this._agrupacionActiva = val === 'categorias';
             StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this._agrupacionActiva ? 'on' : 'off');
             StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS, this._vistaEstados ? 'true' : 'false');
-            this.renderServicios();
+            this.vista.renderServicios();
         });
 
         // Listeners para sincronizar botón toggle de monto con el input
         document.getElementById('factura-monto').addEventListener('input', (e) => {
-            this.actualizarEstadoBotonToggle('factura-monto', 'btn-toggle-negativo');
+            this.servicio.actualizarEstadoBotonToggle('factura-monto', 'btn-toggle-negativo');
         });
 
         document.getElementById('editar-factura-monto').addEventListener('input', (e) => {
-            this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
+            this.servicio.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
         });
 
         // Buscador
@@ -261,7 +269,7 @@ export class GestionServicios {
                         const cat = servicio.categoria || '';
                         delete this._catColapsadas[cat];
                         // Expandir grupo por estado
-                        const claseEstado = this.calcularEstadoServicio(servicio).claseEstado;
+                        const claseEstado = this.vista.calcularEstadoServicio(servicio).claseEstado;
                         const esPendiente = ['vencido', 'urgente', 'proximo', 'lejano'].includes(claseEstado);
                         const keyEstado = esPendiente ? '__estado_pendiente' : `__estado_${claseEstado}`;
                         delete this._catColapsadas[keyEstado];
@@ -269,7 +277,7 @@ export class GestionServicios {
                 });
             }
 
-            this.renderServicios();
+            this.vista.renderServicios();
         };
         this._busquedaDebounced = debounce(aplicarBusqueda, this.BUSQUEDA_DEBOUNCE_MS);
 
@@ -335,14 +343,14 @@ export class GestionServicios {
         init('editar-servicio-categoria-csd', 'editar-servicio-categoria', null);
 
         // Modal ordenar — orden y vista
-        init('select-orden-csd', 'select-orden', () => this.aplicarOrden());
+        init('select-orden-csd', 'select-orden', () => this.vista.aplicarOrden());
         init('select-vista-csd', 'select-vista', () => {
             const val = document.getElementById('select-vista').value;
             this._vistaEstados    = val === 'estados';
             this._agrupacionActiva = val === 'categorias';
             StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this._agrupacionActiva ? 'on' : 'off');
             StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS,  this._vistaEstados ? 'true' : 'false');
-            this.renderServicios();
+            this.vista.renderServicios();
         });
 
         // Modal nuevo ingreso — tipo
@@ -359,1183 +367,49 @@ export class GestionServicios {
     // ── Delegación a CalculadorService ───────────────────────
     activarModoCalculadora(silencioso = false) { this.calculador.activarModo(silencioso); }
     desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
-    setupEventListeners() {
-        // Botones principales
-        document.getElementById('btn-agregar-servicio').addEventListener('click', () => {
-            // Si está en modo calculadora, desactivar
-            if (this.modoCalculadora) {
-                this.desactivarModoCalculadora();
-            } else {
-                this.ui.toggleMenuAgregar();
-            }
-        });
-        document.getElementById('btn-ajustes').addEventListener('click', () => this.ui.toggleMenuAjustes());
-        document.getElementById('menu-overlay').addEventListener('click', () => this.ui.cerrarMenuAjustes());
-        document.getElementById('btn-cerrar-menu').addEventListener('click', () => this.ui.cerrarMenuAjustes());
-
-        // Undo/Redo
-        document.getElementById('btn-undo').addEventListener('click', () => this.historial_mgr.deshacer());
-        document.getElementById('btn-redo').addEventListener('click', () => this.historial_mgr.rehacer());
-
-        // Menú ajustes
-        document.getElementById('menu-tema').addEventListener('click', () => this.ui.toggleTema());
-        document.getElementById('menu-exportar').addEventListener('click', () => this.storage.exportarDatos());
-        document.getElementById('menu-importar').addEventListener('click', () => this.mostrarOpcionesImportacion());
-        document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.storage.importarDatos('reemplazar'));
-        document.getElementById('menu-importar-combinar').addEventListener('click', () => this.storage.importarDatos('combinar'));
-        document.getElementById('menu-limpiar').addEventListener('click', () => this.mostrarOpcionesBorrar());
-        document.getElementById('menu-dolar').addEventListener('click', () => this.toggleMenuDolar());
-        document.getElementById('menu-borrar-todo').addEventListener('click', () => this.limpiarDatos('todo'));
-        document.getElementById('menu-borrar-servicios').addEventListener('click', () => this.limpiarDatos('servicios'));
-        document.getElementById('menu-borrar-facturas').addEventListener('click', () => this.limpiarDatos('facturas'));
-        document.getElementById('menu-borrar-ingresos').addEventListener('click', () => this.limpiarDatos('ingresos'));
-        document.getElementById('menu-borrar-categorias').addEventListener('click', () => this.limpiarDatos('categorias'));
-        document.getElementById('menu-toggle-ingresos').addEventListener('click', () => this.ui.toggleIngresos());
-        document.getElementById('menu-toggle-blur').addEventListener('click', () => this.ui.toggleBlur());
-        document.getElementById('menu-toggle-animaciones').addEventListener('click', () => this.ui.toggleAnimaciones());
-
-        // Menú agregar
-        document.getElementById('menu-agregar-overlay').addEventListener('click', () => this.ui.cerrarMenuAgregar());
-        document.getElementById('menu-agregar-servicio').addEventListener('click', () => {
-            this.ui.cerrarMenuAgregar();
-            this.abrirModalServicio();
-        });
-        document.getElementById('menu-agregar-factura').addEventListener('click', () => {
-            this.ui.cerrarMenuAgregar();
-            this.ui.abrirModalFacturaRapida();
-        });
-        document.getElementById('menu-agregar-recibo').addEventListener('click', () => {
-            this.ui.cerrarMenuAgregar();
-            this.ingreso.abrirModal(null, true);
-        });
-        document.getElementById('menu-agregar-calcular').addEventListener('click', () => {
-            document.getElementById('menu-vista-principal').classList.add('hidden-vista');
-            const vistaCalc = document.getElementById('menu-vista-calcular');
-            vistaCalc.classList.add('visible-vista');
-            vistaCalc.classList.remove('anim-slide-up');
-            void vistaCalc.offsetWidth; // reflow para reiniciar animación
-            vistaCalc.classList.add('anim-slide-up');
-        });
-
-        document.getElementById('menu-calcular-volver').addEventListener('click', () => {
-            document.getElementById('menu-vista-calcular').classList.remove('visible-vista');
-            document.getElementById('menu-vista-calcular').classList.add('hidden-vista');
-            const vistaPrincipal = document.getElementById('menu-vista-principal');
-            vistaPrincipal.classList.remove('hidden-vista');
-            vistaPrincipal.classList.remove('anim-slide-up');
-            void vistaPrincipal.offsetWidth;
-            vistaPrincipal.classList.add('anim-slide-up');
-        });
-
-        document.getElementById('menu-calcular-pendientes').addEventListener('click', () => {
-            this.modoCalculadoraTipo = 'pendientes';
-            this.ui.cerrarMenuAgregar();
-            this.activarModoCalculadora();
-        });
-
-        document.getElementById('menu-calcular-pagados').addEventListener('click', () => {
-            this.modoCalculadoraTipo = 'pagados';
-            this.ui.cerrarMenuAgregar();
-            this.activarModoCalculadora();
-        });
-
-        // Listener para toggle de resumen (solo una vez)
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('#resumen-toggle')) {
-                this.estadisticas.toggleResumen();
-            }
-        });
-
-        // Modales
-        document.getElementById('modal-servicio-close').addEventListener('click', () => this.ui.cerrarModal('modal-agregar-servicio'));
-        document.getElementById('modal-editar-servicio-close').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-editar-servicio');
-            // Volver al modal de facturas si venimos desde ahí
-            if (this.servicioActual) {
-                this.factura.abrirModalLista(this.servicioActual);
-            }
-        });
-        document.getElementById('modal-factura-close').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-agregar-factura');
-            // Solo reabrir el modal de servicio si vino desde ahí
-            if (this.origenModalFactura === 'servicio') {
-                this.factura.abrirModalLista(this.servicioActual);
-            }
-        });
-
-        // Menú de perfiles
-        document.getElementById('menu-gist').addEventListener('click', () => {
-            this.ui.cerrarMenuAjustes();
-            this.gist.abrirModal();
-        });
-
-        document.getElementById('menu-perfiles').addEventListener('click', () => {
-            this.perfil.abrirModal();
-        });
-
-        // Event listener para el botón volver del grid (modo agregar)
-        document.getElementById('modal-factura-close-en-grid').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-editar-factura');
-            // Solo reabrir el modal de servicio si vino desde ahí
-            if (this.origenModalFactura === 'servicio') {
-                this.factura.abrirModalLista(this.servicioActual);
-            }
-        });
-
-        // Cerrar modales al hacer click fuera
-        // Solo si el pointerdown también empezó en el overlay (no si viene de arrastrar desde dentro)
-        document.querySelectorAll('.modal').forEach(modal => {
-            let _downOnOverlay = false;
-            modal.addEventListener('pointerdown', (e) => {
-                _downOnOverlay = e.target === modal;
-            }, { passive: true });
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal && _downOnOverlay) {
-                    _downOnOverlay = false;
-                    if (modal.id === 'modal-confirmar') return;
-                    ModalManager.ejecutarAccionCierre(modal.id);
-                }
-            });
-        });
-
-        // Formularios
-        document.getElementById('form-servicio').addEventListener('submit', (e) => this.guardarServicio(e));
-        document.getElementById('form-editar-servicio').addEventListener('submit', (e) => this.guardarServicio(e));
-        document.getElementById('form-factura').addEventListener('submit', (e) => this.factura.guardar(e));
-        document.getElementById('form-editar-factura').addEventListener('submit', (e) => this.factura.guardar(e));
-        document.getElementById('btn-eliminar-servicio').addEventListener('click', () => this.eliminarServicio());
-        document.getElementById('btn-borrar-facturas-servicio').addEventListener('click', () => this.factura.borrarTodas());
-        document.getElementById('btn-fecha-hoy').addEventListener('click', () => this.factura.establecerFechaHoy('factura'));
-        document.getElementById('btn-editar-fecha-hoy').addEventListener('click', () => this.factura.establecerFechaHoy('factura', 'editar'));
-        document.getElementById('btn-eliminar-factura-modal').addEventListener('click', () => this.factura.eliminar());
-
-        // Formulario de ingresos
-        document.getElementById('form-ingreso').addEventListener('submit', (e) => this.ingreso.guardar(e));
-        document.getElementById('form-editar-ingreso').addEventListener('submit', (e) => this.ingreso.guardar(e));
-        document.getElementById('btn-eliminar-ingreso').addEventListener('click', () => this.ingreso.eliminar());
-        document.getElementById('btn-ingreso-fecha-hoy').addEventListener('click', () => {
-            this.factura.establecerFechaHoy('ingreso');
-        });
-        document.getElementById('btn-editar-ingreso-fecha-hoy').addEventListener('click', () => {
-            this.factura.establecerFechaHoy('ingreso', 'editar');
-        });
-
-        document.getElementById('modal-ingreso-close').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-agregar-ingreso');
-            if (!this.ingresoDesdeMenu) {
-                this.ingreso.abrirModalLista(this.SERVICIO_INGRESOS_ID);
-            }
-        });
-        document.getElementById('modal-ingreso-volver').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-editar-ingreso');
-            if (!this.ingresoDesdeMenu) {
-                this.ingreso.abrirModalLista(this.SERVICIO_INGRESOS_ID);
-            }
-        });
-
-        document.getElementById('estadisticas-header').addEventListener('click', () => {
-            this.estadisticas.toggleEstadisticas();
-        });
-
-        // Selector de tipo de estadística
-        document.getElementById('estadisticas-tipo').addEventListener('change', (e) => {
-            this.tipoEstadisticaActual = e.target.value;
-            StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, e.target.value);
-            this.estadisticas.cambiarTipoEstadistica();
-        });
-
-        document.getElementById('btn-calculador-ver-facturas').addEventListener('click', () => {
-            const servicioId = document.getElementById('calculador-servicio').value;
-            if (servicioId) this.factura.abrirModalLista(servicioId);
-        });
-
-        // Inicializar calculador individual
-        this.estadisticas.inicializarCalculador();
-
-        // Toggle de servicios colapsable (3 estados)
-        document.getElementById('servicios-header').addEventListener('click', () => {
-            this.toggleServicios();
-        });
-        // Atajos de teclado
-        document.addEventListener('keydown', (e) => {
-            // ESC: cerrar modales, menús, modo calculadora o búsqueda
-            if (e.key === 'Escape') {
-                const hayCapaAbierta = document.querySelector(
-                    '.modal.show, .modal.active, .menu-ajustes.active, .menu-ajustes.show, .menu-agregar.active, .menu-agregar.show, #ctx-menu-servicio.active, #ctx-menu-servicio.show'
-                );
-
-                if (this.modoCalculadora) { this.desactivarModoCalculadora(); return; }
-                if (hayCapaAbierta) {
-                    e.preventDefault();
-                    this.volverDesdeModalActivo();
-                    return;
-                }
-                if (this.terminoBusqueda) { this.utils.limpiarBusqueda(); return; }
-            }
-
-            // Enter en modal nueva categoría
-            if (e.key === 'Enter') {
-                const modalCat = document.getElementById('modal-nueva-categoria');
-                if (modalCat && (modalCat.classList.contains('active') || modalCat.classList.contains('show'))) {
-                    e.preventDefault();
-                    this.categoria.guardarNueva();
-                    return;
-                }
-            }
-
-            // Ctrl/Cmd + Z/Y para undo/redo
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'z' && !e.shiftKey) {
-                    e.preventDefault(); this.historial_mgr.deshacer();
-                } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
-                    e.preventDefault(); this.historial_mgr.rehacer();
-                }
-                return; // no continuar al bloque de letra suelta
-            }
-
-            // Atajo de letra suelta → foco al buscador (solo desktop, sin modales/menús)
-            if (window.innerWidth < 768) return;
-            if (document.querySelector('.modal.active')) return;
-            if (document.getElementById('menu-ajustes').classList.contains('active')) return;
-            if (document.getElementById('menu-agregar').classList.contains('active')) return;
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
-            if (e.altKey) return;
-
-            if (/^[a-zA-Z]$/.test(e.key)) {
-                e.preventDefault();
-                const serviciosContent = document.getElementById('servicios-content');
-                // Solo expandir desde collapsed → semi-collapsed (buscador visible, sin botones)
-                // Si ya está en semi-collapsed o expanded el buscador ya es visible, no cambiar
-                if (serviciosContent.classList.contains('collapsed')) {
-                    this.aplicarEstadoServicios('semi-collapsed');
-                    StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
-                    this.serviciosCollapseState = 'semi-collapsed';
-                }
-                const searchInput = document.getElementById('search-input');
-                searchInput.focus();
-                searchInput.value = e.key;
-                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        });
-
-        document.getElementById('menu-categorias').addEventListener('click', () => {
-            this.ui.cerrarMenuAjustes();
-            this.categoria.abrirModal(null);
-        });
-
-        // Menu informacion
-        document.getElementById('menu-informacion').addEventListener('click', () => {
-            this.ui.cerrarMenuAjustes();
-            this.ui.abrirModal('modal-informacion');
-        });
-
-        // Cerrar modal informacion
-        document.getElementById('modal-informacion-close').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-informacion');
-        });
-
-        // ---- Listeners migrados desde inline handlers en el HTML ----
-
-        // btn-reporte-estadisticas
-        document.getElementById('btn-reporte-estadisticas').addEventListener('click', () => {
-            this.calculador.generarReporte();
-        });
-
-        // Modal info-resumen (botón header + botón footer)
-        document.getElementById('btn-cerrar-modal-info-resumen').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-info-resumen');
-        });
-        document.getElementById('btn-cerrar-modal-info-resumen-footer').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-info-resumen');
-        });
-
-        // btn-info-resumen: delegado en el contenedor estático para evitar
-        // acumulación de listeners en cada llamada a _renderResumen (memory leak)
-        document.getElementById('resumen-mes').addEventListener('click', (e) => {
-            if (e.target.closest('#btn-info-resumen')) {
-                e.stopPropagation();
-                this.estadisticas.abrirModalInfoResumen();
-            }
-        });
-
-        //gist
-        document.getElementById('btn-gist-ir')?.addEventListener('click', () => this.gist.irAlGist());
-        document.getElementById('gist-token-eye')?.addEventListener('click', () => this.gist.toggleToken());
-        document.getElementById('gist-autosync-toggle')?.addEventListener('click', () => this.gist.toggleAuto());
-        document.getElementById('btn-gist-subir')?.addEventListener('click', () => this.gist.subir());
-        document.getElementById('btn-gist-bajar')?.addEventListener('click', () => this.gist.bajar());
-        document.getElementById('btn-gist-guardar')?.addEventListener('click', () => this.gist.guardarConfig());
-        document.getElementById('btn-gist-cerrar')?.addEventListener('click', () => {
-            this.ui.cerrarModal('modal-gist');
-            this.ui.toggleMenuAjustes();
-        });
-        document.getElementById('btn-gist-crear-token')?.addEventListener('click', () => {
-            window.open('https://github.com/settings/tokens/new?description=Servicios+sync&scopes=gist', '_blank');
-        });
-        document.getElementById('gist-novedades-ok')?.addEventListener('click', () => this.gist.aplicarNovedades());
-        document.getElementById('gist-novedades-ignorar-btn')?.addEventListener('click', () => this.ui.cerrarModal('modal-gist-novedades'));
-        document.getElementById('btn-agregar-cat-servicio').addEventListener('click', () => {
-            this.categoria.abrirModal('servicio-categoria');
-        });
-        document.getElementById('btn-agregar-cat-editar-servicio').addEventListener('click', () => {
-            this.categoria.abrirModal('editar-servicio-categoria');
-        });
-
-        // Modal ordenar: cerrar
-        document.getElementById('btn-cerrar-modal-ordenar').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-ordenar');
-        });
-
-        // Modal nueva-categoria: guardar / cerrar
-        document.getElementById('btn-guardar-nueva-categoria').addEventListener('click', () => {
-            this.categoria.guardarNueva();
-        });
-        document.getElementById('btn-cerrar-modal-categorias').addEventListener('click', () => {
-            this.categoria.cerrarModal();
-        });
-
-        // Modal agregar-factura: toggle moneda / negativo / credito / pagada
-        document.getElementById('btn-factura-moneda').addEventListener('click', () => {
-            this.utils.toggleMoneda('factura-moneda', 'btn-factura-moneda');
-        });
-        document.getElementById('btn-toggle-negativo').addEventListener('click', () => {
-            this.factura.toggleMontoNegativo('factura-monto');
-        });
-        document.getElementById('btn-toggle-credito').addEventListener('click', () => {
-            this.factura.toggleConCredito();
-        });
-        document.getElementById('btn-toggle-pagada').addEventListener('click', () => {
-            this.factura.toggleEstadoPago();
-        });
-
-        // Modal editar-factura: toggle moneda / negativo / credito / pagada
-        document.getElementById('btn-editar-factura-moneda').addEventListener('click', () => {
-            this.utils.toggleMoneda('editar-factura-moneda', 'btn-editar-factura-moneda');
-        });
-        document.getElementById('btn-editar-toggle-negativo').addEventListener('click', () => {
-            this.factura.toggleMontoNegativo('editar-factura-monto');
-        });
-        document.getElementById('btn-editar-toggle-credito').addEventListener('click', () => {
-            this.factura.toggleConCredito('editar');
-        });
-        document.getElementById('btn-editar-toggle-pagada').addEventListener('click', () => {
-            this.factura.toggleEstadoPago('btn-editar-toggle-pagada', 'editar-factura-fecha-pago');
-        });
-
-        // Modal facturas-servicio: editar servicio / nueva factura / cerrar
-        document.getElementById('btn-editar-servicio-desde-modal').addEventListener('click', () => {
-            this.editarServicioDesdeModal();
-        });
-        document.getElementById('btn-modal-facturas-nueva-factura').addEventListener('click', () => {
-            const servicioId = document.getElementById('modal-facturas-servicio').dataset.servicioId;
-            this.factura.abrirModal(servicioId, null);
-        });
-        document.getElementById('btn-cerrar-modal-facturas-servicio').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-facturas-servicio');
-        });
-
-        // Modal ingresos-lista: nuevo ingreso / cerrar
-        document.getElementById('btn-modal-ingresos-nuevo').addEventListener('click', () => {
-            this.ingreso.abrirModal(null);
-        });
-        document.getElementById('btn-cerrar-modal-ingresos-lista').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-ingresos-lista');
-        });
-
-        // Modal agregar-ingreso: toggle moneda
-        document.getElementById('btn-ingreso-moneda').addEventListener('click', () => {
-            this.utils.toggleMoneda('ingreso-moneda', 'btn-ingreso-moneda');
-        });
-
-        // Modal editar-ingreso: toggle moneda
-        document.getElementById('btn-editar-ingreso-moneda').addEventListener('click', () => {
-            this.utils.toggleMoneda('editar-ingreso-moneda', 'btn-editar-ingreso-moneda');
-        });
-
-        // Modal perfiles: input Enter + botón agregar + cerrar
-        document.getElementById('perfil-nuevo-nombre').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.perfil.crearInline();
-            }
-        });
-        document.getElementById('btn-crear-perfil-inline').addEventListener('click', () => {
-            this.perfil.crearInline();
-        });
-        document.getElementById('btn-cerrar-modal-perfiles').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-perfiles');
-        });
-
-        // Modal editar-perfil: submit + volver
-        document.getElementById('form-perfil').addEventListener('submit', (e) => {
-            this.perfil.guardarEdicion(e);
-        });
-        document.getElementById('btn-cancelar-editar-perfil').addEventListener('click', () => {
-            this.perfil.cancelarEditar();
-        });
-
-        // Modal debug-estadisticas: cerrar
-        document.getElementById('btn-cerrar-modal-debug').addEventListener('click', () => {
-            this.ui.cerrarModal('modal-debug-estadisticas');
-        });
-
-        // ---- Delegación de eventos para HTML generado dinámicamente ----
-
-        // Perfiles: cambiar / eliminar / editar
-        document.getElementById('perfiles-lista')?.addEventListener('click', (e) => {
-            const card = e.target.closest('[data-action="cambiar-perfil"]');
-            const btnEliminar = e.target.closest('[data-action="eliminar-perfil"]');
-            const btnEditar = e.target.closest('[data-action="editar-perfil"]');
-            const stop = e.target.closest('[data-action="stop-propagation"]');
-            if (btnEliminar) { e.stopPropagation(); this.perfil.eliminar(btnEliminar.dataset.perfilId); return; }
-            if (btnEditar) { e.stopPropagation(); this.perfil.abrirModalEditar(btnEditar.dataset.perfilId); return; }
-            if (card) this.perfil.cambiar(card.dataset.perfilId);
-        });
-
-        // Estadísticas mensuales: abrir debug al clickear un item
-        document.getElementById('estadisticas-mensual-container')?.addEventListener('click', (e) => {
-            const item = e.target.closest('[data-action="debug-estadisticas"]');
-            if (item) this.abrirDebugEstadisticas(item.dataset.tipo);
-        });
-
-        // Lista de servicios: toggle grupos por categoría + long press
-        const listaSvc = document.getElementById('servicios-lista');
-        if (listaSvc) {
-            // Detectar si el pointerdown derivó en scroll para ignorar el click posterior
-            let _pdownY = 0;
-            let _scrolled = false;
-            listaSvc.addEventListener('pointerdown', (e) => {
-                _pdownY = e.clientY;
-                _scrolled = false;
-            }, { passive: true });
-            listaSvc.addEventListener('pointermove', (e) => {
-                if (!_scrolled && Math.abs(e.clientY - _pdownY) > 8) {
-                    _scrolled = true;
-                    // Cancelar long press en cuanto se detecta intención de scroll
-                    this._lpCancel();
-                }
-            }, { passive: true });
-            // El browser dispara pointercancel cuando toma control del touch (scroll nativo)
-            listaSvc.addEventListener('pointercancel', () => {
-                _scrolled = true;
-                this._lpCancel();
-            });
-
-            listaSvc.addEventListener('click', (e) => {
-                if (_scrolled) return;
-                const header = e.target.closest('[data-action="toggle-grupo-cat"]');
-                if (header) this.toggleGrupoCat(header);
-            });
-            listaSvc.addEventListener('pointerdown', (e) => {
-                const header = e.target.closest('[data-lp="true"]');
-                if (header) this._lpStart(e, header);
-            });
-            // pointerup y pointerleave cancelan el LP sin importar el target actual
-            // (el dedo pudo haberse movido fuera del header durante el drag)
-            listaSvc.addEventListener('pointerup', () => this._lpCancel());
-            listaSvc.addEventListener('pointerleave', () => this._lpCancel());
-            listaSvc.addEventListener('contextmenu', (e) => {
-                if (e.target.closest('[data-lp="true"]') || this._lpFired) {
-                    e.preventDefault();
-                    this._lpFired = false;
-                }
-            });
-        }
-
-        // Modal facturas servicio: toggle grupos por año + editar factura al click
-        document.getElementById('lista-facturas-modal')?.addEventListener('click', (e) => {
-            const headerAno = e.target.closest('[data-action="toggle-grupo-ano"]');
-            if (headerAno) { this.toggleGrupoAno(headerAno); return; }
-            const facturaInfo = e.target.closest('[data-action="factura-click"]');
-            if (facturaInfo && facturaInfo.dataset.facturaAccion === 'editar-factura') {
-                this.editarFactura(facturaInfo.dataset.facturaId);
-            }
-        });
-
-        // Modal ingresos lista: toggle grupos por año + abrir ingreso al click
-        document.getElementById('lista-ingresos-modal')?.addEventListener('click', (e) => {
-            const headerAno = e.target.closest('[data-action="toggle-grupo-ano"]');
-            if (headerAno) { this.toggleGrupoAno(headerAno); return; }
-            const ingresoInfo = e.target.closest('[data-action="abrir-ingreso"]');
-            if (ingresoInfo) this.ingreso.abrirModal(ingresoInfo.dataset.ingresoId);
-        });
-
-        // Modal categorías: eliminar categoría
-        document.getElementById('categorias-lista')?.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-action="eliminar-categoria"]');
-            if (btn) this.categoria.eliminar(btn.dataset.cat);
-        });
-
-    }
 
     // ========================================
     // GESTIÓN DE FECHA
     // ========================================
 
     // ── Delegación a EstadisticasService ─────────────────────
-    toggleServicios() {
-        // Si estamos en expanded y hay timer activo (clic rápido después de abrir botones)
-        if (this.serviciosCollapseState === 'expanded' && this.toggleServiciosTimer !== null) {
-            // Cerrar todo de golpe
-            clearTimeout(this.toggleServiciosTimer);
-            this.toggleServiciosTimer = null;
-            this.serviciosCollapseState = 'collapsed';
-            this.aplicarEstadoServicios('collapsed');
-            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'collapsed');
 
-            // Limpiar búsqueda al colapsar
-            if (this.terminoBusqueda) this.utils.limpiarBusqueda();
-            return;
-        }
 
-        // Limpiar timer si existe
-        if (this.toggleServiciosTimer !== null) {
-            clearTimeout(this.toggleServiciosTimer);
-            this.toggleServiciosTimer = null;
-        }
-
-        // Ciclo normal de estados
-        if (this.serviciosCollapseState === 'collapsed') {
-            // De collapsed a semi-collapsed
-            this.serviciosCollapseState = 'semi-collapsed';
-            this.aplicarEstadoServicios('semi-collapsed');
-            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
-
-        } else if (this.serviciosCollapseState === 'semi-collapsed') {
-            // De semi-collapsed a expanded (AQUÍ INICIA EL TIMER)
-            this.serviciosCollapseState = 'expanded';
-            this.aplicarEstadoServicios('expanded');
-            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'expanded');
-
-            // Activar timer de 3 segundos
-            this.toggleServiciosTimer = setTimeout(() => {
-                this.toggleServiciosTimer = null;
-            }, this.toggleServiciosDelay);
-
-        } else {
-            // De expanded a semi-collapsed (después de que expiró el timer)
-            this.serviciosCollapseState = 'semi-collapsed';
-            this.aplicarEstadoServicios('semi-collapsed');
-            StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
-
-            // Limpiar búsqueda al contraer
-            if (this.terminoBusqueda) this.utils.limpiarBusqueda();
-        }
-    }
-
-    obtenerEstadoFactura(factura) {
-        const tipo = EstadoFacturas.clasificarFactura(factura);
-        const vista = {
-            favor: ['<div class="factura-estado-pagado">Saldo a favor</div>', 'factura-monto factura-monto-favor'],
-            pagada: ['<div class="factura-estado-pagado">✓ Pagada</div>', 'factura-monto'],
-            vencida: ['<div class="factura-estado-vencido">⚠ Vencida</div>', 'factura-monto'],
-            pendiente: ['<div class="factura-estado-pendiente">⏱ Pendiente</div>', 'factura-monto'],
-        }[tipo];
-        return { estadoPago: vista[0], claseMonto: vista[1] };
-    }
-
-    aplicarEstadoServicios(estado) {
-        const contenido = document.getElementById('servicios-content');
-        const chevron = document.getElementById('servicios-chevron');
-
-        // Remover todas las clases de estado
-        contenido.classList.remove('collapsed', 'semi-collapsed');
-        chevron.classList.remove('collapsed', 'semi-collapsed');
-
-        if (estado === 'collapsed') {
-            contenido.classList.add('collapsed');
-            chevron.classList.add('collapsed');
-        } else if (estado === 'semi-collapsed') {
-            contenido.classList.add('semi-collapsed');
-            chevron.classList.add('semi-collapsed');
-        } else {
-            // Estado expanded - chevron normal
-            chevron.classList.remove('semi-collapsed');
-        }
-    }
 
     // ========================================
     // GESTIÓN DE SERVICIOS
     // ========================================
 
-    calcularEstadoServicio(servicio) {
-        return EstadoFacturas.estadoServicio(servicio);
-    }
 
-    renderServicios() {
-        const indicador = document.getElementById('perfil-indicador');
-        if (indicador && this.perfilActivo !== 'default') {
-            indicador.textContent = `${this.perfiles[this.perfilActivo].nombre}`;
-        } else if (indicador) {
-            indicador.textContent = '';
-        }
 
-        const lista = document.getElementById('servicios-lista');
-        if (!lista) return;
 
-        const scrollPos = window.scrollY;
 
-        // Separar servicios normales del servicio de ingresos
-        const serviciosNormales = this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID);
-        const servicioIngresos = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
 
-        const pintar = (contenido) => {
-            const fn = () => { lista.innerHTML = contenido; };
-            if (this._animarRender) Anim.diffLista(lista, '.servicio-wrapper', 'data-id', fn);
-            else fn();
-        };
 
-        if (serviciosNormales.length === 0 && !this.ui.ingresosHabilitado()) {
-            pintar(`
-                  <div class="empty-state">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                          <line x1="12" y1="9" x2="12" y2="15"/>
-                          <line x1="9" y1="12" x2="15" y2="12"/>
-                      </svg>
-                      <p>No hay servicios registrados<br>Presiona el botón + para agregar uno</p>
-                  </div>
-              `);
-            this.estadisticas.actualizarResumenMes();
-            return;
-        }
 
-        // Filtrar servicios normales
-        let serviciosFiltrados = this.aplicarFiltro(serviciosNormales);
 
-        // Ordenar servicios según el orden actual
-        const serviciosOrdenados = this.ordenarServicios(serviciosFiltrados);
 
-        // Renderizar servicios normales agrupados por categoría
-        const generarItemServicio = (servicio) => {
-            const { estado, claseEstado, montoTexto, fechaTexto } = this.calcularEstadoServicio(servicio);
-            const claseCalculando = this.serviciosSeleccionados.has(servicio.id) ? 'calculando' : '';
-            return `
-   <div class="servicio-wrapper" data-id="${this.utils.escaparAtributoHTML(servicio.id)}">
-  <div class="servicio-item ${claseEstado} ${claseCalculando}" data-id="${this.utils.escaparAtributoHTML(servicio.id)}">
-                      <div class="servicio-nombre">${this.utils.escaparHTML(servicio.nombre)}</div>
-                       <div class="servicio-info">
-                          <span class="servicio-monto">${montoTexto}</span>
-                           ${fechaTexto ? `<span class="servicio-fecha">${fechaTexto}</span>` : ''}
-                       </div>
-                    ${estado ? `<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
-                   </div>
-               </div>
-             `;
-        };
 
-        // Agrupar por categoría
-        const gruposCat = {};
-        serviciosOrdenados.forEach(servicio => {
-            const cat = servicio.categoria || '';
-            if (!gruposCat[cat]) gruposCat[cat] = [];
-            gruposCat[cat].push(servicio);
-        });
-
-        // Ordenar: categorías nombradas alfabéticamente, sin categoría al final
-        const catKeys = Object.keys(gruposCat).sort((a, b) => {
-            if (a === '' && b !== '') return 1;
-            if (a !== '' && b === '') return -1;
-            return a.localeCompare(b);
-        });
-
-        let html = '';
-
-        // Si solo hay una categoría (o ninguna), no mostrar encabezado de grupo
-        if (this._vistaEstados) {
-            const grupos = [
-                { key: 'pendiente', label: 'Pendientes', clases: ['vencido', 'urgente', 'proximo', 'lejano'] },
-                { key: 'sin-facturas-mes', label: 'Sin facturas este mes', clases: ['sin-facturas-mes'] },
-                { key: 'pagado', label: 'Pagados', clases: ['pagado'] },
-                { key: 'sin-facturas', label: 'Sin facturas', clases: ['sin-facturas'] },
-            ];
-            grupos.forEach(grupo => {
-                const items = serviciosOrdenados.filter(s => grupo.clases.includes(this.calcularEstadoServicio(s).claseEstado));
-                if (items.length === 0) return;
-                const collapsed = this._catColapsadas[`__estado_${grupo.key}`] ? 'collapsed' : '';
-                html += `
-    <div class="servicios-grupo-cat" data-cat="__estado_${grupo.key}">
-        <div class="servicios-grupo-cat-header" data-action="toggle-grupo-cat" data-lp="true">
-            <div class="servicios-grupo-cat-header-info">
-                <span class="servicios-grupo-cat-texto">${grupo.label}</span>
-                <span class="servicios-grupo-cat-contador">(${items.length})</span>
-            </div>
-            <svg class="icon servicios-grupo-cat-chevron ${collapsed}"><use href="#icon-chevron-down"/></svg>
-        </div>
-        <div class="servicios-grupo-cat-contenido ${collapsed}">
-            <div class="collapsible-inner">${items.map(generarItemServicio).join('')}</div>
-        </div>
-    </div>`;
-            });
-        } else if (catKeys.length <= 1 || !this._agrupacionActiva) {
-            html = serviciosOrdenados.map(generarItemServicio).join('');
-        } else {
-            catKeys.forEach(cat => {
-                const items = gruposCat[cat];
-                const catLabel = cat || 'Sin categoría';
-                const collapsed = this._catColapsadas[cat] ? 'collapsed' : '';
-                const cantidad = items.length;
-                const itemsHTML = items.map(generarItemServicio).join('');
-
-                // Calcular el estado de alerta más prioritario de la categoría
-                const prioridad = { 'vencido': 4, 'urgente': 3, 'proximo': 2, 'sin-facturas-mes': 1 };
-                let mejorAlerta = null;
-                items.forEach(s => {
-                    const { claseEstado } = this.calcularEstadoServicio(s);
-                    if (prioridad[claseEstado] && (!mejorAlerta || prioridad[claseEstado] > prioridad[mejorAlerta])) {
-                        mejorAlerta = claseEstado;
-                    }
-                });
-
-                // Generar icono indicador si hay alertas
-                let alertaIconHTML = '';
-                if (mejorAlerta) {
-                    const svgPath = (mejorAlerta === 'proximo' || mejorAlerta === 'sin-facturas-mes')
-                        ? '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/>'
-                        : '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><line x1="12" y1="8" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.2" fill="currentColor"/>';
-                    alertaIconHTML = `<svg class="cat-alerta-icon ${mejorAlerta}" viewBox="0 0 24 24" width="14" height="14">${svgPath}</svg>`;
-                }
-
-                html += `
-    <div class="servicios-grupo-cat" data-cat="${this.utils.escaparAtributoHTML(cat)}">
-        <div class="servicios-grupo-cat-header" data-action="toggle-grupo-cat" data-lp="true">
-            <div class="servicios-grupo-cat-header-info">
-                <span class="servicios-grupo-cat-texto">${this.utils.escaparHTML(catLabel)}</span>
-                <span class="servicios-grupo-cat-contador">(${cantidad})</span>
-            </div>
-            <div class="d-flex align-items-center gap-1">
-               ${alertaIconHTML}
-             <svg class="icon servicios-grupo-cat-chevron ${collapsed}"><use href="#icon-chevron-down"/></svg>
-         </div>
-        </div>
-        <div class="servicios-grupo-cat-contenido ${collapsed}">
-            <div class="collapsible-inner">${itemsHTML}</div>
-        </div>
-    </div>
-                    `;
-            });
-        }
-
-        // Agregar servicio de ingresos si está habilitado Y (no hay búsqueda O coincide con la búsqueda)
-        if (this.ui.ingresosHabilitado() && (!this.terminoBusqueda || 'ingresos'.includes(this.terminoBusqueda))) {
-            // Línea separadora
-            if (serviciosOrdenados.length > 0) {
-                html += `<div class="separator-line"></div>`;
-            }
-
-            // Crear servicio de ingresos si no existe
-            if (!servicioIngresos) {
-                this.ingreso.crearServicio();
-            }
-
-            const ingresos = servicioIngresos || this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-            if (ingresos) {
-                const { estado, claseEstado, montoTexto, fechaTexto } = this.calcularEstadoServicio(ingresos);
-
-                const claseCalculandoIngresos = this.serviciosSeleccionados.has(ingresos.id) ? 'calculando' : '';
-
-                html += `
-   <div class="servicio-wrapper" data-id="${this.utils.escaparAtributoHTML(ingresos.id)}">
-  <div class="servicio-item ${claseEstado} ${claseCalculandoIngresos}" data-id="${this.utils.escaparAtributoHTML(ingresos.id)}">
-                          <div class="servicio-nombre">${this.utils.escaparHTML(ingresos.nombre)}</div>
-                           <div class="servicio-info">
-                              <span class="servicio-monto">${montoTexto}</span>
-                               ${fechaTexto ? `<span class="servicio-fecha">${fechaTexto}</span>` : ''}
-                           </div>
-                        ${estado ? `<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
-                       </div>
-                   </div>
-                 `;
-            }
-        }
-
-        pintar(html);
-
-        // Eventos de click en servicios
-        lista.querySelectorAll('.servicio-item').forEach(item => {
-            const servicioId = item.dataset.id;
-            const esIngresos = servicioId === this.SERVICIO_INGRESOS_ID;
-
-            item.addEventListener('click', (e) => {
-                // Evitar que se dispare si se hace click en un botón
-                if (e.target.closest('button')) return;
-
-                // Si está en modo calculadora, toggle selección
-                if (this.modoCalculadora) {
-                    this.calculador.toggleServicio(servicioId);
-                    return;
-                }
-
-                if (esIngresos) {
-                    this.ingreso.abrirModalLista(servicioId);
-                } else {
-                    this.factura.abrirModalLista(servicioId);
-                }
-            });
-
-            // Menú contextual (solo servicios normales, no ingresos)
-            if (!esIngresos) {
-                item.addEventListener('contextmenu', (e) => {
-                    this.ctx.abrir(e, servicioId);
-                });
-            }
-
-            // Actualizar menú flotante
-            this.ui.actualizarMenuAgregar();
-        });
-
-        // Restaurar posición de scroll
-        requestAnimationFrame(() => {
-            window.scrollTo(0, scrollPos);
-        });
-
-        // Solo actualizar resumen y calculador si no estamos filtrando por búsqueda
-        if (!this.enModoBusqueda) {
-            this.estadisticas.actualizarResumenMes();
-            this.estadisticas.actualizarSelectServicios();
-            this.calculador.calcularPeriodo();
-        }
-    }
-
-    aplicarFiltro(servicios) {
-        return EstadoFacturas.filtrar(servicios, this.terminoBusqueda);
-    }
-
-    ordenarServicios(servicios) {
-        return EstadoFacturas.ordenar(servicios, this.ordenActual);
-    }
-
-    aplicarOrden() {
-        const select = document.getElementById('select-orden');
-        this.ordenActual = select.value;
-        StorageHelper.setItem(STORAGE_KEYS.ORDEN, this.ordenActual);
-        this.renderServicios();
-        this.mostrarToast('Orden aplicado', 'success');
-    }
-
-    toggleGrupoCat(headerElement) {
-        if (this._lpFired) { this._lpFired = false; return; }
-        const chevron = headerElement.querySelector('.servicios-grupo-cat-chevron');
-        const contenido = headerElement.nextElementSibling;
-        const cat = headerElement.closest('.servicios-grupo-cat')?.dataset.cat ?? '';
-
-        const estaColapsado = chevron.classList.contains('collapsed');
-        if (estaColapsado) {
-            chevron.classList.remove('collapsed');
-            contenido.classList.remove('collapsed');
-            delete this._catColapsadas[cat];
-            Anim.scrollAlExpandir(headerElement.closest('.servicios-grupo-cat'));
-        } else {
-            chevron.classList.add('collapsed');
-            contenido.classList.add('collapsed');
-            this._catColapsadas[cat] = true;
-        }
-        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, this._catColapsadas);
-    }
-
-    _lpStart(event, headerElement) {
-        this._lpTimer = setTimeout(() => {
-            this._lpFired = true;
-            this.toggleTodosGruposCat(headerElement);
-        }, 500);
-        this._lpFired = false;
-    }
-
-    _lpCancel() {
-        clearTimeout(this._lpTimer);
-    }
-
-    toggleTodosGruposCat(headerElement) {
-        // Determinar estado del grupo tocado
-        const chevronTocado = headerElement.querySelector('.servicios-grupo-cat-chevron');
-        const estaColapsado = chevronTocado.classList.contains('collapsed');
-
-        // Seleccionar todos los grupos visibles
-        const todosHeaders = document.querySelectorAll('.servicios-grupo-cat-header');
-        todosHeaders.forEach(header => {
-            const chevron = header.querySelector('.servicios-grupo-cat-chevron');
-            const contenido = header.nextElementSibling;
-            const cat = header.closest('.servicios-grupo-cat')?.dataset.cat ?? '';
-            if (estaColapsado) {
-                // Expandir todos
-                chevron.classList.remove('collapsed');
-                contenido.classList.remove('collapsed');
-                delete this._catColapsadas[cat];
-            } else {
-                // Colapsar todos
-                chevron.classList.add('collapsed');
-                contenido.classList.add('collapsed');
-                this._catColapsadas[cat] = true;
-            }
-        });
-        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, this._catColapsadas);
-        this.mostrarToast(estaColapsado ? 'Categorías expandidas' : 'Categorías colapsadas', 'info');
-    }
-
-    toggleGrupoAno(headerElement) {
-        const chevron = headerElement.querySelector('.facturas-grupo-chevron');
-        const contenido = headerElement.nextElementSibling;
-
-        if (chevron.classList.contains('collapsed')) {
-            // Acordeón: abrir un año cierra los demás de la misma lista
-            const grupo = headerElement.closest('.facturas-grupo-ano');
-            const lista = grupo?.parentElement || document;
-            lista.querySelectorAll('.facturas-grupo-chevron:not(.collapsed)').forEach(ch => ch.classList.add('collapsed'));
-            lista.querySelectorAll('.facturas-grupo-contenido:not(.collapsed)').forEach(cont => cont.classList.add('collapsed'));
-
-            chevron.classList.remove('collapsed');
-            contenido.classList.remove('collapsed');
-            Anim.scrollAlExpandir(grupo);
-        } else {
-            chevron.classList.add('collapsed');
-            contenido.classList.add('collapsed');
-        }
-    }
-
-    abrirModalServicio(servicioId = null) {
-        this.servicioActual = servicioId;
-
-        if (servicioId) {
-            // Modo editar - usar modal separado
-            const servicio = this.servicios.find(s => s.id === servicioId);
-            if (servicio) {
-                document.getElementById('editar-servicio-nombre').value = servicio.nombre;
-                this.categoria.poblarSelect('editar-servicio-categoria', servicio.categoria || '');
-            }
-            this.ui.abrirModal('modal-editar-servicio');
-        } else {
-            // Modo nuevo
-            document.getElementById('form-servicio').reset();
-            this.categoria.poblarSelect('servicio-categoria', '');
-            this.ui.abrirModal('modal-agregar-servicio');
-        }
-    }
 
     // Anima el ítem recién guardado en la lista de facturas/ingresos,
     // expandiendo su año si estaba colapsado. Espera a que termine de
     // abrirse el modal para que la animación se vea.
-    _resaltarItemLista(lista, id) {
-        if (!lista || !id) return;
-        const item = lista.querySelector(`.factura-item[data-id="${CSS.escape(id)}"]`);
-        if (!item) return;
-        const grupo = item.closest('.facturas-grupo-contenido.collapsed');
-        if (grupo) {
-            const ano = grupo.previousElementSibling?.querySelector('.facturas-grupo-ano-texto')?.textContent;
-            this._restaurarAnoExpandido(ano);
-        }
-        Anim.marcarNuevo(item, { delay: Anim.getCSSdur('--dur-pop') });
-    }
 
-    _restaurarAnoExpandido(anoObjetivo) {
-        if (!anoObjetivo) return;
-        const headers = document.querySelectorAll('.facturas-grupo-header');
-        let encontrado = false;
-        headers.forEach(header => {
-            const textoAno = header.querySelector('.facturas-grupo-ano-texto')?.textContent;
-            if (textoAno === anoObjetivo) encontrado = true;
-        });
-        if (!encontrado) return;  // si el año no existe, no tocar nada
 
-        headers.forEach(header => {
-            const textoAno = header.querySelector('.facturas-grupo-ano-texto')?.textContent;
-            const chevron = header.querySelector('.facturas-grupo-chevron');
-            const contenido = header.nextElementSibling;
-            if (textoAno === anoObjetivo) {
-                chevron.classList.remove('collapsed');
-                contenido.classList.remove('collapsed');
-            } else {
-                chevron.classList.add('collapsed');
-                contenido.classList.add('collapsed');
-            }
-        });
-    }
-
-    generarHTMLFactura(factura, accion = null) {
-        const { estadoPago, claseMonto } = this.obtenerEstadoFactura(factura);
-        const esc = t => this.utils.escaparAtributoHTML(t);
-        const dataAccion = accion ? `data-action="factura-click" data-factura-accion="${esc(accion)}" data-factura-id="${esc(factura.id)}"` : '';
-        const moneda = factura.moneda === 'usd' ? 'usd' : 'ars';
-        const badgeClass = moneda;
-        const pagoBadge = factura.pagada
-            ? (factura.conCredito
-                ? '<span class="moneda-badge credito">Crédito</span>'
-                : '<span class="moneda-badge contado">Contado</span>')
-            : '';
-
-        return `
-    <div class="factura-item" data-id="${esc(factura.id)}">
-        <div class="factura-info" ${dataAccion}>
-            <div class="${claseMonto}">${this.utils.formatearMoneda(factura.monto, moneda)}<span class="moneda-badge ${badgeClass}">${moneda.toUpperCase()}</span>${pagoBadge}</div>
-            <div class="factura-fecha">
-                ${this.utils.escaparHTML(factura.tipo || 'mensual')} | Vence: ${this.utils.formatearFecha(factura.fecha)}
-            </div>
-            ${estadoPago}
-        </div>
-    </div>
-`;
-    }
 
     // ── Categorías ──────────────────────────────────────────────
     // ── Delegación a CategoriaService ────────────────────────
-    guardarServicio(e) {
-        e.preventDefault();
 
-        // Detectar si estamos en modo agregar o editar
-        const esEditar = document.getElementById('modal-editar-servicio').classList.contains('active');
-        const nombre = esEditar
-            ? document.getElementById('editar-servicio-nombre').value.trim()
-            : document.getElementById('servicio-nombre').value.trim();
-        const categoria = esEditar
-            ? document.getElementById('editar-servicio-categoria').value
-            : document.getElementById('servicio-categoria').value;
 
-        if (!nombre) {
-            this.mostrarToast('El nombre del servicio es obligatorio', 'error');
-            return;
-        }
 
-        // Validar que no exista otro servicio con el mismo nombre (case insensitive)
-        const nombreExiste = this.servicios.some(s =>
-            s.id !== this.servicioActual &&
-            s.nombre.toLowerCase() === nombre.toLowerCase()
-        );
-
-        if (nombreExiste) {
-            this.mostrarToast('Ya existe un servicio con ese nombre', 'error');
-            return;
-        }
-
-        if (this.servicioActual) {
-            // Editar servicio existente
-            const servicio = this.servicios.find(s => s.id === this.servicioActual);
-            if (servicio) {
-                // Verificar si hubo cambios
-                if (servicio.nombre === nombre && (servicio.categoria || '') === categoria) {
-                    this.mostrarToast('Sin cambios', 'info');
-                    this.ui.cerrarModal('modal-editar-servicio');
-                    // Volver al modal de facturas
-                    if (this.servicioActual) {
-                        this.factura.abrirModalLista(this.servicioActual);
-                    }
-                    return;
-                }
-                servicio.nombre = nombre;
-                servicio.categoria = categoria;
-                this.mostrarToast('Servicio actualizado', 'success');
-            }
-        } else {
-            // Crear nuevo servicio
-            const nuevoServicio = {
-                id: this.utils.generarId(),
-                nombre: nombre,
-                categoria: categoria,
-                facturas: []
-            };
-            this.servicios.push(nuevoServicio);
-            this.mostrarToast('Servicio creado', 'success');
-        }
-
-        this.storage.guardarDatos();
-        this.guardarEstado(`${esEditar ? 'editar' : 'crear'} servicio (${nombre})`);
-        this.enModoBusqueda = false;
-        this.renderServicios();
-        this.ui.cerrarModal(esEditar ? 'modal-editar-servicio' : 'modal-agregar-servicio');
-        // Volver al modal de facturas después de guardar
-        if (esEditar && this.servicioActual) {
-            this.factura.abrirModalLista(this.servicioActual);
-        }
-    }
-
-    editarServicio(servicioId) {
-        this.abrirModalServicio(servicioId);
-    }
-
-    editarServicioDesdeModal() {
-        const modal = document.getElementById('modal-facturas-servicio');
-        const servicioId = modal.dataset.servicioId;
-        if (servicioId) {
-            this.ui.cerrarModal('modal-facturas-servicio');
-            this.editarServicio(servicioId);
-        }
-    }
-
-    async eliminarServicio() {
-        if (!this.servicioActual) return;
-
-        const confirmado = await ModalManager.confirmar(
-            '¿Estás seguro de eliminar este servicio y todas sus facturas?',
-            'Eliminar',
-            '#icon-trash',
-            { titulo: 'Eliminar servicio' }
-        );
-        if (confirmado) {
-            const eliminado = this.servicios.find(s => s.id === this.servicioActual);
-            this.servicios = this.servicios.filter(s => s.id !== this.servicioActual);
-
-            this.storage.guardarDatos();
-            this.guardarEstado(`eliminar servicio${eliminado ? ` (${eliminado.nombre})` : ''}`);
-            this.enModoBusqueda = false;
-            this.renderServicios();
-            this.ui.cerrarModal('modal-editar-servicio');
-            // No volver al modal de facturas porque eliminamos el servicio
-            this.toastConDeshacer('Servicio eliminado');
-        }
-    }
 
     // ========================================
     // GESTIÓN DE FACTURAS
     // ========================================
 
-    _resetBtnCredito(btn) {
-        if (!btn) return;
-        const iconUse = btn.querySelector('use');
-        if (iconUse) iconUse.setAttribute('href', '#icon-cash');
-        btn.classList.remove('pagada');
-        btn.title = 'Contado / crédito';
-    }
 
-    actualizarEstadoBotonToggle(inputId, btnId) {
-        const input = document.getElementById(inputId);
-        const btn = document.getElementById(btnId);
 
-        if (!input || !btn) return;
 
-        const valor = parseFloat(input.value) || 0;
-
-        if (valor < 0) {
-            btn.classList.add('activo');
-            input.dataset.negativo = 'true';
-            btn.title = 'Cambiar a gasto normal';
-        } else {
-            btn.classList.remove('activo');
-            input.dataset.negativo = 'false';
-            btn.title = 'Cambiar a saldo a favor';
-        }
-    }
-
-    editarFactura(facturaId) {
-        const servicio = this.servicios.find(s => s.facturas.some(f => f.id === facturaId));
-        if (!servicio) return;
-        const factura = servicio.facturas.find(f => f.id === facturaId);
-        if (!factura) return;
-
-        const modal = document.getElementById('modal-facturas-servicio');
-        if (modal?.classList.contains('active')) {
-            const sid = modal.dataset.servicioId;
-            const item = document.querySelector(`.factura-item[data-id="${CSS.escape(facturaId)}"]`);
-            const grupo = item?.closest('.facturas-grupo-ano');
-            const ano = grupo?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
-            this._anoExpandidoFacturas[sid] = ano;
-        }
-
-        this.ui.cerrarModal('modal-facturas-servicio');
-        this.factura.abrirModal(servicio.id, facturaId);
-        this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
-    }
-
-    obtenerUltimaFactura(servicioId) {
-        return EstadoFacturas.ultimaFactura(this.servicios.find(s => s.id === servicioId));
-    }
 
     // ========================================
     // SISTEMA UNDO/REDO
@@ -1576,134 +450,15 @@ export class GestionServicios {
     // Se conserva por compatibilidad pero NO debe llamarse directamente.
     // TODO: eliminar en la próxima limpieza de código.
 
-    mostrarOpcionesImportacion() {
-        this.utils.toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
-    }
 
-    mostrarOpcionesBorrar() {
-        this.utils.toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
-    }
 
-    toggleMenuDolar() {
-        this.utils.toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
-    }
 
-    async limpiarDatos(tipo = 'todo') {
-        const mensajes = {
-            todo: '¿Estás seguro de eliminar TODOS los datos? (servicios, facturas, ingresos y categorías)',
-            servicios: '¿Estás seguro de eliminar todos los servicios y sus facturas? Los ingresos y categorías se conservarán.',
-            facturas: '¿Estás seguro de eliminar todas las facturas de todos los servicios? Los servicios se conservarán vacíos.',
-            ingresos: '¿Estás seguro de eliminar todos los ingresos registrados?',
-            categorias: '¿Estás seguro de eliminar todas las categorías?'
-        };
-
-        const toasts = {
-            todo: 'Todos los datos han sido eliminados',
-            servicios: 'Todos los servicios han sido eliminados',
-            facturas: 'Todas las facturas han sido eliminadas',
-            ingresos: 'Todos los ingresos han sido eliminados',
-            categorias: 'Todas las categorías han sido eliminadas'
-        };
-
-        const confirmado = await ModalManager.confirmar(
-            mensajes[tipo] || mensajes.todo,
-            'Borrar',
-            '#icon-trash',
-            { titulo: 'Eliminar datos' }
-        );
-        if (!confirmado) return;
-
-        if (tipo === 'todo') {
-            this.servicios = [];
-            this.categoria.saveCategorias([]);
-        } else if (tipo === 'servicios') {
-            // Eliminar todos los servicios excepto el de ingresos
-            this.servicios = this.servicios.filter(s => s.id === this.SERVICIO_INGRESOS_ID);
-        } else if (tipo === 'facturas') {
-            // Vaciar facturas de todos los servicios normales (no ingresos)
-            this.servicios = this.servicios.map(s => {
-                if (s.id === this.SERVICIO_INGRESOS_ID) return s;
-                return { ...s, facturas: [] };
-            });
-        } else if (tipo === 'ingresos') {
-            // Eliminar todas las facturas del servicio de ingresos
-            const servicioIngresos = this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
-            if (servicioIngresos) {
-                servicioIngresos.facturas = [];
-            }
-        } else if (tipo === 'categorias') {
-            // Limpiar categorías y quitar la categoría asignada a los servicios
-            this.categoria.saveCategorias([]);
-            this.servicios = this.servicios.map(s => ({ ...s, categoria: '' }));
-        }
-
-        const etiquetas = { todo: 'todos los datos', servicios: 'servicios', facturas: 'facturas', ingresos: 'ingresos', categorias: 'categorías' };
-        this._postGuardado(`borrar ${etiquetas[tipo] || etiquetas.todo}`);
-        this.historial_mgr.actualizarBotones();
-        this.toastConDeshacer(toasts[tipo] || toasts.todo);
-        document.getElementById('opciones-borrar').classList.remove('open');
-        document.getElementById('menu-limpiar').classList.remove('open');
-        this.ui.cerrarMenuAjustes();
-    }
 
     // ========================================
     // TEMA
     // ========================================
 
     // ── Delegación a UIManager ────────────────────────────────
-    // Mapa de modales hijo → id del botón "volver" que se debe simular al cerrar con ESC/overlay.
-    // Modales que no aparecen aquí no tienen padre → cerrarTodosLosModales normalmente.
-    _MODAL_VOLVER_BTN = {
-        'modal-editar-factura':     'modal-factura-close-en-grid',
-        'modal-agregar-factura':    'modal-factura-close',
-        'modal-editar-servicio':    'modal-editar-servicio-close',
-        'modal-agregar-servicio':   'modal-servicio-close',
-        'modal-agregar-ingreso':    'modal-ingreso-close',
-        'modal-editar-ingreso':     'modal-ingreso-volver',
-        'modal-editar-perfil':      'btn-cancelar-editar-perfil',
-        'modal-nueva-categoria':    'btn-cerrar-modal-categorias',
-        'modal-ordenar':            'btn-cerrar-modal-ordenar',
-        'modal-perfiles':           'btn-cerrar-modal-perfiles',
-        'modal-informacion':        'modal-informacion-close',
-        'modal-info-resumen':       'btn-cerrar-modal-info-resumen',
-        'modal-gist':               'btn-gist-cerrar',
-        'modal-gist-novedades':     'gist-novedades-ignorar-btn',
-        'modal-debug-estadisticas': 'btn-cerrar-modal-debug',
-        'modal-facturas-servicio':  'btn-cerrar-modal-facturas-servicio',
-        'modal-ingresos-lista':     'btn-cerrar-modal-ingresos-lista',
-    };
-
-    volverDesdeModalActivo() {
-        // 1. Context menu abierto tiene prioridad máxima
-        const ctxMenu = document.getElementById('ctx-menu-servicio');
-        if (ctxMenu && (ctxMenu.classList.contains('active') || ctxMenu.classList.contains('show'))) {
-            ModalManager.ejecutarAccionCierre('ctx-menu-servicio');
-            return;
-        }
-
-        // 2. Modales en pantalla (el superior en orden DOM)
-        const modales = Array.from(document.querySelectorAll('.modal.show, .modal.active'));
-        if (modales.length > 0) {
-            const topModal = modales[modales.length - 1];
-            ModalManager.ejecutarAccionCierre(topModal.id);
-            return;
-        }
-
-        // 3. Paneles laterales
-        const menuAjustes = document.getElementById('menu-ajustes');
-        if (menuAjustes && (menuAjustes.classList.contains('active') || menuAjustes.classList.contains('show'))) {
-            ModalManager.ejecutarAccionCierre('menu-ajustes');
-            return;
-        }
-
-        const menuAgregar = document.getElementById('menu-agregar');
-        if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
-            ModalManager.ejecutarAccionCierre('menu-agregar');
-            return;
-        }
-
-        this.ui.cerrarTodosLosModales();
-    }
 
     // ========================================
     // MODALES Y MENÚS
@@ -1715,117 +470,6 @@ export class GestionServicios {
     // GESTIÓN DE INGRESOS
     // ========================================
 
-    abrirDebugEstadisticas(tipo) {
-        const selectMes = document.getElementById('select-mes-estadisticas');
-        let mesSeleccionado, añoSeleccionado;
-        if (selectMes && selectMes.value) {
-            const [año, mes] = selectMes.value.split('-');
-            añoSeleccionado = parseInt(año);
-            mesSeleccionado = parseInt(mes) - 1;
-        } else {
-            const hoy = new Date();
-            mesSeleccionado = hoy.getMonth();
-            añoSeleccionado = hoy.getFullYear();
-        }
-
-        const categoriaActiva = this._estadisticaCategoriaActiva || null;
-        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-
-        const titulos = {
-            'facturas': 'Facturas del mes',
-            'pendientes': 'Pendientes',
-            'pagadas': 'Pagadas este mes',
-            'vencidas': 'Vencidas',
-            'pagado-monto': 'Monto pagado',
-            'ingresos': 'Ingresos',
-        };
-
-        document.getElementById('modal-debug-titulo').textContent = titulos[tipo] || 'Detalle';
-
-        let items = [];
-
-        this.servicios.forEach(servicio => {
-            if (categoriaActiva && servicio.id !== this.SERVICIO_INGRESOS_ID) {
-                if ((servicio.categoria || '') !== categoriaActiva) return;
-            }
-
-            servicio.facturas.forEach(factura => {
-                const fechaVenc = this.utils.parseDate(factura.fecha);
-                fechaVenc.setHours(0, 0, 0, 0);
-                const esDelMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
-                const esServicioIngresos = servicio.id === this.SERVICIO_INGRESOS_ID;
-                const moneda = factura.moneda || 'ars';
-
-                let incluir = false;
-
-                switch (tipo) {
-                    case 'facturas':
-                        // Igual que cantidadFacturasMes: del mes, positivas, no ingresos
-                        incluir = esDelMes && !esServicioIngresos && factura.monto >= 0;
-                        break;
-
-                    case 'pendientes':
-                        // Igual que cantidadPendientes: del mes, no pagadas, no vencidas
-                        incluir = esDelMes && !esServicioIngresos && !factura.pagada
-                            && factura.monto > 0 && fechaVenc >= hoy;
-                        break;
-
-                    case 'vencidas':
-                        // Igual que cantidadVencidas: del mes, no pagadas, fecha pasada
-                        incluir = esDelMes && !esServicioIngresos && !factura.pagada
-                            && factura.monto > 0 && fechaVenc < hoy;
-                        break;
-
-                    case 'pagadas':
-                        // Igual que cantidadPagadas: pagada, fechaPago en el mes seleccionado
-                        if (factura.pagada && factura.monto >= 0 && factura.fechaPago && !esServicioIngresos) {
-                            const fp = this.utils.parseDate(factura.fechaPago);
-                            incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
-                        }
-                        break;
-
-                    case 'pagado-monto':
-                        // Igual que totalPagadoMesARS/USD: pagada, fechaPago en el mes, no crédito (salvo cat activa)
-                        if (factura.pagada && factura.monto > 0 && factura.fechaPago && !esServicioIngresos
-                            && (!factura.conCredito || categoriaActiva)) {
-                            const fp = this.utils.parseDate(factura.fechaPago);
-                            incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
-                        }
-                        break;
-
-                    case 'ingresos':
-                        // Igual que totalIngresosARS/USD: del mes, servicio ingresos
-                        incluir = esDelMes && esServicioIngresos;
-                        break;
-                }
-
-                if (incluir) items.push({ servicio, factura });
-            });
-        });
-
-        const lista = document.getElementById('modal-debug-lista');
-        if (items.length === 0) {
-            lista.innerHTML = `<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`;
-        } else {
-            lista.innerHTML = items.map(({ servicio, factura }) => {
-                const moneda = factura.moneda || 'ars';
-                const estadoBadge = factura.pagada
-                    ? `<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.utils.formatearFecha(factura.fechaPago) : ''}</span>`
-                    : `<span class="debug-badge debug-badge-warning">Pendiente</span>`;
-                return `
-    <div class="debug-card">
-        <div class="debug-card-title">${this.utils.escaparHTML(servicio.nombre)}</div>
-        <div class="d-flex justify-content-between align-items-center text-muted text-sm">
-            <span>Vence: ${this.utils.formatearFecha(factura.fecha)}</span>
-            <span>${this.utils.formatearMoneda(factura.monto, moneda)}</span>
-        </div>
-        <div class="mt-1">${estadoBadge}</div>
-    </div>`;
-            }).join('');
-        }
-
-        this.ui.abrirModal('modal-debug-estadisticas');
-    }
 
     // ========================================
     // GIST SYNC

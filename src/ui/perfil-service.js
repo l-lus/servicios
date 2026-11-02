@@ -29,13 +29,13 @@ export class PerfilService {
     // ── Cambio de perfil activo ───────────────────────────────
     cambiar(perfilId) {
         if (perfilId === this.perfilActivo) return;
-        this\.app.storage.guardarDatosPerfilActivo();
+        this.app.storage.guardarDatosPerfilActivo();
         this.perfilActivo = perfilId;
         StorageHelper.setItem(STORAGE_KEYS.PERFIL_ACTIVO, perfilId);
-        this\.app.storage.cargarDatosPerfilActivo();
+        this.app.storage.cargarDatosPerfilActivo();
         this.app._estadisticaCategoriaActiva = null;
         this.app.ultimoEstadoEstadisticas = null;
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
         this.app.ui.cerrarModal('modal-perfiles');
         this.app.ui.cerrarMenuAjustes();
         this.app.ui.mostrarToast(`Cambiado a perfil: ${this.perfiles[perfilId].nombre}`, 'success');
@@ -122,7 +122,7 @@ export class PerfilService {
         if (error === 'duplicado') { this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
         if (this.app.perfilEditando) {
             GestorPerfiles.renombrar(this.perfiles, this.app.perfilEditando, nombre);
-            if (this.app.perfilEditando === this.perfilActivo) this.app.renderServicios();
+            if (this.app.perfilEditando === this.perfilActivo) this.app.vista.renderServicios();
             this.app.ui.mostrarToast('Perfil actualizado', 'success');
         } else {
             if (!GestorPerfiles.puedeCrear(this.perfiles)) { this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return; }

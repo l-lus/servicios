@@ -24,7 +24,7 @@ export class GistService {
     setPerfil(campos) {
         if (!this.app.perfiles[this.perfilActivo]) return;
         Object.assign(this.app.perfiles[this.perfilActivo], campos);
-        this\.app.perfil.guardar();
+        this.app.perfil.guardar();
     }
 
     esIdValido(id) { return /^[a-f0-9]{20,40}$/i.test(id || ''); }
@@ -87,7 +87,7 @@ export class GistService {
         this.setPerfil({ gistId, gistAuto: auto });
 
         this.app.mostrarToast(auto ? 'Sincronización automática activada' : 'Configuración guardada', 'success');
-        this\.app.ui.cerrarModal('modal-gist');
+        this.app.ui.cerrarModal('modal-gist');
         this.actualizarBotones();
     }
 
@@ -104,8 +104,8 @@ export class GistService {
             btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
             btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
         } else {
-            btnRespaldar.onclick = () => this\.app.storage.exportarDatos();
-            btnRestaurar.onclick = () => this.app.mostrarOpcionesImportacion();
+            btnRespaldar.onclick = () => this.app.storage.exportarDatos();
+            btnRestaurar.onclick = () => this.app.storage.mostrarOpcionesImportacion();
             btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
             btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
         }
@@ -275,7 +275,7 @@ export class GistService {
                 }
 
                 this.app._gistDatosPendientes = data;
-                setTimeout(() => this\.app.ui.abrirModal('modal-gist-novedades'), 600);
+                setTimeout(() => this.app.ui.abrirModal('modal-gist-novedades'), 600);
             }
         } catch (e) {
             console.error("AutoSync error:", e);
@@ -327,7 +327,7 @@ export class GistService {
         this.setPerfil({ gistLastSync: new Date().toISOString() });
         this.app._gistDatosPendientes = null;
 
-        this\.app.ui.cerrarModal('modal-gist-novedades');
+        this.app.ui.cerrarModal('modal-gist-novedades');
         this.app.mostrarToast('Datos combinados correctamente', 'success');
     }
 

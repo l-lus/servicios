@@ -57,13 +57,13 @@ export class ContextMenuService {
         const btnPagarText = btnPagar.childNodes[btnPagar.childNodes.length - 1];
         if (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) {
             const hayPagables = [...this.app.serviciosSeleccionados].some(id => {
-                const f = this.app.obtenerUltimaFactura(id);
+                const f = this.app.vista.obtenerUltimaFactura(id);
                 return f && !f.pagada && !f.conCredito;
             });
             btnPagar.disabled = !hayPagables;
             btnPagarText.textContent = ` Pagar ${this.app.serviciosSeleccionados.size} seleccionados`;
         } else {
-            const factura = this.app.obtenerUltimaFactura(servicioId);
+            const factura = this.app.vista.obtenerUltimaFactura(servicioId);
             btnPagar.disabled = !factura || factura.pagada || !!factura.conCredito;
             btnPagarText.textContent = ' Pagar factura del mes';
         }
@@ -99,7 +99,7 @@ export class ContextMenuService {
             this.app.calculador.activarModo(true);
             this.app.serviciosSeleccionados.add(servicioId);
             this.app.calculador.actualizar();
-            this.app.renderServicios();
+            this.app.vista.renderServicios();
             return;
         }
         if (this.app.serviciosSeleccionados.has(servicioId)) {
@@ -112,7 +112,7 @@ export class ContextMenuService {
             this.app.serviciosSeleccionados.add(servicioId);
         }
         this.app.calculador.actualizar();
-        this.app.renderServicios();
+        this.app.vista.renderServicios();
     }
 
     copiarMonto() {
@@ -123,7 +123,7 @@ export class ContextMenuService {
 
         let totalARS = 0, totalUSD = 0;
         ids.forEach(id => {
-            const f = this.app.obtenerUltimaFactura(id);
+            const f = this.app.vista.obtenerUltimaFactura(id);
             if (!f) return;
             if ((f.moneda || 'ars') === 'usd') totalUSD += f.monto;
             else totalARS += f.monto;
@@ -152,7 +152,7 @@ export class ContextMenuService {
 
         ids.forEach(id => {
             const servicio = this.app.servicios.find(s => s.id === id);
-            const factura = this.app.obtenerUltimaFactura(id);
+            const factura = this.app.vista.obtenerUltimaFactura(id);
             if (!servicio || !factura || factura.pagada || factura.conCredito) return;
             const idx = servicio.facturas.findIndex(f => f.id === factura.id);
             if (idx === -1) return;

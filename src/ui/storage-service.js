@@ -23,11 +23,11 @@ export class StorageService {
         try {
             const key = STORAGE_KEYS.DATOS_PERFIL(this.perfilActivo);
             this.servicios = StorageHelper.getObject(key, []);
-            this\.app.historial_mgr.inicializarHistorial();
+            this.app.historial_mgr.inicializarHistorial();
         } catch (error) {
             console.error('Error al cargar datos del perfil:', error);
             this.servicios = [];
-            this\.app.historial_mgr.inicializarHistorial();
+            this.app.historial_mgr.inicializarHistorial();
         }
     }
 
@@ -179,7 +179,7 @@ export class StorageService {
         const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
         if (modo === 'combinar') {
             const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
-            const categoriasAgregadas = this\.app.gist.mergeCategorias(datos.categorias);
+            const categoriasAgregadas = this.app.gist.mergeCategorias(datos.categorias);
             if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
                 this.app.ui.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
             }
@@ -204,5 +204,75 @@ export class StorageService {
         const { combinar, reemplazar } = ImportarExportar.compararRespaldo(
             this.servicios, serviciosRemoto, this.app.categoria.getCategorias(), categoriasRemoto);
         return `<strong>Combinar:</strong> ${combinar}<br><strong>Reemplazar:</strong> ${reemplazar}`;
+    }
+
+    mostrarOpcionesImportacion() {
+        this.app.utils.toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
+    }
+
+    mostrarOpcionesBorrar() {
+        this.app.utils.toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
+    }
+
+    toggleMenuDolar() {
+        this.app.utils.toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
+    }
+
+    async limpiarDatos(tipo = 'todo') {
+        const mensajes = {
+            todo: '¿Estás seguro de eliminar TODOS los datos? (servicios, facturas, ingresos y categorías)',
+            servicios: '¿Estás seguro de eliminar todos los servicios y sus facturas? Los ingresos y categorías se conservarán.',
+            facturas: '¿Estás seguro de eliminar todas las facturas de todos los servicios? Los servicios se conservarán vacíos.',
+            ingresos: '¿Estás seguro de eliminar todos los ingresos registrados?',
+            categorias: '¿Estás seguro de eliminar todas las categorías?'
+        };
+
+        const toasts = {
+            todo: 'Todos los datos han sido eliminados',
+            servicios: 'Todos los servicios han sido eliminados',
+            facturas: 'Todas las facturas han sido eliminadas',
+            ingresos: 'Todos los ingresos han sido eliminados',
+            categorias: 'Todas las categorías han sido eliminadas'
+        };
+
+        const confirmado = await ModalManager.confirmar(
+            mensajes[tipo] || mensajes.todo,
+            'Borrar',
+            '#icon-trash',
+            { titulo: 'Eliminar datos' }
+        );
+        if (!confirmado) return;
+
+        if (tipo === 'todo') {
+            this.app.servicios = [];
+            this.app.categoria.saveCategorias([]);
+        } else if (tipo === 'servicios') {
+            // Eliminar todos los servicios excepto el de ingresos
+            this.app.servicios = this.app.servicios.filter(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+        } else if (tipo === 'facturas') {
+            // Vaciar facturas de todos los servicios normales (no ingresos)
+            this.app.servicios = this.app.servicios.map(s => {
+                if (s.id === this.app.SERVICIO_INGRESOS_ID) return s;
+                return { ...s, facturas: [] };
+            });
+        } else if (tipo === 'ingresos') {
+            // Eliminar todas las facturas del servicio de ingresos
+            const servicioIngresos = this.app.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+            if (servicioIngresos) {
+                servicioIngresos.facturas = [];
+            }
+        } else if (tipo === 'categorias') {
+            // Limpiar categorías y quitar la categoría asignada a los servicios
+            this.app.categoria.saveCategorias([]);
+            this.app.servicios = this.app.servicios.map(s => ({ ...s, categoria: '' }));
+        }
+
+        const etiquetas = { todo: 'todos los datos', servicios: 'servicios', facturas: 'facturas', ingresos: 'ingresos', categorias: 'categorías' };
+        this.app._postGuardado(`borrar ${etiquetas[tipo] || etiquetas.todo}`);
+        this.app.historial_mgr.actualizarBotones();
+        this.app.toastConDeshacer(toasts[tipo] || toasts.todo);
+        document.getElementById('opciones-borrar').classList.remove('open');
+        document.getElementById('menu-limpiar').classList.remove('open');
+        this.app.ui.cerrarMenuAjustes();
     }
 }

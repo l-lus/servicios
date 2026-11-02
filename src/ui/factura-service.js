@@ -92,14 +92,14 @@ export class FacturaService {
             const ordenadas = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
             const grupos = this.agruparPorAno(ordenadas);
             lista.innerHTML = grupos.map((grupo, index) => {
-                const html = grupo.items.map(f => this.app.generarHTMLFactura(f, 'editar-factura')).join('');
+                const html = grupo.items.map(f => this.app.vista.generarHTMLFactura(f, 'editar-factura')).join('');
                 return this.generarGrupoAno(grupo.ano, grupo.items, html, 'factura', index);
             }).join('');
         }
-        this\.app.ui.abrirModal('modal-facturas-servicio');
+        this.app.ui.abrirModal('modal-facturas-servicio');
         const anoGuardado = this.app._anoExpandidoFacturas[servicioId];
-        if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoFacturas[servicioId] = null; }
-        this.app._resaltarItemLista(lista, resaltar);
+        if (anoGuardado) { this.app.vista._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoFacturas[servicioId] = null; }
+        this.app.vista._resaltarItemLista(lista, resaltar);
     }
 
     async borrarTodas() {
@@ -116,16 +116,16 @@ export class FacturaService {
         );
         if (confirmado) {
             servicio.facturas = [];
-            this\.app.storage.guardarDatos();
+            this.app.storage.guardarDatos();
             this.app.guardarEstado(`borrar facturas (${servicio.nombre})`);
-            this.app.renderServicios();
+            this.app.vista.renderServicios();
             this.app.toastConDeshacer(`${total} factura${total !== 1 ? 's' : ''} eliminada${total !== 1 ? 's' : ''}`);
         }
     }
 
     // ── Modal agregar/editar ──────────────────────────────────
     abrirModal(servicioId, facturaId = null, origen = 'servicio') {
-        this\.app.ui.cerrarModal('modal-facturas-servicio');
+        this.app.ui.cerrarModal('modal-facturas-servicio');
         this.app.servicioActual = servicioId;
         this.app.facturaActual  = facturaId;
         const ids     = this.app.utils.idsFormFactura(!!facturaId);
@@ -192,7 +192,7 @@ export class FacturaService {
             if (csdSvcEdit?._customSelect) csdSvcEdit._customSelect.refresh();
             const csdTipoEdit = document.getElementById('editar-factura-tipo-csd');
             if (csdTipoEdit?._customSelect) csdTipoEdit._customSelect.refresh();
-            this\.app.ui.abrirModal('modal-editar-factura');
+            this.app.ui.abrirModal('modal-editar-factura');
         } else {
             // Poblar select ANTES de reset para que reset no lo borre
             const selectSvc = document.getElementById('factura-servicio');
@@ -213,7 +213,7 @@ export class FacturaService {
             if (csdTipoNueva?._customSelect) csdTipoNueva._customSelect.refresh();
             this.app.origenModalFactura = origen;
             if (origen === 'menu') this.app.ui.cerrarMenuAgregar();
-            this\.app.ui.abrirModal('modal-agregar-factura');
+            this.app.ui.abrirModal('modal-agregar-factura');
         }
     }
 
@@ -322,7 +322,7 @@ export class FacturaService {
                 factura.pagada === estaPagada && factura.fechaPago === fechaPago &&
                 (factura.moneda || 'ars') === moneda) {
                 this.app.ui.mostrarToast('Sin cambios', 'info');
-                this\.app.ui.cerrarModal('modal-editar-factura');
+                this.app.ui.cerrarModal('modal-editar-factura');
                 this.abrirModalLista(servicioSelId); return;
             }
             Object.assign(factura, { monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
@@ -331,7 +331,7 @@ export class FacturaService {
             servicio.facturas.push({ id: facturaId, monto, tipo, fecha, moneda, pagada: estaPagada, fechaPago: estaPagada ? fechaPago : null, conCredito });
         }
         this.app.utils.postGuardado(`${esEditar ? 'editar' : 'agregar'} factura (${servicio.nombre})`);
-        this\.app.ui.cerrarModal(esEditar ? 'modal-editar-factura' : 'modal-agregar-factura');
+        this.app.ui.cerrarModal(esEditar ? 'modal-editar-factura' : 'modal-agregar-factura');
         this.abrirModalLista(servicioSelId, { resaltar: facturaId });
         this.app.ui.mostrarToast(esEditar ? 'Factura actualizada' : 'Factura agregada', 'success');
     }
@@ -342,10 +342,10 @@ export class FacturaService {
         const servicio = this.servicios.find(s => s.id === this.app.servicioActual);
         if (!servicio) return;
         servicio.facturas = servicio.facturas.filter(f => f.id !== this.app.facturaActual);
-        this\.app.storage.guardarDatos();
+        this.app.storage.guardarDatos();
         this.app.guardarEstado(`eliminar factura (${servicio.nombre})`);
-        this.app.renderServicios();
-        this\.app.ui.cerrarModal('modal-editar-factura');
+        this.app.vista.renderServicios();
+        this.app.ui.cerrarModal('modal-editar-factura');
         this.app.toastConDeshacer('Factura eliminada');
     }
 }
