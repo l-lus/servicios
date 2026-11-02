@@ -1,3 +1,4 @@
+import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { ModalManager } from './gestor-modales.js';
@@ -273,16 +274,16 @@ export class ListenersApp {
             this.app.categoria.abrirModal(null);
         });
 
-        // Menu informacion
-        document.getElementById('menu-informacion').addEventListener('click', () => {
+        // Ayuda con buscador
+        document.getElementById('menu-ayuda').addEventListener('click', () => {
             this.app.ui.cerrarMenuAjustes();
-            this.app.ui.abrirModal('modal-informacion');
+            AyudaBuscador.limpiar();
+            this.app.ui.abrirModal('modal-ayuda');
         });
-
-        // Cerrar modal informacion
-        document.getElementById('modal-informacion-close').addEventListener('click', () => {
-            this.app.ui.cerrarModal('modal-informacion');
+        document.getElementById('modal-ayuda-close').addEventListener('click', () => {
+            this.app.ui.cerrarModal('modal-ayuda');
         });
+        AyudaBuscador.bindEventos();
 
         // ---- Listeners migrados desde inline handlers en el HTML ----
 

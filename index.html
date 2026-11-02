@@ -429,11 +429,11 @@
                 <span>Ingresos</span>
                 <span id="ingresos-indicator"></span>
             </div>
-            <div class="menu-item" id="menu-informacion">
+            <div class="menu-item" id="menu-ayuda">
                 <svg class="icon">
                     <use href="#icon-info" />
                 </svg>
-                <span>Información</span>
+                <span>Ayuda</span>
             </div>
         </div>
         <div class="menu-footer">
@@ -1420,126 +1420,115 @@
     </div>
 
     <!-- Modal Información Calculador -->
-    <div class="modal" id="modal-informacion">
+    <div class="modal" id="modal-ayuda" role="dialog" aria-modal="true" aria-labelledby="modal-ayuda-titulo">
         <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h3>📊 Informacion</h3>
+            <div class="modal-header ayuda-encabezado">
+                <h3 id="modal-ayuda-titulo">Ayuda</h3>
+                <div class="ayuda-buscador">
+                    <div class="ayuda-buscador-campo">
+                        <input type="search" id="ayuda-buscar" placeholder="Buscar en la ayuda" aria-label="Buscar en la ayuda"
+                            autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+                        <button type="button" class="search-clear" id="btn-ayuda-buscar-limpiar" title="Limpiar búsqueda" hidden>
+                            <svg class="icon"><use href="#icon-cancel" /></svg>
+                        </button>
+                    </div>
+                    <span class="ayuda-resultados" id="ayuda-resultados" role="status" aria-live="polite"></span>
+                </div>
             </div>
-            <div class="info-content">
-                <p class="mb-3 text-muted">
-                    Analiza tus facturas o ingresos en un rango de tiempo específico.
-                </p>
-
-                <div class="info-section">
-                    <h4 class="mb-2 d-flex align-items-center gap-2">
-                        <span class="info-section-icon">📌</span> Métricas Disponibles
-                    </h4>
-
-                    <div class="info-item">
-                        <strong>• Registros</strong><br>
-                        <span class="info-muted">
-                            Cantidad total de facturas en el período seleccionado
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <strong>• Monto Total</strong><br>
-                        <span class="info-muted">
-                            Suma de todos los montos (positivos y negativos)
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <strong>• Monto Promedio</strong><br>
-                        <span class="info-muted">
-                            Monto total dividido por la cantidad de registros
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <strong>• Variación (%)</strong><br>
-                        <span class="info-muted">
-                            Indica si tus gastos/ingresos aumentaron o disminuyeron en el período
-                        </span>
-                    </div>
-                </div>
-
-                <div class="info-section">
-                    <h4 class="mb-2 d-flex align-items-center gap-2">
-                        <span class="info-section-icon">📈</span> ¿Cómo se calcula la Variación?
-                    </h4>
-                    <p class="info-muted-mb">
-                        El sistema usa un método adaptativo según la cantidad de datos:
-                    </p>
-
-                    <div class="info-item">
-                        <strong>▸ Con 2-3 registros:</strong><br>
-                        <span class="info-muted">
-                            Compara el primer registro contra el último<br>
-                            <em>Ejemplo: Feb $5.000 → Dic $6.000 = +20%</em>
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <strong>▸ Con 4-8 registros:</strong><br>
-                        <span class="info-muted">
-                            Compara el promedio de la primera mitad vs segunda mitad<br>
-                            <em>Ejemplo: Promedio(Ene-Feb) vs Promedio(Nov-Dic)</em>
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <strong>▸ Con 9+ registros:</strong><br>
-                        <span class="info-muted">
-                            Usa el 30% de cada extremo (mín 3, máx 6 registros)<br>
-                            <em>Ejemplo: Promedio(6 primeras) vs Promedio(6 últimas)</em>
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <strong>▸ Con 1 registro:</strong><br>
-                        <span class="info-muted">
-                            Muestra "N/A" (no hay comparación posible)
-                        </span>
-                    </div>
-                </div>
-
-                <div class="info-section">
-                    <h4 class="mb-2 d-flex align-items-center gap-2">
-                        <span class="info-section-icon">💡</span> Caso Especial: Ingresos
-                    </h4>
-                    <p class="info-muted-mb2">
-                        Cuando seleccionas el servicio "Ingresos", la variación excluye automáticamente
-                        los registros complementarios (bonos, aguinaldos, extras) para calcular solo la
-                        tendencia de tus ingresos regulares.
-                    </p>
-                    <div class="info-code-box">
-                        <strong>Ejemplo:</strong><br>
-                        • Total incluye todo: $550.000 (5 registros)<br>
-                        • Variación usa solo regulares: $500.000 (4 registros)<br>
-                        • Excluye: $50.000 (aguinaldo)
-                    </div>
-                </div>
-
-                <div class="info-section">
-                    <h4 class="mb-2 d-flex align-items-center gap-2">
-                        <span class="info-section-icon">🎯</span> Interpretación
-                    </h4>
-                    <div class="info-code-box-mono">
-                        +15.5% = Aumentó 15.5% en el período<br>
-                        -8.3% = Disminuyó 8.3% en el período<br>
-                        0% = Se mantuvo estable<br>
-                        N/A = No hay suficientes datos<br>
-                        Solo extras = Todos los ingresos son complementarios
+            <div class="info-content ayuda-cuerpo custom-scroll">
+                <p class="ayuda-sin-resultados" id="ayuda-sin-resultados" hidden>No hay secciones que coincidan con la búsqueda. Probá con otras palabras.</p>
+                <div class="ayuda-layout">
+                    <nav class="ayuda-indice" id="ayuda-indice">
+                        <h4>Índice</h4>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-inicio">Primeros pasos</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-colores">Estados y colores</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-facturas">Facturas y pagos</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-resumen">Resumen</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-busqueda">Buscar y ordenar</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-categorias">Categorías</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-calculadora">Calculadora</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-estadisticas">Estadísticas</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-ingresos">Ingresos</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-perfiles">Perfiles</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-respaldo">Respaldo y sincronización</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-privacidad">Privacidad y ajustes</button>
+                    </nav>
+                    <div class="ayuda-secciones">
+                        <section class="ayuda-seccion" id="ayuda-sec-inicio">
+                            <h4>Primeros pasos</h4>
+                            <p>Cada <strong>servicio</strong> (luz, gas, internet…) tiene sus <strong>facturas</strong>. Tocá el botón <strong>+</strong> para agregar un servicio, una factura o un ingreso.</p>
+<p>Tocá un servicio para ver sus facturas por año; mantené presionado o hacé click derecho para el menú rápido (pagar, copiar monto, editar).</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-colores">
+                            <h4>Estados y colores</h4>
+                            <p>Cada servicio muestra la factura del mes en curso con un color según su vencimiento:</p>
+<div class="ayuda-color-fila"><span class="ayuda-color ayuda-color--red"></span><p><strong>Vencido:</strong> la fecha ya pasó y no está pagada.</p></div>
+<div class="ayuda-color-fila"><span class="ayuda-color ayuda-color--orange"></span><p><strong>Urgente:</strong> vence hoy, mañana o en 2 días.</p></div>
+<div class="ayuda-color-fila"><span class="ayuda-color ayuda-color--gold"></span><p><strong>Próximo:</strong> vence en 3 a 5 días.</p></div>
+<div class="ayuda-color-fila"><span class="ayuda-color ayuda-color--blue"></span><p><strong>Lejano:</strong> vence en más de 5 días.</p></div>
+<div class="ayuda-color-fila"><span class="ayuda-color ayuda-color--green"></span><p><strong>Pagado:</strong> la factura del mes ya está paga.</p></div>
+<div class="ayuda-color-fila"><span class="ayuda-color ayuda-color--vacio"></span><p><strong>Sin facturas:</strong> el servicio no tiene facturas o ninguna es de este mes.</p></div>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-facturas">
+                            <h4>Facturas y pagos</h4>
+                            <p>Una factura tiene monto, vencimiento, tipo (mensual, bimestral, semestral, anual) y moneda (ARS o USD). Podés marcarla como <strong>pagada</strong> con su fecha de pago, o como <strong>con crédito</strong> (se cuenta como pagada pero no suma al total del mes).</p>
+<p>Un monto <strong>negativo</strong> es un saldo a favor: no entra en los totales ni se considera deuda.</p>
+<p>Una factura <strong>anual</strong> pagada cubre todo el año: el servicio queda como pagado y no aparece como pendiente cada mes.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-resumen">
+                            <h4>Resumen</h4>
+                            <p>La tarjeta de arriba muestra lo <strong>pendiente</strong> del mes. Tocala para ver lo <strong>pagado</strong>; la barra indica qué parte del total del mes ya se pagó. El color del borde es el de la factura más urgente.</p>
+<p>El botón <strong>i</strong> detalla qué facturas vencen este mes y cuáles se pagaron este mes aunque vencieran en otro.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-busqueda">
+                            <h4>Buscar y ordenar</h4>
+                            <p>El buscador filtra por nombre sin distinguir mayúsculas ni acentos: «telefono» encuentra «Teléfono». El botón de ordenar permite elegir por nombre, vencimiento o monto.</p>
+<p>Las categorías pueden agruparse y tocar su título las colapsa; mantenerlo presionado colapsa o expande todas.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-categorias">
+                            <h4>Categorías</h4>
+                            <p>Desde Ajustes → Categorías creás y borrás categorías. Se asignan al crear o editar un servicio y sirven para agrupar la lista y filtrar las estadísticas.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-calculadora">
+                            <h4>Calculadora</h4>
+                            <p>Desde el menú + → <strong>Calcular</strong> elegís <strong>Pendientes</strong> o <strong>Pagados</strong>, seleccionás servicios y la calculadora flotante suma lo que corresponde (ARS y USD por separado). Tocala para copiar el total.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-estadisticas">
+                            <h4>Estadísticas</h4>
+                            <p>La tarjeta de estadísticas tiene dos modos: <strong>Mensual</strong> (totales, cantidades de pendientes, pagadas y vencidas del mes, filtrables por categoría) e <strong>Individual</strong> (análisis de un servicio en un rango de fechas). Tocar un dato abre el detalle de facturas que lo componen.</p>
+<h5>Métricas del modo individual</h5>
+<p><strong>Facturas:</strong> cantidad en el período. <strong>Monto total:</strong> suma de los montos. <strong>Monto promedio:</strong> total dividido la cantidad. <strong>Variación:</strong> si el gasto subió o bajó.</p>
+<h5>¿Cómo se calcula la variación?</h5>
+<p>Con 2 o 3 registros compara el primero contra el último. Con 4 a 8 compara el promedio de la primera mitad contra el de la segunda. Con 9 o más usa el 30 % de cada extremo (mínimo 3, máximo 6). Con 1 registro muestra «N/A».</p>
+<p>Ejemplo: +15.5 % = aumentó 15.5 % en el período; −8.3 % = disminuyó; 0 % = estable.</p>
+<p>En el servicio <strong>Ingresos</strong> la variación excluye los ingresos complementarios (bonos, aguinaldos, extras) y muestra «Solo extras» si todos lo son.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-ingresos">
+                            <h4>Ingresos</h4>
+                            <p>Activá <strong>Ingresos</strong> en Ajustes para registrar lo que cobrás (regular, complementario o transferencia). Con ingresos activados, las estadísticas muestran qué porcentaje del ingreso representan las facturas del mes.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-perfiles">
+                            <h4>Perfiles</h4>
+                            <p>Hasta 4 perfiles con datos separados (por ejemplo, casa y negocio). El perfil activo se cambia desde Ajustes → Perfiles.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-respaldo">
+                            <h4>Respaldo y sincronización</h4>
+                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad. <strong>Restaurar</strong> puede <strong>reemplazar</strong> todo o <strong>combinar</strong> con lo que ya tenés (agrega lo nuevo y actualiza las facturas que cambiaron).</p>
+<p><strong>Sincronización</strong> guarda el respaldo en un Gist privado de GitHub. Con la sincronización automática la app avisa si hay novedades al abrirla.</p>
+<p>Deshacer y rehacer (botones de la barra) guardan hasta 20 cambios durante 24 horas.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-privacidad">
+                            <h4>Privacidad y ajustes</h4>
+                            <p><strong>Privacidad</strong> desenfoca los montos del resumen hasta que los tocás. <strong>Reducir animaciones</strong> puede seguir al sistema (Auto) o forzarse. <strong>Dólar</strong> muestra la cotización del día.</p>
+<p>La app funciona sin conexión y avisa cuando hay una versión nueva para actualizar.</p>
+                        </section>
                     </div>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button type="button" class="button" id="modal-informacion-close">
-                    <svg class="icon">
-                        <use href="#icon-cancel" />
-                    </svg>
+                <button type="button" class="button" id="modal-ayuda-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg>
                     Cerrar
                 </button>
             </div>

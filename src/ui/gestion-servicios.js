@@ -1,3 +1,4 @@
+import { normalizarBusqueda } from '../core/busqueda-texto.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ListenersApp } from './listeners-app.js';
 import { ServicioService } from './servicio-service.js';
@@ -265,7 +266,7 @@ export class GestionServicios {
             // Si hay búsqueda activa, expandir grupos con resultados
             if (this.terminoBusqueda) {
                 EstadoApp.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
-                    const coincide = servicio.nombre.toLowerCase().includes(this.terminoBusqueda);
+                    const coincide = normalizarBusqueda(servicio.nombre).includes(this.terminoBusqueda);
                     if (coincide) {
                         // Expandir grupo por categoría
                         const cat = servicio.categoria || '';
@@ -284,7 +285,7 @@ export class GestionServicios {
         this._busquedaDebounced = debounce(aplicarBusqueda, this.BUSQUEDA_DEBOUNCE_MS);
 
         searchInput.addEventListener('input', (e) => {
-            const termino = e.target.value.toLowerCase().trim();
+            const termino = normalizarBusqueda(e.target.value).trim();
             searchClear.classList.toggle('d-flex-force', !!termino);
             // Vaciar el campo restaura la lista al instante
             if (!termino) { this._busquedaDebounced.cancel(); aplicarBusqueda(termino); return; }

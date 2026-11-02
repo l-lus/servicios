@@ -1,5 +1,6 @@
 import { parseDate, inicioDeDia } from '../core/fechas.js';
 import { formatearMoneda, formatearFecha } from '../core/formato.js';
+import { normalizarBusqueda } from '../core/busqueda-texto.js';
 
 // ====================================================================
 // ESTADO DE FACTURAS Y SERVICIOS — reglas de dominio puras (sin DOM)
@@ -96,10 +97,11 @@ export const EstadoFacturas = {
         return { estado, claseEstado, montoTexto, fechaTexto };
     },
 
-    /** Búsqueda por nombre (`termino` ya en minúsculas). El servicio de ingresos nunca se filtra por texto. */
+    /** Búsqueda por nombre, sin distinguir mayúsculas ni acentos. El servicio de ingresos nunca se filtra por texto. */
     filtrar(servicios, termino) {
-        if (!termino) return servicios;
-        return servicios.filter(s => s.id !== SERVICIO_INGRESOS_ID && s.nombre.toLowerCase().includes(termino));
+        const buscado = normalizarBusqueda(termino || '').trim();
+        if (!buscado) return servicios;
+        return servicios.filter(s => s.id !== SERVICIO_INGRESOS_ID && normalizarBusqueda(s.nombre).includes(buscado));
     },
 
     /** Ordena una copia: 'nombre' | 'vencimiento' | 'monto-desc' | 'monto-asc'. */

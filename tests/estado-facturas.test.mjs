@@ -84,3 +84,11 @@ test('ordenar: por nombre, por monto y por vencimiento (vencidas → pendientes 
     assert.deepEqual(EstadoFacturas.ordenar([caro, barato], 'monto-asc', HOY).map(s => s.nombre), ['Barato', 'Caro']);
     assert.notEqual(EstadoFacturas.ordenar(mezclado, 'nombre', HOY), mezclado, 'no muta la lista original');
 });
+
+test('filtrar: sin distinguir mayúsculas ni acentos', () => {
+    const lista = [srv('Electricidad'), srv('Gas Natural'), srv('Teléfono'), srv('Ñandú')];
+    assert.deepEqual(EstadoFacturas.filtrar(lista, 'TELEFONO').map(s => s.nombre), ['Teléfono']);
+    assert.deepEqual(EstadoFacturas.filtrar(lista, 'electrícidad').map(s => s.nombre), ['Electricidad']);
+    assert.deepEqual(EstadoFacturas.filtrar(lista, 'nandu').map(s => s.nombre), ['Ñandú']);
+    assert.equal(EstadoFacturas.filtrar(lista, '  ').length, 4);
+});
