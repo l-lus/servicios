@@ -2,6 +2,7 @@ import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { ResumenAnual } from '../services/resumen-anual.js';
 import { ResumenMes } from '../services/resumen-mes.js';
 import { Anim } from './animaciones.js';
 import { CustomSelect } from './custom-select.js';
@@ -142,8 +143,78 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
         else this.mostrarPagadoEnResumen();
     }
 
+    // ── Estadísticas anuales ──────────────────────────────────
+    actualizarEstadisticasAnuales() {
+        const cont = document.getElementById('estadisticas-anual-container');
+        if (!cont) return;
+        const anios = ResumenAnual.aniosDisponibles(this.servicios);
+        const anio = anios.includes(this._anioAnual) ? this._anioAnual : anios[0];
+        this._anioAnual = anio;
+
+        if (!document.getElementById('select-anio-estadisticas')) {
+            montar(cont, html`
+<div class="calculador-campo"><label class="calculador-label">Año</label>
+<div class="custom-select-wrapper" id="select-anio-estadisticas-csd"><div class="custom-select-trigger"><span class="csd-label"></span><svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div><div class="custom-select-dropdown"></div></div>
+<select id="select-anio-estadisticas" class="select-mes-oculto"></select></div>
+<div class="estadisticas-lista" id="estadisticas-anual-lista"></div>`);
+            const select = document.getElementById('select-anio-estadisticas');
+            const wrapper = document.getElementById('select-anio-estadisticas-csd');
+            wrapper._customSelect = new CustomSelect(wrapper, select, () => {
+                this._anioAnual = Number(select.value);
+                this.actualizarEstadisticasAnuales();
+            });
+        }
+        const select = document.getElementById('select-anio-estadisticas');
+        montar(select, html`${anios.map(a => html`<option value="${a}" ${a === anio ? 'selected' : ''}>${a}</option>`)}`);
+        select.value = String(anio);
+        document.getElementById('select-anio-estadisticas-csd')._customSelect.refresh();
+
+        const r = ResumenAnual.calcular(this.servicios, anio);
+        const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
+        const par = p => (p.ars > 0 || p.usd === 0 ? fmt(p.ars, 'ars') : fmt(p.usd, 'usd'));
+        const nombreMes = i => new Date(2000, i, 1).toLocaleDateString('es-AR', { month: 'long' });
+        const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+        const item = (label, valor, clase = '') => html`<div class="calculador-resultado-item"><span class="estadistica-label">${label}</span><span class="estadistica-valor ${clase}">${valor}</span></div>`;
+        const medida = r.medida;
+        const maximoMes = Math.max(1, ...r.meses.map(m => m[medida]));
+        const maximoCat = Math.max(1, ...r.porCategoria.map(c => c[medida]));
+
+        const colorVar = r.variacion === null ? '' : (r.variacion > 0 ? 'text-red' : 'text-green');
+        const filas = html`
+    ${item('Total del año', par(r.total))}
+    ${r.total.ars > 0 && r.total.usd > 0 ? item('Total USD', fmt(r.total.usd, 'usd')) : ''}
+    ${item('Promedio mensual', par(r.promedio))}
+    ${r.mesMayor !== null ? item('Mes de mayor gasto', `${cap(nombreMes(r.mesMayor))} · ${fmt(r.meses[r.mesMayor][medida], medida)}`) : ''}
+    ${r.mesMenor !== null ? item('Mes de menor gasto', `${cap(nombreMes(r.mesMenor))} · ${fmt(r.meses[r.mesMenor][medida], medida)}`) : ''}
+    ${r.variacion !== null ? item(`Vs. ${anio - 1}`, `${r.variacion > 0 ? '+' : ''}${r.variacion.toFixed(1)}%`, colorVar) : ''}
+    ${item('Facturas', `${r.facturas} (${r.pagadas} ${r.pagadas === 1 ? 'pagada' : 'pagadas'})`)}
+    ${r.pendiente.ars > 0 || r.pendiente.usd > 0 ? item('Pendiente', par(r.pendiente)) : ''}
+    ${this.app.ui.ingresosHabilitado() && r.porcentajeIngreso !== null ? item('% del ingreso anual', `${r.porcentajeIngreso.toFixed(1)}%`) : ''}
+    <div class="anual-grafico" role="list" aria-label="Gasto por mes">${r.meses.map(m => html`
+        <div class="anual-fila${m.mes === r.mesMayor ? ' anual-fila--mayor' : ''}" role="listitem">
+            <span class="anual-etiqueta">${cap(nombreMes(m.mes).slice(0, 3))}</span>
+            <span class="anual-pista"><span class="anual-barra" data-pct="${Math.round((m[medida] / maximoMes) * 100)}"></span></span>
+            <span class="anual-monto">${m[medida] > 0 ? fmt(m[medida], medida) : '—'}</span>
+        </div>`)}
+    </div>
+    ${r.porCategoria.length ? html`
+    <div class="anual-grafico anual-categorias" role="list" aria-label="Gasto por categoría">
+        <div class="anual-subtitulo">Por categoría</div>${r.porCategoria.slice(0, 6).map(c => html`
+        <div class="anual-fila" role="listitem">
+            <span class="anual-etiqueta anual-etiqueta--cat">${c.categoria || 'Sin categoría'}</span>
+            <span class="anual-pista"><span class="anual-barra" data-pct="${Math.round((c[medida] / maximoCat) * 100)}"></span></span>
+            <span class="anual-monto">${fmt(c[medida], medida)}</span>
+        </div>`)}
+    </div>` : ''}`;
+        const lista = document.getElementById('estadisticas-anual-lista');
+        montar(lista, r.facturas === 0 ? html`<span class="text-center-muted d-block sin-facturas-text">Sin facturas en ${anio}</span>` : filas);
+        // La CSP no admite style en línea: el ancho de cada barra se asigna por JS (CSSOM)
+        lista.querySelectorAll('.anual-barra').forEach(b => b.style.setProperty('--barra-w', `${b.dataset.pct}%`));
+    }
+
     // ── Estadísticas mensuales ────────────────────────────────
     actualizarEstadisticas() {
+        if (this.app.tipoEstadisticaActual === 'anual') { this.actualizarEstadisticasAnuales(); return; }
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
         const mesActual = hoy.getMonth(), añoActual = hoy.getFullYear();
         const selectMes = document.getElementById('select-mes-estadisticas');
@@ -260,17 +331,18 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
     }
 
     cambiarTipoEstadistica() {
-        const mensualContainer = document.getElementById('estadisticas-mensual-container');
-        const individualContainer = document.getElementById('estadisticas-individual-container');
-        if (this.app.tipoEstadisticaActual === 'mensual') {
-            mensualContainer.classList.add('visible'); mensualContainer.classList.remove('hidden');
-            individualContainer.classList.add('hidden'); individualContainer.classList.remove('visible');
-            this.actualizarEstadisticas();
-        } else {
-            mensualContainer.classList.add('hidden'); mensualContainer.classList.remove('visible');
-            individualContainer.classList.add('visible'); individualContainer.classList.remove('hidden');
-            this.app.calculador.calcularPeriodo();
-        }
+        const tipo = this.app.tipoEstadisticaActual;
+        const contenedores = { mensual: 'estadisticas-mensual-container', individual: 'estadisticas-individual-container', anual: 'estadisticas-anual-container' };
+        Object.entries(contenedores).forEach(([clave, id]) => {
+            const el = document.getElementById(id);
+            el.classList.toggle('visible', clave === tipo);
+            el.classList.toggle('hidden', clave !== tipo);
+        });
+        // El reporte solo existe para el mes y para un servicio
+        document.getElementById('btn-reporte-estadisticas').classList.toggle('hidden', tipo === 'anual');
+        if (tipo === 'mensual') this.actualizarEstadisticas();
+        else if (tipo === 'anual') this.actualizarEstadisticasAnuales();
+        else this.app.calculador.calcularPeriodo();
     }
 
     // ── Select servicios (calculador) ─────────────────────────

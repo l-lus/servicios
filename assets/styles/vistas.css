@@ -1153,3 +1153,69 @@
     font-weight: var(--fw-semibold);
     white-space: nowrap;
 }
+
+/* ============================================================
+           ESTADÍSTICAS ANUALES
+        ============================================================ */
+.anual-grafico {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: var(--space-lg);
+}
+
+.anual-subtitulo {
+    margin-bottom: var(--space-xs);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-muted);
+}
+
+.anual-fila {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--text-sm);
+}
+
+.anual-categorias .anual-fila {
+    grid-template-columns: 6rem 1fr auto;
+}
+
+.anual-etiqueta {
+    color: var(--text-muted);
+}
+
+.anual-etiqueta--cat {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.anual-pista {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+    overflow: hidden;
+}
+
+.anual-barra {
+    display: block;
+    height: 100%;
+    width: var(--barra-w, 0%);
+    border-radius: 999px;
+    background: var(--c-blue);
+    transition: width var(--dur-anim) var(--ease-anim);
+}
+
+.anual-fila--mayor .anual-barra {
+    background: var(--c-red);
+}
+
+.anual-monto {
+    min-width: 5rem;
+    text-align: right;
+    color: var(--text-main);
+    white-space: nowrap;
+}
