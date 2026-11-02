@@ -713,6 +713,12 @@ body.tarjeta-arrastrando-activa * {
 /* ============================================================
            PERFILES Y AJUSTES (modales con encabezado, cuerpo con scroll y pie fijo)
         ============================================================ */
+@media (min-width: 1024px) {
+    .header-profile-btn {
+        max-width: 300px;
+    }
+}
+
 .header-profile-btn {
     display: flex;
     align-items: center;
@@ -1049,4 +1055,33 @@ form.modal-content {
     text-align: center;
     color: var(--text-muted);
     font-size: var(--text-sm);
+}
+
+/* Selector de columna de cada tarjeta (1, 2 o 3) */
+.orden-columnas {
+    display: inline-flex;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--input-bg);
+}
+
+.orden-col-btn {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+}
+
+.orden-col-btn[aria-pressed="true"] {
+    background: var(--c-active);
+    color: var(--c-white);
+}
+
+#tarjetas-columnas[hidden] {
+    display: none;
 }

@@ -2,24 +2,26 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS, CARDS, CARDS_ETIQUETAS } from '../core/constantes.js';
 import { html, montar } from '../core/html.js';
 import {
-    normalizarDisposicion, normalizarOrdenMovil, columnaDe, colocarEnColumna, colocarEnLista,
-    moverEnColumna, moverEnLista, pasarAOtraColumna,
+    normalizarDisposicion, normalizarOrdenMovil, columnaDe, columnasActivas, colocarEnColumna, colocarEnLista,
+    moverEnColumna, moverEnLista, pasarAColumna,
 } from '../services/orden-cards.js';
 import { uiAnimarReubicacion, uiArrastreLargo, REUBICACION_MS } from './arrastre.js';
 
 // ============================================================
 // DISPOSICIÓN DE TARJETAS — visibilidad, columnas libres en PC y orden propio en el celular
 // ============================================================
-// PC: dos columnas y cada tarjeta va a la que se elija ({ izq, der }). Celular: una sola columna con su propio orden.
+// PC: 2 o 3 columnas del mismo ancho y cada tarjeta va a la que se elija ({ izq, cen, der }). Celular: una sola columna con su propio orden.
 // Se cambia desde Ajustes (lista con botones, para PC o celular) o arrastrando el título de una tarjeta (o con Alt + flechas).
 const $ = id => document.getElementById(id);
 
-// Mismo corte que el CSS (min-width: 768px)
+// Mismos cortes que el CSS: escritorio desde 768 px; la tercera columna solo se muestra desde 1100 px (más angosto se vuelve a 2)
 const consultaEscritorio = window.matchMedia('(min-width: 768px)');
+const consultaAncho = window.matchMedia('(min-width: 1100px)');
 const esEscritorio = () => consultaEscritorio.matches;
+const NOMBRES_COLUMNA = { izq: 'Columna 1', cen: 'Columna 2', der: 'Columna 3' };
 
 // Desde dónde se arrastra cada tarjeta: su encabezado (en el resumen, el título; el resto del resumen toca para alternar)
-const SELECTOR_ENCABEZADOS = '#card-resumen .resumen-titulo, #card-atajos .card-header-sin-chevron, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
+const SELECTOR_ENCABEZADOS = '#card-resumen .resumen-titulo, #card-atajos, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
 const SELECTOR_CARDS = '#card-resumen, #card-atajos, #card-estadisticas, #card-calendario, #card-servicios';
 
 export class OrdenTarjetas {
@@ -30,8 +32,17 @@ export class OrdenTarjetas {
     }
 
     // ── Estado guardado ──────────────────────────────────────
+    /** Columnas elegidas para PC (2 o 3). */
+    columnasPC() { return Number(StorageHelper.getItem(STORAGE_KEYS.COLUMNAS_PC, '2')) === 3 ? 3 : 2; }
+
+    /** Columnas que se ven ahora: 1 en celular; en PC las elegidas (3 solo si hay ancho suficiente). */
+    columnasEfectivas() {
+        if (!esEscritorio()) return 1;
+        return this.columnasPC() === 3 && consultaAncho.matches ? 3 : 2;
+    }
+
     obtenerDisposicion() {
-        return normalizarDisposicion(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null), CARDS);
+        return normalizarDisposicion(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null), CARDS, this.columnasPC());
     }
 
     guardarDisposicion(d) { StorageHelper.setItem(STORAGE_KEYS.ORDEN_CARDS, d); }
@@ -49,37 +60,49 @@ export class OrdenTarjetas {
         CARDS.forEach(cual => { const card = $('card-' + cual); if (card) card.style.display = this.esVisible(cual) ? '' : 'none'; });
     }
 
-    /** Columnas de escritorio: la izquierda es la barra lateral, la derecha el contenido principal (en el celular todo va en la primera). */
+    /** Contenedores de las columnas (el del centro solo se ve con 3 columnas; en el celular todo va en el primero). */
     _columnas() {
-        return { izq: document.querySelector('.sidebar-left'), der: document.querySelector('.main-content') };
+        return { izq: document.querySelector('.sidebar-left'), cen: $('columna-centro'), der: document.querySelector('.main-content') };
     }
 
     /** Coloca las tarjetas según la disposición del dispositivo actual (o la que se pase). */
     aplicar(layout = null) {
-        const { izq, der } = this._columnas();
-        if (!izq || !der) return;
-        if (esEscritorio()) {
-            const d = layout?.izq ? layout : this.obtenerDisposicion();
-            ['izq', 'der'].forEach(col => d[col].forEach(cual => { const c = $('card-' + cual); if (c) (col === 'izq' ? izq : der).appendChild(c); }));
-        } else {
+        const cols = this._columnas();
+        if (!cols.izq || !cols.der || !cols.cen) return;
+        // Al volver a insertar una tarjeta el navegador reinicia su animación de entrada (y la tarjeta parpadea desde invisible):
+        // una vez cargada la pantalla se les quita la clase de entrada, que ya cumplió su función
+        if (this._listo) this._quitarEntrada();
+        const n = this.columnasEfectivas();
+        document.querySelector('.main-grid')?.classList.toggle('cols-3', n === 3);
+        if (n === 1) {
             const lista = Array.isArray(layout) ? layout : this.obtenerOrdenMovil();
-            lista.forEach(cual => { const c = $('card-' + cual); if (c) izq.appendChild(c); });
+            lista.forEach(cual => { const c = $('card-' + cual); if (c) cols.izq.appendChild(c); });
+        } else {
+            const d = layout?.izq ? layout : this.obtenerDisposicion();
+            // Con 2 columnas lo del centro se muestra a continuación de la derecha (sin tocar lo guardado)
+            const destino = { izq: cols.izq, cen: n === 3 ? cols.cen : cols.der, der: cols.der };
+            const orden = n === 3 ? ['izq', 'cen', 'der'] : ['izq', 'der', 'cen'];
+            orden.forEach(col => d[col].forEach(cual => { const c = $('card-' + cual); if (c) destino[col].appendChild(c); }));
         }
         this.renderLista();
     }
 
+    _quitarEntrada() {
+        document.querySelectorAll('.card-fade-in').forEach(c => c.classList.remove('card-fade-in', 'delay-1', 'delay-2'));
+    }
+
     /** Tarjetas visibles en el orden en que se ven (columna izquierda y luego derecha). */
     obtenerCardsVisibles() {
-        const { izq, der } = this._columnas();
+        const { izq, cen, der } = this._columnas();
         const cards = [];
-        [izq, der].forEach(col => {
+        [izq, cen, der].forEach(col => {
             if (!col) return;
             Array.from(col.children).forEach(el => { if (el.id?.startsWith('card-') && el.style.display !== 'none') cards.push(el); });
         });
         return cards;
     }
 
-    /** Disposición actual leída del DOM-independiente: la guardada del dispositivo (PC: { izq, der }; celular: lista). */
+    /** Disposición guardada del dispositivo actual (PC: { izq, cen, der }; celular: lista). */
     _actual() { return esEscritorio() ? this.obtenerDisposicion() : this.obtenerOrdenMovil(); }
 
     _guardarActual(layout) { if (esEscritorio()) this.guardarDisposicion(layout); else this.guardarOrdenMovil(layout); }
@@ -89,12 +112,16 @@ export class OrdenTarjetas {
         const cont = $('lista-orden-cards');
         if (!cont) return;
         const pc = this.edicion === 'pc';
+        const n = this.columnasPC();
         document.querySelectorAll('#modal-tarjetas .tarjetas-modo').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.modo === 'pc') === pc)));
+        document.querySelectorAll('#modal-tarjetas .tarjetas-cols').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n)));
+        $('tarjetas-columnas').hidden = !pc;
         $('orden-cards-contexto').textContent = pc
-            ? 'En PC hay dos columnas: elegí en cuál va cada tarjeta y su orden.'
+            ? `En PC: ${n} columnas del mismo ancho${n === 3 ? ' (en pantallas angostas se muestran 2)' : ''}. Elegí en cuál va cada tarjeta y su orden.`
             : 'En el celular las tarjetas van en una sola columna, con su propio orden.';
 
-        const fila = (cual, lista, i, conColumna) => html`
+        const activas = columnasActivas(n);
+        const fila = (cual, lista, i, columnaActual) => html`
             <div class="orden-card-item" data-card="${cual}">
                 <span class="orden-card-nombre">${CARDS_ETIQUETAS[cual]}</span>
                 <button type="button" class="icon-btn" data-mover="-1" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir ${CARDS_ETIQUETAS[cual]}">
@@ -103,22 +130,21 @@ export class OrdenTarjetas {
                 <button type="button" class="icon-btn" data-mover="1" ${i === lista.length - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar ${CARDS_ETIQUETAS[cual]}">
                     <svg class="icon"><use href="#icon-chevron-down" /></svg>
                 </button>
-                ${conColumna ? html`<button type="button" class="icon-btn" data-columna="1" title="Pasar a la otra columna" aria-label="Pasar ${CARDS_ETIQUETAS[cual]} a la otra columna">
-                    <svg class="icon"><use href="#icon-replace-swap" /></svg>
-                </button>` : ''}
+                ${columnaActual ? html`<span class="orden-columnas" role="group" aria-label="Columna de ${CARDS_ETIQUETAS[cual]}">${activas.map((col, k) => html`
+                    <button type="button" class="orden-col-btn" data-columna="${col}" aria-pressed="${col === columnaActual}" title="${NOMBRES_COLUMNA[col]}" aria-label="Pasar ${CARDS_ETIQUETAS[cual]} a la ${NOMBRES_COLUMNA[col].toLowerCase()}">${k + 1}</button>`)}</span>` : ''}
                 <button type="button" class="toggle-switch ${this.esVisible(cual) ? 'on' : ''}" data-visible="${cual}" role="switch" aria-checked="${this.esVisible(cual)}" aria-label="Mostrar ${CARDS_ETIQUETAS[cual]}"><span class="toggle-thumb"></span></button>
             </div>`;
 
         if (pc) {
             const d = this.obtenerDisposicion();
-            montar(cont, html`${['izq', 'der'].map(col => html`
+            montar(cont, html`${activas.map((col, k) => html`
                 <div class="orden-columna" data-columna-lista="${col}">
-                    <div class="orden-columna-titulo">${col === 'izq' ? 'Columna izquierda' : 'Columna derecha'}</div>
-                    ${d[col].length ? d[col].map((c, i) => fila(c, d[col], i, true)) : html`<div class="orden-columna-vacia">Vacía</div>`}
+                    <div class="orden-columna-titulo">Columna ${k + 1}</div>
+                    ${d[col].length ? d[col].map((c, i) => fila(c, d[col], i, col)) : html`<div class="orden-columna-vacia">Vacía</div>`}
                 </div>`)}`);
         } else {
             const lista = this.obtenerOrdenMovil();
-            montar(cont, html`<div class="orden-columna">${lista.map((c, i) => fila(c, lista, i, false))}</div>`);
+            montar(cont, html`<div class="orden-columna">${lista.map((c, i) => fila(c, lista, i, null))}</div>`);
         }
     }
 
@@ -144,13 +170,22 @@ export class OrdenTarjetas {
             : moverEnLista(this.obtenerOrdenMovil(), cual, delta));
     }
 
-    pasarDeColumna(cual) {
-        this._cambiarLayout(pasarAOtraColumna(this.obtenerDisposicion(), cual));
+    pasarDeColumna(cual, columna) {
+        this._cambiarLayout(pasarAColumna(this.obtenerDisposicion(), cual, columna));
+    }
+
+    /** 2 o 3 columnas en PC. Al pasar a 2, lo que había en la del medio se une a la última. */
+    cambiarColumnas(n) {
+        StorageHelper.setItem(STORAGE_KEYS.COLUMNAS_PC, n);
+        this.guardarDisposicion(this.obtenerDisposicion());
+        if (this._editaLaVisible() || esEscritorio()) uiAnimarReubicacion(() => this.obtenerCardsVisibles(), c => c.id, () => this.aplicar());
+        else this.renderLista();
     }
 
     restablecer() {
         StorageHelper.removeItem(STORAGE_KEYS.ORDEN_CARDS);
         StorageHelper.removeItem(STORAGE_KEYS.ORDEN_CARDS_MOVIL);
+        StorageHelper.removeItem(STORAGE_KEYS.COLUMNAS_PC);
         CARDS.forEach(c => StorageHelper.removeItem(STORAGE_KEYS.CARD_VISIBLE(c)));
         this.aplicarVisibilidad();
         this.aplicar();
@@ -163,23 +198,25 @@ export class OrdenTarjetas {
      */
     _evaluarDestino(arrastrado, clientX, clientY) {
         const id = arrastrado.id.replace('card-', '');
-        const { izq, der } = this._columnas();
+        const cols = this._columnas();
         const visibles = this.obtenerCardsVisibles().filter(c => c !== arrastrado);
+        const n = this.columnasEfectivas();
         let columna = 'izq';
-        if (esEscritorio()) {
-            const ri = izq.getBoundingClientRect(), rd = der.getBoundingClientRect();
-            columna = clientX >= (ri.right + rd.left) / 2 ? 'der' : 'izq';
+        if (n > 1) {
+            // La columna es la más cercana al puntero (por el centro horizontal de cada contenedor)
+            columna = columnasActivas(n).reduce((mejor, col) => {
+                const r = cols[col].getBoundingClientRect(), rm = cols[mejor].getBoundingClientRect();
+                return Math.abs(clientX - (r.left + r.width / 2)) < Math.abs(clientX - (rm.left + rm.width / 2)) ? col : mejor;
+            }, 'izq');
         }
-        const contenedor = columna === 'izq' ? izq : der;
+        const contenedor = cols[columna];
         const enColumna = visibles.filter(c => c.parentElement === contenedor);
         const siguiente = enColumna.find(c => { const r = c.getBoundingClientRect(); return clientY < r.top + r.height / 2; });
         const antesDe = siguiente ? siguiente.id.replace('card-', '') : null;
 
         const actual = this._actual();
-        const nueva = esEscritorio() ? colocarEnColumna(actual, id, columna, antesDe) : colocarEnLista(actual, id, antesDe);
-        // ¿Quedó distinto? (comparando el orden visible resultante)
-        const mismo = JSON.stringify(nueva) === JSON.stringify(actual);
-        return mismo ? null : nueva;
+        const nueva = n > 1 ? colocarEnColumna(actual, id, columna, antesDe) : colocarEnLista(actual, id, antesDe);
+        return JSON.stringify(nueva) === JSON.stringify(actual) ? null : nueva;
     }
 
     iniciarArrastre() {
@@ -191,7 +228,7 @@ export class OrdenTarjetas {
                 const header = el?.closest(SELECTOR_ENCABEZADOS);
                 return header ? header.closest(SELECTOR_CARDS) : null;
             },
-            capturar: (card) => card.querySelector('.resumen-titulo, .card-header-sin-chevron, .card-header-collapsible') || card,
+            capturar: (card) => card.querySelector('.resumen-titulo, .card-header-collapsible') || card,
             alEmpezar: (card) => {
                 inicial = this._actual();
                 enCurso = inicial;
@@ -238,14 +275,16 @@ export class OrdenTarjetas {
                 const idVecina = vecina.id.replace('card-', '');
                 // arriba: antes de la vecina; abajo: antes de la que sigue a la vecina (o al final)
                 const antesDe = e.key === 'ArrowUp' ? idVecina : (hermanas[i + 2]?.id.replace('card-', '') ?? null);
-                nueva = esEscritorio() ? colocarEnColumna(actual, id, columnaDe(actual, id), antesDe) : colocarEnLista(actual, id, antesDe);
-            } else if (esEscritorio()) {
-                const aDerecha = e.key === 'ArrowRight';
-                if ((columnaDe(actual, id) === 'der') === aDerecha) return;
-                const destino = visibles.filter(c => c !== card && c.parentElement === this._columnas()[aDerecha ? 'der' : 'izq']);
+                nueva = this.columnasEfectivas() > 1 ? colocarEnColumna(actual, id, columnaDe(actual, id), antesDe) : colocarEnLista(actual, id, antesDe);
+            } else if (this.columnasEfectivas() > 1) {
+                const activas = columnasActivas(this.columnasEfectivas());
+                const k = activas.indexOf(columnaDe(actual, id));
+                const destinoCol = activas[k + (e.key === 'ArrowRight' ? 1 : -1)];
+                if (!destinoCol) return;
+                const destino = visibles.filter(c => c !== card && c.parentElement === this._columnas()[destinoCol]);
                 const r = card.getBoundingClientRect();
                 const delante = destino.find(c => c.getBoundingClientRect().top + c.getBoundingClientRect().height / 2 > r.top);
-                nueva = colocarEnColumna(actual, id, aDerecha ? 'der' : 'izq', delante ? delante.id.replace('card-', '') : null);
+                nueva = colocarEnColumna(actual, id, destinoCol, delante ? delante.id.replace('card-', '') : null);
             }
             if (!nueva) return;
             e.preventDefault();
@@ -263,8 +302,11 @@ export class OrdenTarjetas {
         this.edicion = esEscritorio() ? 'pc' : 'movil';
         this.aplicarVisibilidad();
         this.aplicar();
-        // Al pasar de escritorio a celular (o al revés) se arma el diseño del modo nuevo
+        // Pasada la animación de entrada, reordenar no debe volver a animar las tarjetas
+        setTimeout(() => { this._listo = true; this._quitarEntrada(); }, 1500);
+        // Al pasar de escritorio a celular (o al revés) o al cambiar el ancho se arma el diseño del modo nuevo
         consultaEscritorio.addEventListener('change', () => { this.aplicar(); });
+        consultaAncho.addEventListener('change', () => { this.aplicar(); });
     }
 
     bindEventos() {
@@ -283,8 +325,11 @@ export class OrdenTarjetas {
             const cual = item.dataset.card;
             const mover = e.target.closest('[data-mover]');
             if (mover && !mover.disabled) this.mover(cual, Number(mover.dataset.mover));
-            else if (e.target.closest('[data-columna]')) this.pasarDeColumna(cual);
+            else if (e.target.closest('[data-columna]')) this.pasarDeColumna(cual, e.target.closest('[data-columna]').dataset.columna);
             else if (e.target.closest('[data-visible]')) this.alternarVisibilidad(cual);
+        });
+        document.querySelectorAll('#modal-tarjetas .tarjetas-cols').forEach(b => {
+            b.addEventListener('click', () => this.cambiarColumnas(Number(b.dataset.n)));
         });
         $('btn-tarjetas-restablecer').addEventListener('click', () => { this.restablecer(); this.app.ui.mostrarToast('Tarjetas restablecidas', 'success'); });
         $('modal-tarjetas-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-tarjetas'));

@@ -32,7 +32,7 @@ body.modal-open {
            LAYOUT
         ============================================================ */
 .container {
-    max-width: 1300px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: var(--space-lg) var(--space-sm);
 }
@@ -51,7 +51,8 @@ body.modal-open {
     justify-content: space-between;
     align-items: center;
     background: var(--bg-header);
-    padding: 0 0.6rem;
+    padding: var(--space-smd);
+    border-bottom: 3px solid transparent;
     box-shadow: var(--shadow);
 }
 

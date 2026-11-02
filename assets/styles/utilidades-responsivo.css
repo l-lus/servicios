@@ -637,20 +637,34 @@
 }
 
 @media (min-width: 768px) {
+    /* Columnas del mismo ancho (2, o 3 cuando se eligen y hay lugar): cada tarjeta tiene el mismo ancho en cualquier columna */
     .main-grid {
-        grid-template-columns: 400px 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-xl);
         align-items: start;
     }
 
-    .sidebar-left {
+    .main-grid.cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sidebar-left,
+    .main-content,
+    .columna-centro {
         display: flex;
         flex-direction: column;
         gap: var(--space-lg);
-        top: 70px;
+        min-width: 0;
     }
 
-    .sidebar-left .card {
+    .sidebar-left .card,
+    .main-content .card,
+    .columna-centro .card {
         margin-bottom: 0;
+    }
+
+    .main-grid.cols-3 .columna-centro {
+        display: flex;
     }
 
     .servicios-lista,
@@ -768,4 +782,20 @@
 /* Reducir animaciones: la barra indeterminada del toast de progreso queda quieta */
 :root[data-motion="reduce"] .toast-progreso:indeterminate {
     animation: none;
+}
+
+/* La columna del centro solo existe con 3 columnas en PC */
+.columna-centro {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .atajos-grid {
+        grid-template-columns: repeat(10, 1fr);
+    }
+
+    .atajo-btn {
+        height: auto;
+        aspect-ratio: 1;
+    }
 }

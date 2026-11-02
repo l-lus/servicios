@@ -1,5 +1,5 @@
 export const APP_NOMBRE = 'SERVICIOS';
-export const APP_VERSION = 'v261101';
+export const APP_VERSION = 'v261102';
 
 // ============================================================
 // STORAGE KEYS — única fuente de verdad de las claves de localStorage
@@ -24,6 +24,7 @@ export const STORAGE_KEYS = Object.freeze({
     ATAJOS: 'atajos',
     ORDEN_CARDS: 'orden-tarjetas',
     ORDEN_CARDS_MOVIL: 'orden-tarjetas-movil',
+    COLUMNAS_PC: 'columnas-pc',
     CARD_VISIBLE: (cual) => `tarjeta-visible-${cual}`,
     SERVICIOS_COLLAPSE: 'servicios-collapse-state',
     GIST_TOKEN: 'gist_token',

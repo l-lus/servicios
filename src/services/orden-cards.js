@@ -3,58 +3,69 @@ import { CARDS } from '../core/constantes.js';
 // ====================================================================
 // DISPOSICIÓN DE LAS TARJETAS (sin DOM)
 // ====================================================================
-// En escritorio hay dos columnas y cada tarjeta se asigna a la que se quiera: { izq: [...], der: [...] }.
-// En el celular todo va en una sola columna: una lista con el orden. Las dos disposiciones son independientes.
+// En escritorio hay 2 o 3 columnas (izquierda, centro y derecha) y cada tarjeta se asigna a la que se quiera: { izq, cen, der }.
+// Con 2 columnas el centro queda vacío. En el celular todo va en una sola columna: una lista con el orden.
+// Las dos disposiciones son independientes.
 
 /** Disposición de escritorio por defecto. */
 export const DISPOSICION_POR_DEFECTO = Object.freeze({
     izq: Object.freeze(['resumen', 'atajos', 'estadisticas', 'calendario']),
+    cen: Object.freeze([]),
     der: Object.freeze(['servicios']),
 });
 
-const otraColumna = c => (c === 'izq' ? 'der' : 'izq');
+/** Columnas de escritorio, de izquierda a derecha. */
+export const COLUMNAS = Object.freeze(['izq', 'cen', 'der']);
+
+/** Columnas en uso según la cantidad (2: izquierda y derecha; 3: las tres), de izquierda a derecha. */
+export const columnasActivas = (cantidad) => (cantidad === 3 ? ['izq', 'cen', 'der'] : ['izq', 'der']);
 const sinRepetir = (lista, cards) => [...new Set(lista.filter(c => cards.includes(c)))];
 
 /**
  * Lo guardado → disposición válida de escritorio. Acepta el formato anterior (una lista donde la última tarjeta va a la derecha).
  * Descarta lo desconocido y repetido; una tarjeta que no estaba al guardar entra al final de su columna por defecto.
+ * Con 2 columnas (`columnas` = 2) lo que hubiera en el centro pasa al final de la derecha.
  * @param {unknown} guardado
  * @param {readonly string[]} [cards]
- * @returns {{ izq: string[], der: string[] }}
+ * @param {number} [columnas]
+ * @returns {{ izq: string[], cen: string[], der: string[] }}
  */
-export function normalizarDisposicion(guardado, cards = CARDS) {
-    let izq = [], der = [];
+export function normalizarDisposicion(guardado, cards = CARDS, columnas = 3) {
+    let izq = [], cen = [], der = [];
     if (Array.isArray(guardado)) {
         const lista = sinRepetir(guardado, cards);
         der = lista.slice(-1);
         izq = lista.slice(0, -1);
     } else if (guardado && typeof guardado === 'object') {
         const g = /** @type {any} */ (guardado);
-        izq = Array.isArray(g.izq) ? sinRepetir(g.izq, cards) : [];
-        der = Array.isArray(g.der) ? sinRepetir(g.der, cards).filter(c => !izq.includes(c)) : [];
+        const limpiar = (v, ya) => (Array.isArray(v) ? sinRepetir(v, cards).filter(c => !ya.includes(c)) : []);
+        izq = limpiar(g.izq, []);
+        cen = limpiar(g.cen, izq);
+        der = limpiar(g.der, [...izq, ...cen]);
     }
-    const puestas = new Set([...izq, ...der]);
+    const puestas = new Set([...izq, ...cen, ...der]);
     cards.filter(c => !puestas.has(c)).forEach(c => {
         (DISPOSICION_POR_DEFECTO.der.includes(c) ? der : izq).push(c);
     });
-    return { izq, der };
+    if (columnas !== 3) { der = [...der, ...cen]; cen = []; }
+    return { izq, cen, der };
 }
 
 /**
  * Lo guardado → orden válido del celular. Sin orden propio se parte del de escritorio (izquierda y luego derecha).
  * @param {unknown} guardado
- * @param {{ izq: readonly string[], der: readonly string[] }} [base]
+ * @param {{ izq: readonly string[], cen: readonly string[], der: readonly string[] }} [base]
  * @param {readonly string[]} [cards]
  */
 export function normalizarOrdenMovil(guardado, base = DISPOSICION_POR_DEFECTO, cards = CARDS) {
-    const lista = Array.isArray(guardado) ? sinRepetir(guardado, cards) : [...base.izq, ...base.der].filter(c => cards.includes(c));
+    const lista = Array.isArray(guardado) ? sinRepetir(guardado, cards) : [...base.izq, ...base.cen, ...base.der].filter(c => cards.includes(c));
     cards.filter(c => !lista.includes(c)).forEach(c => lista.push(c));
     return lista;
 }
 
-/** Columna ('izq' | 'der') en que está la tarjeta. */
+/** Columna ('izq' | 'cen' | 'der') en que está la tarjeta. */
 export function columnaDe(disposicion, cual) {
-    return disposicion.izq.includes(cual) ? 'izq' : 'der';
+    return disposicion.izq.includes(cual) ? 'izq' : (disposicion.cen.includes(cual) ? 'cen' : 'der');
 }
 
 /** Saca `cual` de la lista y lo inserta antes de `antesDe` (o al final si es null o no está). */
@@ -76,14 +87,14 @@ export function moverEnLista(lista, cual, delta) {
 
 /** Nueva disposición con `cual` en `columna`, antes de `antesDe` (o al final). No muta la original. */
 export function colocarEnColumna(disposicion, cual, columna, antesDe = null) {
-    const nueva = { izq: disposicion.izq.filter(c => c !== cual), der: disposicion.der.filter(c => c !== cual) };
+    const nueva = { izq: disposicion.izq.filter(c => c !== cual), cen: disposicion.cen.filter(c => c !== cual), der: disposicion.der.filter(c => c !== cual) };
     nueva[columna] = colocarEnLista(nueva[columna], cual, antesDe);
     return nueva;
 }
 
-/** Nueva disposición con la tarjeta movida a la otra columna (al final de ella). */
-export function pasarAOtraColumna(disposicion, cual) {
-    return colocarEnColumna(disposicion, cual, otraColumna(columnaDe(disposicion, cual)));
+/** Nueva disposición con la tarjeta movida al final de otra columna. */
+export function pasarAColumna(disposicion, cual, columna) {
+    return colocarEnColumna(disposicion, cual, columna);
 }
 
 /** Nueva disposición con la tarjeta una posición arriba (-1) o abajo (1) dentro de su columna. */

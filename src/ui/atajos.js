@@ -23,9 +23,9 @@ export class AtajosCard {
          */
         this.catalogo = [
             { id: 'nueva-factura', nombre: 'Nueva factura', descripcion: 'Carga una factura de un servicio existente',
-                estado: () => ({ icono: '#icon-plus', titulo: 'Nueva factura' }), accion: () => this.app.ui.abrirModalFacturaRapida() },
+                estado: () => ({ icono: '#icon-receipt', titulo: 'Nueva factura' }), accion: () => this.app.ui.abrirModalFacturaRapida() },
             { id: 'nuevo-servicio', nombre: 'Nuevo servicio', descripcion: 'Agrega un servicio (luz, gas, internet…)',
-                estado: () => ({ icono: '#icon-add', titulo: 'Nuevo servicio' }), accion: () => this.app.servicio.abrirModalServicio() },
+                estado: () => ({ icono: '#icon-calendar', titulo: 'Nuevo servicio' }), accion: () => this.app.servicio.abrirModalServicio() },
             { id: 'nuevo-ingreso', nombre: 'Nuevo ingreso', descripcion: 'Registra un cobro (requiere activar ingresos)',
                 estado: () => ({ icono: '#icon-cash', titulo: 'Nuevo ingreso', desactivado: !this.app.ui.ingresosHabilitado() }),
                 accion: () => this.app.ingreso.abrirModal(null, true) },

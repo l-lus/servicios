@@ -1221,46 +1221,48 @@
 }
 
 /* ============================================================
-           ATAJOS RÁPIDOS
+           ATAJOS RÁPIDOS (misma tarjeta que Horarios: sin encabezado, una grilla de botones sin fondo)
         ============================================================ */
-.card-header-sin-chevron {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-sm);
-    margin: 0 0 var(--space-md);
-    font-size: var(--text-base);
-    font-weight: var(--fw-semibold);
-}
-
-.card-header-sin-chevron > span {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-sm);
-}
-
-.atajos-botones {
+/* 6 por fila en el celular (10 en escritorio, ver utilidades-responsivo.css) */
+.atajos-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: var(--space-sm);
+    padding: 0 var(--space-sm);
+    /* La fila de botones (con su área táctil completa) sobresale del relleno de la tarjeta: una fila mide lo que una tarjeta cerrada */
+    margin-block: calc((var(--text-base) * var(--lh-normal) - var(--touch-target)) / 2);
+}
+
+.atajos-botones {
+    display: contents;
+}
+
+/* La tarjeta no tiene encabezado: se mantiene presionada para reordenarla */
+#card-atajos {
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.atajo-agregar {
+    color: var(--text-muted);
 }
 
 .atajo-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1;
+    width: 100%;
+    min-width: 0;
+    height: var(--touch-target);
     padding: 0;
     border: none;
     border-radius: var(--radius-md);
-    background: var(--input-bg);
-    color: var(--text-main);
-    cursor: pointer;
-    transition: filter var(--transition-ui), opacity var(--transition-ui);
+    background: transparent;
+    touch-action: manipulation;
+    transition: background var(--dur-fast), color var(--dur-fast);
 }
 
-.atajo-btn:hover:not(:disabled) {
-    filter: var(--hover);
+.atajo-btn:active:not(:disabled) {
+    background: var(--c-gray-btn);
 }
 
 .atajo-btn:disabled {
