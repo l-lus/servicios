@@ -302,6 +302,7 @@ export class ListenersApp {
         // btn-reporte-estadisticas
         document.getElementById('btn-reporte-estadisticas').addEventListener('click', () => this.app.reporte.abrir());
         this.app.reporte.bindEventos();
+        this.app.calendario.bindEventos();
 
         // Modal info-resumen (botón header + botón footer)
         document.getElementById('btn-cerrar-modal-info-resumen').addEventListener('click', () => {

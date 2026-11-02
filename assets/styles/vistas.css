@@ -978,3 +978,178 @@
     font-weight: 600;
     cursor: pointer;
 }
+
+/* ============================================================
+           CALENDARIO DE VENCIMIENTOS
+        ============================================================ */
+.cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.cal-titulo {
+    flex: 1;
+    padding: var(--space-xs) var(--space-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    font-size: var(--text-md);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+}
+
+.cal-titulo::first-letter {
+    text-transform: uppercase;
+}
+
+.cal-flecha-izq {
+    transform: rotate(90deg);
+}
+
+.cal-flecha-der {
+    transform: rotate(-90deg);
+}
+
+.cal-grilla {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cal-semana {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.cal-cabecera {
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    font-weight: var(--fw-medium);
+}
+
+.cal-vacio {
+    aspect-ratio: 1;
+}
+
+.cal-dia {
+    --cal-color: transparent;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--cal-color) 22%, transparent);
+    color: var(--text-main);
+    font-size: var(--text-base);
+    cursor: pointer;
+    transition: transform var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.cal-dia:hover {
+    transform: scale(1.06);
+}
+
+.cal-dia--hoy {
+    border-color: var(--text-main);
+    font-weight: var(--fw-bold);
+}
+
+.cal-dia-cantidad {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.65rem;
+    line-height: 1;
+    color: var(--text-muted);
+}
+
+.cal-dia--vencido { --cal-color: var(--c-red); }
+.cal-dia--urgente { --cal-color: var(--c-orange); }
+.cal-dia--proximo { --cal-color: var(--c-gold); }
+.cal-dia--lejano { --cal-color: var(--c-blue); }
+.cal-dia--pagado { --cal-color: var(--c-green); }
+.cal-dia--favor { --cal-color: var(--c-purple); }
+
+.cal-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm) var(--space-md);
+    margin-top: var(--space-md);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.cal-ley::before {
+    content: "";
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    margin-right: 0.35em;
+    border-radius: 50%;
+    background: var(--cal-color);
+}
+
+.cal-resumen {
+    margin: var(--space-md) 0 0;
+    font-size: var(--text-base);
+    color: var(--text-muted);
+}
+
+.cal-alerta {
+    color: var(--c-red);
+    font-weight: var(--fw-semibold);
+}
+
+.cal-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    border: none;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-main);
+    text-align: left;
+    cursor: pointer;
+}
+
+.cal-item-punto {
+    flex-shrink: 0;
+    width: 0.8em;
+    height: 0.8em;
+    border-radius: 50%;
+    background: var(--cal-color);
+}
+
+.cal-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.cal-item-nombre {
+    font-weight: var(--fw-semibold);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cal-item-estado {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.cal-item-monto {
+    font-weight: var(--fw-semibold);
+    white-space: nowrap;
+}

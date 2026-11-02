@@ -555,6 +555,43 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Tarjeta de Calendario de vencimientos -->
+                <div class="card card-fade-in delay-2" id="card-calendario">
+                    <h2 class="card-header-collapsible" id="calendario-header">
+                        <span>
+                            <svg class="icon">
+                                <use href="#icon-calendar" />
+                            </svg>
+                            Calendario
+                        </span>
+                        <svg class="icon chevron-icon collapsed" id="calendario-chevron">
+                            <use href="#icon-chevron-down" />
+                        </svg>
+                    </h2>
+                    <div id="calendario-content" class="collapsible-content collapsed">
+                        <div class="collapsible-inner">
+                            <div class="cal-nav">
+                                <button type="button" class="icon-btn" id="calendario-anterior" title="Mes anterior" aria-label="Mes anterior">
+                                    <svg class="icon cal-flecha-izq"><use href="#icon-chevron-down" /></svg>
+                                </button>
+                                <button type="button" class="cal-titulo" id="calendario-titulo" title="Volver al mes actual"></button>
+                                <button type="button" class="icon-btn" id="calendario-siguiente" title="Mes siguiente" aria-label="Mes siguiente">
+                                    <svg class="icon cal-flecha-der"><use href="#icon-chevron-down" /></svg>
+                                </button>
+                            </div>
+                            <div class="cal-grilla" id="calendario-grilla"></div>
+                            <div class="cal-leyenda" aria-hidden="true">
+                                <span class="cal-ley cal-dia--vencido">Vencida</span>
+                                <span class="cal-ley cal-dia--urgente">Pronto</span>
+                                <span class="cal-ley cal-dia--proximo">Próxima</span>
+                                <span class="cal-ley cal-dia--lejano">Pendiente</span>
+                                <span class="cal-ley cal-dia--pagado">Pagada</span>
+                            </div>
+                            <p class="cal-resumen" id="calendario-resumen"></p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Columna derecha (contenido principal) -->
@@ -850,6 +887,21 @@
                 <button type="button" id="btn-resumen-merge-aplicar">Combinar</button>
                 <button type="button" class="btn-secondary" id="btn-resumen-merge-cancelar">
                     <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-calendario-dia" role="dialog" aria-modal="true" aria-labelledby="calendario-dia-titulo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="calendario-dia-titulo"></h3>
+            </div>
+            <div class="modal-body d-flex flex-column gap-2" id="calendario-dia-lista"></div>
+            <div class="form-actions">
+                <button type="button" class="button" id="modal-calendario-dia-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg>
+                    Cerrar
                 </button>
             </div>
         </div>

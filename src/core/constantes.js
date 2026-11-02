@@ -19,6 +19,7 @@ export const STORAGE_KEYS = Object.freeze({
     INGRESOS_HABILITADO: 'ingresos-habilitado',
     ESTADISTICAS_TIPO: 'estadisticas-tipo',
     ESTADISTICAS_COLAPSADAS: 'estadisticas-collapsed',
+    CALENDARIO_ABIERTO: 'calendario-abierto',
     SERVICIOS_COLLAPSE: 'servicios-collapse-state',
     GIST_TOKEN: 'gist_token',
 

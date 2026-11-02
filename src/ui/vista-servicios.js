@@ -319,6 +319,8 @@ export class VistaServicios {
             this.app.ui.actualizarMenuAgregar();
         });
 
+        this.app.calendario.render();
+
         // Restaurar posición de scroll
         requestAnimationFrame(() => {
             window.scrollTo(0, scrollPos);

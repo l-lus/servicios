@@ -1,3 +1,4 @@
+import { CalendarioVista } from './calendario-vista.js';
 import { ReporteModal } from './reporte-modal.js';
 import { RespaldoModal } from './respaldo-modal.js';
 import { normalizarBusqueda } from '../core/busqueda-texto.js';
@@ -141,6 +142,7 @@ export class GestionServicios {
         this.storage = new StorageService(this);
         this.respaldo = new RespaldoModal(this);
         this.reporte = new ReporteModal(this);
+        this.calendario = new CalendarioVista(this);
         this.vista = new VistaServicios(this);
         this.listeners = new ListenersApp(this);
         this.servicio = new ServicioService(this);
@@ -158,6 +160,7 @@ export class GestionServicios {
 
     init() {
         Motion.init();
+        this.calendario.init();
         Anim.initColapsables();
         this.ui.cargarTema();
         this.estadisticas.actualizarResumenMes();

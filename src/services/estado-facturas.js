@@ -26,6 +26,20 @@ export const EstadoFacturas = {
     },
 
     /**
+     * Clase de color de una factura según su vencimiento (las mismas de la lista de servicios):
+     * 'favor' | 'pagado' | 'vencido' | 'urgente' (hasta 2 días) | 'proximo' (hasta 5) | 'lejano'.
+     */
+    claseVencimiento(factura, hoy = new Date()) {
+        if (factura.monto < 0) return 'favor';
+        if (factura.pagada) return 'pagado';
+        const dias = Math.ceil((inicioDeDia(parseDate(factura.fecha)) - inicioDeDia(hoy)) / MS_DIA);
+        if (dias < 0) return 'vencido';
+        if (dias <= 2) return 'urgente';
+        if (dias <= 5) return 'proximo';
+        return 'lejano';
+    },
+
+    /**
      * Factura que representa al servicio en la lista: la pendiente más próxima del mes actual
      * o, si todas están pagadas, la más reciente del mes. null si el mes no tiene facturas.
      */
