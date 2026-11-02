@@ -1,5 +1,6 @@
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { ResumenMes } from '../services/resumen-mes.js';
 import { Anim } from './animaciones.js';
 import { CustomSelect } from './custom-select.js';
 
@@ -16,59 +17,7 @@ export class EstadisticasService {
 
     // ── Resumen mensual ───────────────────────────────────────
     actualizarResumenMes() {
-        const { mes: mesActual, anio: añoActual } = this.app.utils.mesActualInfo();
-        let totalAPagarARS = 0, totalAPagarUSD = 0;
-        let totalPagadoMesARS = 0, totalPagadoMesUSD = 0;
-        let totalPagadoDelMesActualARS = 0, totalPagadoDelMesActualUSD = 0;
-        let totalFacturasMesActualARS = 0, totalFacturasMesActualUSD = 0;
-        let cantidadPagadasVencenEsteMes = 0, cantidadPendientesEsteMes = 0;
-
-        this.servicios.filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID).forEach(servicio => {
-            servicio.facturas.forEach(factura => {
-                const fechaFactura = this.app.utils.parseDate(factura.fecha);
-                const esDelMesActual = fechaFactura.getMonth() === mesActual && fechaFactura.getFullYear() === añoActual;
-                const moneda = factura.moneda || 'ars';
-                const excluir = factura.conCredito === true;
-                if (esDelMesActual) {
-                    if (factura.monto < 0) return;
-                    const pagadaEsteMes = factura.pagada && factura.fechaPago && (() => {
-                        const fp = this.app.utils.parseDate(factura.fechaPago);
-                        return fp.getMonth() === mesActual && fp.getFullYear() === añoActual;
-                    })();
-                    const contarEnTotal = !factura.pagada || pagadaEsteMes;
-                    if (factura.pagada) cantidadPagadasVencenEsteMes++;
-                    if (!factura.pagada) cantidadPendientesEsteMes++;
-                    if (moneda === 'usd') {
-                        if (!excluir && contarEnTotal) totalFacturasMesActualUSD += factura.monto;
-                        if (!factura.pagada && !excluir) totalAPagarUSD += factura.monto;
-                        else if (pagadaEsteMes && !excluir) totalPagadoDelMesActualUSD += factura.monto;
-                    } else {
-                        if (!excluir && contarEnTotal) totalFacturasMesActualARS += factura.monto;
-                        if (!factura.pagada && !excluir) totalAPagarARS += factura.monto;
-                        else if (pagadaEsteMes && !excluir) totalPagadoDelMesActualARS += factura.monto;
-                    }
-                }
-                if (factura.pagada && factura.fechaPago && factura.monto > 0 && !excluir) {
-                    const fechaPago = this.app.utils.parseDate(factura.fechaPago);
-                    if (fechaPago.getMonth() === mesActual && fechaPago.getFullYear() === añoActual) {
-                        if (moneda === 'usd') totalPagadoMesUSD += factura.monto;
-                        else totalPagadoMesARS += factura.monto;
-                    }
-                }
-            });
-        });
-
-        this.app.datosResumen = {
-            pendienteARS: totalAPagarARS, pendienteUSD: totalAPagarUSD,
-            pagadoMesARS: totalPagadoMesARS, pagadoMesUSD: totalPagadoMesUSD,
-            pagadoDelMesActualARS: totalPagadoDelMesActualARS, pagadoDelMesActualUSD: totalPagadoDelMesActualUSD,
-            totalPeriodoARS: totalFacturasMesActualARS, totalPeriodoUSD: totalFacturasMesActualUSD,
-            cantidadPagadasVencenEsteMes, cantidadPendientesEsteMes,
-            pendiente: totalAPagarARS + totalAPagarUSD,
-            pagadoMes: totalPagadoMesARS,
-            pagadoDelMesActual: totalPagadoDelMesActualARS,
-            totalPeriodo: totalFacturasMesActualARS
-        };
+        this.app.datosResumen = ResumenMes.calcular(this.servicios);
 
         this.app.mostrandoPagadoMes = StorageHelper.getItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO) === 'true';
         if (this.app.mostrandoPagadoMes) this.mostrarPagadoEnResumen();
@@ -77,24 +26,7 @@ export class EstadisticasService {
     }
 
     obtenerColorBordeMasPrioritario() {
-        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-        const { mes: mesActual, anio: añoActual } = this.app.utils.mesActualInfo();
-        let prioridad = 5, colorBorde = '';
-        this.servicios.filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID).forEach(servicio => {
-            servicio.facturas.forEach(factura => {
-                const f = this.app.utils.parseDate(factura.fecha);
-                if (f.getMonth() !== mesActual || f.getFullYear() !== añoActual) return;
-                if (!factura.pagada) {
-                    const venc = this.app.utils.parseDate(factura.fecha); venc.setHours(0, 0, 0, 0);
-                    const dias = Math.ceil((venc - hoy) / 86400000);
-                    if (dias < 0 && prioridad > 1) { prioridad = 1; colorBorde = 'borde-vencido'; }
-                    else if (dias <= 2 && prioridad > 1) { prioridad = 1; colorBorde = 'borde-urgente'; }
-                    else if (dias <= 5 && prioridad > 2) { prioridad = 2; colorBorde = 'borde-proximo'; }
-                    else if (prioridad > 3) { prioridad = 3; colorBorde = 'borde-lejano'; }
-                }
-            });
-        });
-        return colorBorde || 'borde-pagado';
+        return ResumenMes.colorBorde(this.servicios);
     }
 
     // ── Helpers resumen ───────────────────────────────────────
@@ -175,31 +107,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
     }
 
     abrirModalInfoResumen() {
-        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-        const mesActual = hoy.getMonth(), anioActual = hoy.getFullYear();
-        const vencenEsteMes = [], pagadasOtroMes = [];
-        this.servicios.filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID).forEach(servicio => {
-            servicio.facturas.forEach(factura => {
-                if (factura.monto < 0) return;
-                const fechaVenc = this.app.utils.parseDate(factura.fecha);
-                const venceEsteMes = fechaVenc.getMonth() === mesActual && fechaVenc.getFullYear() === anioActual;
-                const pagadaEsteMes = factura.pagada && factura.fechaPago && (() => {
-                    const fp = this.app.utils.parseDate(factura.fechaPago);
-                    return fp.getMonth() === mesActual && fp.getFullYear() === anioActual;
-                })();
-                if (venceEsteMes) {
-                    let estado, badgeClass;
-                    if (factura.conCredito) { estado = 'Con crédito'; badgeClass = 'badge-pagada-credito'; }
-                    else if (factura.pagada && pagadaEsteMes) { estado = 'Pagada este mes'; badgeClass = 'badge-pagada-mes'; }
-                    else if (factura.pagada && !pagadaEsteMes) { const mp = this.app.utils.parseDate(factura.fechaPago).toLocaleDateString('es-AR', { month: 'long' }); estado = `Pagada en ${mp}`; badgeClass = 'badge-pagada-antes'; }
-                    else if (!factura.pagada && fechaVenc < hoy) { estado = 'Vencida'; badgeClass = 'badge-vencida'; }
-                    else { estado = 'Pendiente'; badgeClass = 'badge-pendiente'; }
-                    vencenEsteMes.push({ servicio: servicio.nombre, factura, estado, badgeClass });
-                } else if (pagadaEsteMes) {
-                    pagadasOtroMes.push({ servicio: servicio.nombre, factura, mesVenc: fechaVenc.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) });
-                }
-            });
-        });
+        const { vencenEsteMes, pagadasOtroMes } = ResumenMes.detalle(this.servicios);
         const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
         const renderFila = ({ servicio, factura, estado, badgeClass }) => `
         <div class="info-resumen-fila">
@@ -245,48 +153,8 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         } else { mesSeleccionado = mesActual; añoSeleccionado = añoActual; }
 
         const categoriaActiva = this.app._estadisticaCategoriaActiva || null;
-        let cantidadPendientes = 0, cantidadPagadas = 0, cantidadVencidas = 0, cantidadFacturasMes = 0;
-        let totalMesARS = 0, totalMesUSD = 0, totalPagadoMesARS = 0, totalPagadoMesUSD = 0;
-        let totalIngresosARS = 0, totalIngresosUSD = 0;
-
-        this.servicios.forEach(servicio => {
-            if (categoriaActiva && servicio.id !== this.app.SERVICIO_INGRESOS_ID) {
-                if ((servicio.categoria || '') !== categoriaActiva) return;
-            }
-            servicio.facturas.forEach(factura => {
-                const fechaFactura = this.app.utils.parseDate(factura.fecha);
-                const mesFactura = fechaFactura.getMonth(), añoFactura = fechaFactura.getFullYear();
-                if (mesFactura === mesSeleccionado && añoFactura === añoSeleccionado) {
-                    const moneda = factura.moneda || 'ars';
-                    if (servicio.id === this.app.SERVICIO_INGRESOS_ID) {
-                        if (moneda === 'usd') totalIngresosUSD += factura.monto;
-                        else totalIngresosARS += factura.monto;
-                        return;
-                    }
-                    if (factura.monto < 0) { cantidadPagadas++; return; }
-                    cantidadFacturasMes++;
-                    if (!factura.conCredito || categoriaActiva) {
-                        if (moneda === 'usd') totalMesUSD += factura.monto;
-                        else totalMesARS += factura.monto;
-                    }
-                    if (!factura.pagada) {
-                        const venc = this.app.utils.parseDate(factura.fecha); venc.setHours(0, 0, 0, 0);
-                        if (venc < hoy) cantidadVencidas++; else cantidadPendientes++;
-                    }
-                }
-                if (factura.pagada && factura.fechaPago && factura.monto > 0 && servicio.id !== this.app.SERVICIO_INGRESOS_ID) {
-                    const fechaPago = this.app.utils.parseDate(factura.fechaPago);
-                    if (fechaPago.getMonth() === mesSeleccionado && fechaPago.getFullYear() === añoSeleccionado) {
-                        cantidadPagadas++;
-                        if (!factura.conCredito || categoriaActiva) {
-                            const moneda = factura.moneda || 'ars';
-                            if (moneda === 'usd') totalPagadoMesUSD += factura.monto;
-                            else totalPagadoMesARS += factura.monto;
-                        }
-                    }
-                }
-            });
-        });
+        const { totalMesARS, totalMesUSD, totalPagadoMesARS, totalPagadoMesUSD, cantidadPendientes, cantidadPagadas, cantidadVencidas, cantidadFacturasMes, totalIngresosARS, totalIngresosUSD } =
+            ResumenMes.estadisticasMes(this.servicios, { mes: mesSeleccionado, anio: añoSeleccionado, categoria: categoriaActiva });
 
         const estadoActual = { totalMesARS, totalMesUSD, totalPagadoMesARS, totalPagadoMesUSD, cantidadPendientes, cantidadPagadas, cantidadVencidas, cantidadFacturasMes, totalIngresosARS, totalIngresosUSD, mesSeleccionado, añoSeleccionado, categoriaActiva };
         const estadoCambio = this.app.utils.objetosCambiaron(this.app.ultimoEstadoEstadisticas, estadoActual);
