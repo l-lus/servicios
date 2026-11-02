@@ -59,6 +59,7 @@ export class UIManager {
         const indicator = document.getElementById('ingresos-indicator');
         if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
         this.app.vista.renderServicios();
+        this.app.atajos?.actualizarEstados();
         if (!silencioso) {
             this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
             this.cerrarMenuAjustes();

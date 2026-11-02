@@ -1,3 +1,4 @@
+import { EventosApp } from '../core/eventos.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { html, montar } from '../core/html.js';
@@ -39,6 +40,7 @@ function aplicarTema(tema) {
         b.setAttribute('aria-pressed', String(b.dataset.tema === _actual));
     });
     sincronizarBarraDelSistema();
+    EventosApp.emit('tema:cambio', _actual);
 }
 
 /** Aplica y guarda el tema elegido. */

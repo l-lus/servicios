@@ -66,5 +66,6 @@ export class HistorialManager {
         const redo = document.getElementById('btn-redo');
         if (undo) undo.disabled = !this.puedeDeshacer();
         if (redo) redo.disabled = !this.puedeRehacer();
+        this.app.atajos?.actualizarEstados();
     }
 }

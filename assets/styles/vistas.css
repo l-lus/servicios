@@ -1219,3 +1219,110 @@
     color: var(--text-main);
     white-space: nowrap;
 }
+
+/* ============================================================
+           ATAJOS RÁPIDOS
+        ============================================================ */
+.card-header-sin-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin: 0 0 var(--space-md);
+    font-size: var(--text-base);
+    font-weight: var(--fw-semibold);
+}
+
+.card-header-sin-chevron > span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.atajos-botones {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--space-sm);
+}
+
+.atajo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--input-bg);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: filter var(--transition-ui), opacity var(--transition-ui);
+}
+
+.atajo-btn:hover:not(:disabled) {
+    filter: var(--hover);
+}
+
+.atajo-btn:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: default;
+}
+
+.atajos-vacio {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
+.atajos-contador {
+    margin-left: var(--space-sm);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-muted);
+}
+
+.atajos-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 55vh;
+    overflow-y: auto;
+    padding: var(--space-xs);
+}
+
+.atajo-opcion {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--transition-ui), color var(--transition-ui), opacity var(--transition-ui);
+}
+
+.atajo-opcion.btn-activo {
+    border-color: var(--c-blue);
+    color: var(--text-main);
+}
+
+.atajo-opcion:disabled {
+    opacity: var(--opacity-disabled);
+}
+
+.atajo-opcion-texto {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.atajo-opcion-desc {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}

@@ -457,6 +457,22 @@
                     <div id="resumen-mes"></div>
                 </div>
 
+                <!-- Tarjeta de Atajos rápidos -->
+                <div class="card card-fade-in delay-1" id="card-atajos">
+                    <h2 class="card-header-sin-chevron">
+                        <span>
+                            <svg class="icon">
+                                <use href="#icon-plus" />
+                            </svg>
+                            Atajos
+                        </span>
+                        <button type="button" class="icon-btn" id="btn-atajos-editar" title="Elegir atajos" aria-label="Elegir atajos">
+                            <svg class="icon"><use href="#icon-edit" /></svg>
+                        </button>
+                    </h2>
+                    <div class="atajos-botones" id="atajos-botones"></div>
+                </div>
+
                 <!-- Tarjeta de Estadísticas Unificada -->
                 <div class="card card-fade-in delay-1">
                     <h2 class="card-header-collapsible" id="estadisticas-header">
@@ -891,6 +907,22 @@
                 <button type="button" id="btn-resumen-merge-aplicar">Combinar</button>
                 <button type="button" class="btn-secondary" id="btn-resumen-merge-cancelar">
                     <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-atajos" role="dialog" aria-modal="true" aria-labelledby="modal-atajos-titulo">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="modal-atajos-titulo">Atajos <span class="atajos-contador" id="atajos-contador"></span></h3>
+                <p class="text-muted">Elegí los botones rápidos que se muestran en la tarjeta.</p>
+            </div>
+            <div class="atajos-opciones custom-scroll" id="lista-atajos-opciones"></div>
+            <div class="form-actions">
+                <button type="button" class="button" id="modal-atajos-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg>
+                    Listo
                 </button>
             </div>
         </div>
