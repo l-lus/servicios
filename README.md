@@ -6,3 +6,6 @@ Página para llevar el registro de facturas a pagar (PWA, sin build, ES Modules 
 - `npm run release` sube la versión y regenera el precache.
 - Arquitectura y plan de migración: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 - Avisos push de vencimientos (diseño pendiente): [docs/PUSH-VENCIMIENTOS.md](docs/PUSH-VENCIMIENTOS.md).
+
+## Funciones
+Servicios y facturas con estados por vencimiento, calendario, resumen del mes, estadísticas (mensual, individual y anual), calculadora, categorías, perfiles, ingresos, reportes (HTML/texto), respaldo (todo, mes o rango) con resumen previo al restaurar, sincronización con Gist, 8 temas, atajos, tarjetas ordenables y ayuda con buscador. Funciona sin conexión.

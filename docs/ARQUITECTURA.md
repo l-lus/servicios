@@ -14,15 +14,17 @@
 index.html  sw.js  package.json  scripts/release.mjs  tests/  docs/
 assets/{manifest.json, icons/, styles/{tokens,base,vistas,menus-modales,utilidades-responsivo}.css}
 src/main.js
-src/core/   constantes, eventos (EventosApp), seguridad (SecurityAndUtils), almacenamiento (StorageHelper),
+src/core/   temas, busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp), seguridad (SecurityAndUtils), almacenamiento (StorageHelper),
             movimiento (Motion), debounce, tema-inicial (script clásico anti-parpadeo)
-src/ui/     animaciones (Anim), gestos, toast, gestor-modales (ModalManager/BackNav), custom-select,
+src/ui/     calendario-vista, atajos (AtajosCard), orden-tarjetas, arrastre, bienvenida-modal, reporte-modal, respaldo-modal,
+            resumen-merge, ayuda-buscador, gestor-temas, aviso-actualizacion, animaciones (Anim), gestos, toast, gestor-modales (ModalManager/BackNav), custom-select,
             instalador-pwa, gestion-servicios (orquestador) y las clases heredadas:
             factura-service, ingreso-service, menu-contextual, categoria-service, estadisticas-service,
             ui-manager, utils-service, perfil-service, calculador-service, gist-service,
             historial-manager, storage-service
 src/core/   + fechas.js, formato.js (fechas ISO y formato es-AR, puros)
-src/services/  estado-facturas (EstadoFacturas: estado, última factura, filtro y orden)
+src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-html, atajos, orden-cards (todos puros)
+               estado-facturas (EstadoFacturas: estado, última factura, filtro y orden)
                resumen-mes (ResumenMes: resumen, borde, detalle y estadísticas mensuales)
                importar-exportar (ImportarExportar: validación, respaldo, hash, fusión y comparación)
                — puros: reciben `hoy` y los datos; probados en tests/*.test.mjs sin DOM
@@ -41,6 +43,11 @@ src/services/  estado-facturas (EstadoFacturas: estado, última factura, filtro 
 | 3 | Dominio en `services/` sin DOM + tests: `EstadoFacturas`, `ResumenMes`, `ImportarExportar`, `Calculadora`, `ReportesTexto`, `GestorPerfiles`, `PilaHistorial` y el store `EstadoApp` | ✅ |
 | 4 | `GestionServicios` (2.146 → 493 líneas): 75 pasamanos eliminados; vistas en `VistaServicios`, `ListenersApp`, `ServicioService` | ✅ |
 | 5 | Hecho: `core/html.js` (`html```, `montar`, Trusted Types en la CSP), import/restore único (`ImportarExportar`), CSS en 5 capas, versión dinámica, e2e en Firefox. Aviso de actualización con progreso (`aviso-actualizacion.js`, `instalador-pwa.js`, `sw.js` como en *horarios*). Todas las plantillas usan `html`` (escape automático; `crudo()` solo para un SVG fijo, con test). Push de vencimientos: ver [PUSH-VENCIMIENTOS.md](PUSH-VENCIMIENTOS.md) | 🔶 |
+
+## Funciones tomadas de Horarios
+Aviso de actualización con progreso · ayuda con buscador · búsqueda sin acentos · temas de color · calendario (de vencimientos) ·
+reportes HTML · respaldo por rango y resumen previo al merge · estadísticas anuales · bienvenida · atajos · orden de tarjetas por arrastre ·
+tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: [avisos push](PUSH-VENCIMIENTOS.md).
 
 ## Verificación
 - `npm test`: arquitectura (capas, ciclos, precache, CSP/Trusted Types, CSS) y dominio sin DOM.

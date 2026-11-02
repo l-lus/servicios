@@ -1670,6 +1670,9 @@
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-colores">Estados y colores</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-facturas">Facturas y pagos</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-resumen">Resumen</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-calendario">Calendario</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-atajos">Atajos</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-tarjetas">Tarjetas y orden</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-busqueda">Buscar y ordenar</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-categorias">Categorías</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-calculadora">Calculadora</button>
@@ -1678,6 +1681,7 @@
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-perfiles">Perfiles</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-respaldo">Respaldo y sincronización</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-privacidad">Privacidad y ajustes</button>
+                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-temas">Temas</button>
                     </nav>
                     <div class="ayuda-secciones">
                         <section class="ayuda-seccion" id="ayuda-sec-inicio">
@@ -1706,6 +1710,20 @@
                             <p>La tarjeta de arriba muestra lo <strong>pendiente</strong> del mes. Tocala para ver lo <strong>pagado</strong>; la barra indica qué parte del total del mes ya se pagó. El color del borde es el de la factura más urgente.</p>
 <p>El botón <strong>i</strong> detalla qué facturas vencen este mes y cuáles se pagaron este mes aunque vencieran en otro.</p>
                         </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-calendario">
+                            <h4>Calendario</h4>
+                            <p>La tarjeta <strong>Calendario</strong> muestra el mes con cada día coloreado según su factura más urgente (los mismos colores de la lista). Un número chico en la esquina indica que ese día vencen varias.</p>
+<p>Tocá un día para ver sus facturas y, desde ahí, ir a las del servicio. Las flechas cambian de mes y tocar el título vuelve al mes actual. Abajo se resume cuánto queda pendiente y cuántas están vencidas.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-atajos">
+                            <h4>Atajos</h4>
+                            <p>La tarjeta <strong>Atajos</strong> reúne botones rápidos (nueva factura, calculadora, calendario, deshacer, respaldar, tema…). Con el lápiz elegís cuáles mostrar, hasta 12. Algunos se desactivan solos: deshacer sin cambios, o nuevo ingreso si los ingresos están apagados.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-tarjetas">
+                            <h4>Tarjetas y orden</h4>
+                            <p>Desde Ajustes → <strong>Tarjetas y orden</strong> mostrás u ocultás cada tarjeta y la subís o bajás. También podés mantener presionado el título de una tarjeta y arrastrarla, o usar <strong>Alt + flechas</strong> con el teclado.</p>
+<p>En PC la última tarjeta visible va a la columna derecha. El orden del celular es independiente y parte del de PC hasta que lo cambies.</p>
+                        </section>
                         <section class="ayuda-seccion" id="ayuda-sec-busqueda">
                             <h4>Buscar y ordenar</h4>
                             <p>El buscador filtra por nombre sin distinguir mayúsculas ni acentos: «telefono» encuentra «Teléfono». El botón de ordenar permite elegir por nombre, vencimiento o monto.</p>
@@ -1721,7 +1739,9 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-estadisticas">
                             <h4>Estadísticas</h4>
-                            <p>La tarjeta de estadísticas tiene dos modos: <strong>Mensual</strong> (totales, cantidades de pendientes, pagadas y vencidas del mes, filtrables por categoría) e <strong>Individual</strong> (análisis de un servicio en un rango de fechas). Tocar un dato abre el detalle de facturas que lo componen.</p>
+                            <p>La tarjeta de estadísticas tiene tres modos: <strong>Mensual</strong> (totales, cantidades de pendientes, pagadas y vencidas del mes, filtrables por categoría), <strong>Individual</strong> (análisis de un servicio en un rango de fechas) y <strong>Anual</strong> (gasto por mes y por categoría, promedio mensual, mes de mayor y menor gasto, comparación con el año anterior y, con ingresos activados, qué porcentaje del ingreso se va en facturas). Tocar un dato del modo mensual abre el detalle de facturas que lo componen.</p>
+<h5>Reportes</h5>
+<p>El botón <strong>Reporte</strong> abre un modal para elegir el formato: <strong>HTML</strong> (documento autocontenido para guardar, imprimir o compartir, con las secciones que elijas) o <strong>Texto</strong>.</p>
 <h5>Métricas del modo individual</h5>
 <p><strong>Facturas:</strong> cantidad en el período. <strong>Monto total:</strong> suma de los montos. <strong>Monto promedio:</strong> total dividido la cantidad. <strong>Variación:</strong> si el gasto subió o bajó.</p>
 <h5>¿Cómo se calcula la variación?</h5>
@@ -1739,7 +1759,7 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-respaldo">
                             <h4>Respaldo y sincronización</h4>
-                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad. <strong>Restaurar</strong> puede <strong>reemplazar</strong> todo o <strong>combinar</strong> con lo que ya tenés (agrega lo nuevo y actualiza las facturas que cambiaron).</p>
+                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad: de <strong>todo</strong>, de <strong>un mes</strong> o de un <strong>rango de fechas</strong> (un respaldo parcial solo incluye las facturas de ese período). <strong>Restaurar</strong> muestra primero un <strong>resumen</strong> de lo que haría <strong>Combinar</strong> (agrega lo nuevo y actualiza las facturas que cambiaron) y de lo que haría <strong>Reemplazar</strong>, con aviso de lo que se perdería. Lo mismo ocurre al bajar del Gist.</p>
 <p><strong>Sincronización</strong> guarda el respaldo en un Gist privado de GitHub. Con la sincronización automática la app avisa si hay novedades al abrirla.</p>
 <p>Deshacer y rehacer (botones de la barra) guardan hasta 20 cambios durante 24 horas.</p>
                         </section>
@@ -1747,6 +1767,10 @@
                             <h4>Privacidad y ajustes</h4>
                             <p><strong>Privacidad</strong> desenfoca los montos del resumen hasta que los tocás. <strong>Reducir animaciones</strong> puede seguir al sistema (Auto) o forzarse. <strong>Dólar</strong> muestra la cotización del día.</p>
 <p>La app funciona sin conexión y avisa cuando hay una versión nueva para actualizar.</p>
+                        </section>
+                        <section class="ayuda-seccion" id="ayuda-sec-temas">
+                            <h4>Temas</h4>
+                            <p>Ajustes → <strong>Tema</strong> ofrece ocho temas: Claro, Oscuro, Medianoche, Rosa, Verde, Azul, Lila y Crema. Se aplican antes de dibujar la pantalla para que no haya destellos, y también colorean la barra del sistema.</p>
                         </section>
                     </div>
                 </div>

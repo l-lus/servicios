@@ -19,7 +19,7 @@ export default async (b) => {
     await log('inicio');
     console.log('resumen', await txt('#resumen-mes'));
     // menús y modales
-    for (const [paso, sel] of [['perfiles','#menu-perfiles'],['gist','#menu-gist'],['categorias','#menu-categorias'],['info','#menu-informacion'],['ordenar','#btn-sort']]) {
+    for (const [paso, sel] of [['perfiles','#menu-perfiles'],['gist','#menu-gist'],['categorias','#menu-categorias'],['ayuda','#menu-ayuda'],['ordenar','#btn-sort']]) {
         await click('#btn-ajustes'); if (sel==='#btn-sort') await esc();
         await click(sel); await log('abrir ' + paso); await esc(); await esc(); await log('cerrar ' + paso);
     }
