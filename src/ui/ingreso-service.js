@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 // ============================================================
 // INGRESO SERVICE — ciclo de vida de ingresos
 // ============================================================
@@ -6,7 +7,7 @@ export class IngresoService {
         this.app = app;
     }
 
-    get servicios() { return this.app.servicios; }
+    get servicios() { return EstadoApp.servicios; }
 
     crearServicio() {
         this.servicios.push({ id: this.app.SERVICIO_INGRESOS_ID, nombre: 'Ingresos', facturas: [], activo: false });

@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
@@ -14,16 +15,16 @@ export class GistService {
         this._subiendo = false;
     }
 
-    get servicios() { return this.app.servicios; }
-    set servicios(v) { this.app.servicios = v; }
-    get perfilActivo() { return this.app.perfilActivo; }
+    get servicios() { return EstadoApp.servicios; }
+    set servicios(v) { EstadoApp.servicios = v; }
+    get perfilActivo() { return EstadoApp.perfilActivo; }
 
     getToken() { return StorageHelper.getItem(STORAGE_KEYS.GIST_TOKEN) || ''; }
-    getPerfil() { return this.app.perfiles[this.perfilActivo] || {}; }
+    getPerfil() { return EstadoApp.perfiles[this.perfilActivo] || {}; }
 
     setPerfil(campos) {
-        if (!this.app.perfiles[this.perfilActivo]) return;
-        Object.assign(this.app.perfiles[this.perfilActivo], campos);
+        if (!EstadoApp.perfiles[this.perfilActivo]) return;
+        Object.assign(EstadoApp.perfiles[this.perfilActivo], campos);
         this.app.perfil.guardar();
     }
 

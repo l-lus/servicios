@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
@@ -77,7 +78,7 @@ export class CategoriaService {
     eliminar(nombre) {
         const cats = this.getCategorias().filter(c => c !== nombre);
         this.saveCategorias(cats);
-        this.app.servicios.forEach(s => { if (s.categoria === nombre) s.categoria = ''; });
+        EstadoApp.servicios.forEach(s => { if (s.categoria === nombre) s.categoria = ''; });
         this.app.storage.guardarDatos();
         this.app.guardarEstado(`eliminar categoría (${nombre})`);
         this.poblarSelect('servicio-categoria');

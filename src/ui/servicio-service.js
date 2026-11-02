@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
 // ============================================================
 // SERVICIOSERVICE
@@ -12,7 +13,7 @@ export class ServicioService {
 
         if (servicioId) {
             // Modo editar - usar modal separado
-            const servicio = this.app.servicios.find(s => s.id === servicioId);
+            const servicio = EstadoApp.servicios.find(s => s.id === servicioId);
             if (servicio) {
                 document.getElementById('editar-servicio-nombre').value = servicio.nombre;
                 this.app.categoria.poblarSelect('editar-servicio-categoria', servicio.categoria || '');
@@ -44,7 +45,7 @@ export class ServicioService {
         }
 
         // Validar que no exista otro servicio con el mismo nombre (case insensitive)
-        const nombreExiste = this.app.servicios.some(s =>
+        const nombreExiste = EstadoApp.servicios.some(s =>
             s.id !== this.app.servicioActual &&
             s.nombre.toLowerCase() === nombre.toLowerCase()
         );
@@ -56,7 +57,7 @@ export class ServicioService {
 
         if (this.app.servicioActual) {
             // Editar servicio existente
-            const servicio = this.app.servicios.find(s => s.id === this.app.servicioActual);
+            const servicio = EstadoApp.servicios.find(s => s.id === this.app.servicioActual);
             if (servicio) {
                 // Verificar si hubo cambios
                 if (servicio.nombre === nombre && (servicio.categoria || '') === categoria) {
@@ -80,7 +81,7 @@ export class ServicioService {
                 categoria: categoria,
                 facturas: []
             };
-            this.app.servicios.push(nuevoServicio);
+            EstadoApp.servicios.push(nuevoServicio);
             this.app.mostrarToast('Servicio creado', 'success');
         }
 
@@ -118,8 +119,8 @@ export class ServicioService {
             { titulo: 'Eliminar servicio' }
         );
         if (confirmado) {
-            const eliminado = this.app.servicios.find(s => s.id === this.app.servicioActual);
-            this.app.servicios = this.app.servicios.filter(s => s.id !== this.app.servicioActual);
+            const eliminado = EstadoApp.servicios.find(s => s.id === this.app.servicioActual);
+            EstadoApp.servicios = EstadoApp.servicios.filter(s => s.id !== this.app.servicioActual);
 
             this.app.storage.guardarDatos();
             this.app.guardarEstado(`eliminar servicio${eliminado ? ` (${eliminado.nombre})` : ''}`);
@@ -159,7 +160,7 @@ export class ServicioService {
     }
 
     editarFactura(facturaId) {
-        const servicio = this.app.servicios.find(s => s.facturas.some(f => f.id === facturaId));
+        const servicio = EstadoApp.servicios.find(s => s.facturas.some(f => f.id === facturaId));
         if (!servicio) return;
         const factura = servicio.facturas.find(f => f.id === facturaId);
         if (!factura) return;

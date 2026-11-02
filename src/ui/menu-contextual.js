@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { BackNav } from './gestor-modales.js';
 
 // ============================================================
@@ -151,7 +152,7 @@ export class ContextMenuService {
         let ultimoNombre = '';
 
         ids.forEach(id => {
-            const servicio = this.app.servicios.find(s => s.id === id);
+            const servicio = EstadoApp.servicios.find(s => s.id === id);
             const factura = this.app.vista.obtenerUltimaFactura(id);
             if (!servicio || !factura || factura.pagada || factura.conCredito) return;
             const idx = servicio.facturas.findIndex(f => f.id === factura.id);

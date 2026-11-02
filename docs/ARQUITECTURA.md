@@ -38,8 +38,8 @@ src/services/  estado-facturas (EstadoFacturas: estado, última factura, filtro 
 |---|---|---|
 | 1 | Módulos ES, `package.json`, tests de arquitectura, `release`, CI | ✅ |
 | 2 | Extraer `core/` y utilidades genéricas de `ui/`; quitar `window.app` | ✅ |
-| 3 | Mover dominio a `services/` sin DOM + tests. Hecho: estado de factura, resumen/estadísticas del mes, import/export/merge. Falta: calculadora y período, perfiles, historial, `EstadoApp` | 🔶 |
-| 4 | Dividir `GestionServicios`, eliminar pasamanos y `this.app.*` | ⏳ |
+| 3 | Dominio en `services/` sin DOM + tests: `EstadoFacturas`, `ResumenMes`, `ImportarExportar`, `Calculadora`, `ReportesTexto`, `GestorPerfiles`, `PilaHistorial` y el store `EstadoApp` | ✅ |
+| 4 | `GestionServicios` (2.146 → 493 líneas): 75 pasamanos eliminados; vistas en `VistaServicios`, `ListenersApp`, `ServicioService` | ✅ |
 | 5 | `html```/`montar` + Trusted Types, import/restore único, aviso de actualización, buscador de ayuda, CSS en capas, push opcional | ⏳ |
 
 ## Dónde poner código nuevo

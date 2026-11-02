@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { PilaHistorial, clonar } from '../services/pila-historial.js';
 
@@ -7,12 +8,12 @@ import { PilaHistorial, clonar } from '../services/pila-historial.js';
 export class HistorialManager {
     constructor(app) {
         this.app = app;
-        this._pila = new PilaHistorial({ clave: () => STORAGE_KEYS.HISTORIAL(this.app.perfilActivo) });
+        this._pila = new PilaHistorial({ clave: () => STORAGE_KEYS.HISTORIAL(EstadoApp.perfilActivo) });
     }
 
     _estadoActual() {
         return clonar({
-            servicios: this.app.servicios,
+            servicios: EstadoApp.servicios,
             categorias: this.app.categoria.getCategorias()
         });
     }
@@ -46,7 +47,7 @@ export class HistorialManager {
     indiceActual() { return this._pila.indiceActual(); }
 
     _aplicarEstado(estado) {
-        this.app.servicios = estado.servicios;
+        EstadoApp.servicios = estado.servicios;
         this.app.categoria.saveCategorias(estado.categorias);
         this.app.storage.guardarDatos();
         this.app._marcarRenderAnimado();

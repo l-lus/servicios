@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { GestorPerfiles } from '../services/gestor-perfiles.js';
@@ -12,10 +13,10 @@ export class PerfilService {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get perfiles() { return this.app.perfiles; }
-    set perfiles(v) { this.app.perfiles = v; }
-    get perfilActivo() { return this.app.perfilActivo; }
-    set perfilActivo(v) { this.app.perfilActivo = v; }
+    get perfiles() { return EstadoApp.perfiles; }
+    set perfiles(v) { EstadoApp.perfiles = v; }
+    get perfilActivo() { return EstadoApp.perfilActivo; }
+    set perfilActivo(v) { EstadoApp.perfilActivo = v; }
 
     // ── Persistencia ──────────────────────────────────────────
     cargar() {

@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { ListenersApp } from './listeners-app.js';
 import { ServicioService } from './servicio-service.js';
 import { VistaServicios } from './vista-servicios.js';
@@ -30,7 +31,7 @@ import { UtilsService } from './utils-service.js';
 export class GestionServicios {
     constructor() {
         // core/ no conoce a la app: se le inyecta cómo resolver el perfil activo
-        StorageHelper.setProfileKeyResolver(() => this.perfilActivo);
+        StorageHelper.setProfileKeyResolver(() => EstadoApp.perfilActivo);
 
         // Acciones de "volver" que dependen de servicios de la app
         ModalManager.registrarAccionVolver('menu-ajustes', () => this.ui.cerrarMenuAjustes());
@@ -47,12 +48,12 @@ export class GestionServicios {
 
         // Sistema de perfiles — PerfilService se instancia primero porque
         // cargar() se necesita durante la construcción
-        this.perfilActivo = StorageHelper.getItem(STORAGE_KEYS.PERFIL_ACTIVO) || 'default';
+        EstadoApp.perfilActivo = StorageHelper.getItem(STORAGE_KEYS.PERFIL_ACTIVO) || 'default';
         this.perfil = new PerfilService(this);
-        this.perfiles = this.perfil.cargar();
+        EstadoApp.perfiles = this.perfil.cargar();
 
         // Datos y estado
-        this.servicios = [];
+        EstadoApp.servicios = [];
         this.servicioActual = null;
         this.facturaActual = null;
         this.origenModalFactura = null; // 'menu' o 'servicio'
@@ -113,6 +114,7 @@ export class GestionServicios {
         this.ingresoActual         = null;
         this.ingresoDesdeMenu      = false;
         this.perfilEditando        = null;
+        this._gistDatosPendientes  = null;
         this._lpTimer              = null;
         this._lpFired              = false;
         this._categoriaTargetSelect = null;
@@ -262,7 +264,7 @@ export class GestionServicios {
 
             // Si hay búsqueda activa, expandir grupos con resultados
             if (this.terminoBusqueda) {
-                this.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
+                EstadoApp.servicios.filter(s => s.id !== this.SERVICIO_INGRESOS_ID).forEach(servicio => {
                     const coincide = servicio.nombre.toLowerCase().includes(this.terminoBusqueda);
                     if (coincide) {
                         // Expandir grupo por categoría

@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { ResumenMes } from '../services/resumen-mes.js';
@@ -13,7 +14,7 @@ export class EstadisticasService {
     }
 
     // ── Getters ───────────────────────────────────────────────
-    get servicios() { return this.app.servicios; }
+    get servicios() { return EstadoApp.servicios; }
 
     // ── Resumen mensual ───────────────────────────────────────
     actualizarResumenMes() {
@@ -368,7 +369,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
 
         let items = [];
 
-        this.app.servicios.forEach(servicio => {
+        EstadoApp.servicios.forEach(servicio => {
             if (categoriaActiva && servicio.id !== this.app.SERVICIO_INGRESOS_ID) {
                 if ((servicio.categoria || '') !== categoriaActiva) return;
             }

@@ -1,5 +1,5 @@
 import { parseDate, fechaLocalISO } from '../core/fechas.js';
-import { formatearMoneda, formatearFecha } from '../core/formato.js';
+import { formatearMoneda, formatearFecha, plural } from '../core/formato.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { Anim } from './animaciones.js';
 
@@ -13,8 +13,8 @@ export class UtilsService {
 
     // ── Helpers puros (sin DOM ni estado) ────────────────────
 
-    plural(n, singular, plural) {
-        return `${n} ${n !== 1 ? plural : singular}`;
+    plural(n, singular, pl) {
+        return plural(n, singular, pl);
     }
 
     mesActualInfo() {

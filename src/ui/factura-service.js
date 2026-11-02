@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
 
 // ============================================================
@@ -8,7 +9,7 @@ export class FacturaService {
         this.app = app;
     }
 
-    get servicios() { return this.app.servicios; }
+    get servicios() { return EstadoApp.servicios; }
 
     // ── Validaciones ──────────────────────────────────────────
     validarMonto(monto, permitirNegativos = false) {

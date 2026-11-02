@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { Motion } from '../core/movimiento.js';
@@ -175,12 +176,12 @@ export class UIManager {
 
     // ── Modal factura rápida ──────────────────────────────────
     abrirModalFacturaRapida() {
-        if (this.app.servicios.length === 0) {
+        if (EstadoApp.servicios.length === 0) {
             this.mostrarToast('Primero debes crear un servicio', 'error');
             this.app.servicio.abrirModalServicio();
             return;
         }
-        const primero = [...this.app.servicios]
+        const primero = [...EstadoApp.servicios]
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))[0];
         this.app.factura.abrirModal(primero.id, null, 'menu');
     }

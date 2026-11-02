@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { ReportesTexto } from '../services/reportes-texto.js';
 import { Calculadora } from '../services/calculadora.js';
 import { Anim } from './animaciones.js';
@@ -12,7 +13,7 @@ export class CalculadorService {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get servicios() { return this.app.servicios; }
+    get servicios() { return EstadoApp.servicios; }
     get modoActivo() { return this.app.modoCalculadora; }
     set modoActivo(v) { this.app.modoCalculadora = v; }
     get tipo() { return this.app.modoCalculadoraTipo; }

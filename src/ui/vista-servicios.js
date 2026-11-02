@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EstadoFacturas } from '../services/estado-facturas.js';
@@ -97,8 +98,8 @@ export class VistaServicios {
 
     renderServicios() {
         const indicador = document.getElementById('perfil-indicador');
-        if (indicador && this.app.perfilActivo !== 'default') {
-            indicador.textContent = `${this.app.perfiles[this.app.perfilActivo].nombre}`;
+        if (indicador && EstadoApp.perfilActivo !== 'default') {
+            indicador.textContent = `${EstadoApp.perfiles[EstadoApp.perfilActivo].nombre}`;
         } else if (indicador) {
             indicador.textContent = '';
         }
@@ -109,8 +110,8 @@ export class VistaServicios {
         const scrollPos = window.scrollY;
 
         // Separar servicios normales del servicio de ingresos
-        const serviciosNormales = this.app.servicios.filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID);
-        const servicioIngresos = this.app.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+        const serviciosNormales = EstadoApp.servicios.filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID);
+        const servicioIngresos = EstadoApp.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
 
         const pintar = (contenido) => {
             const fn = () => { lista.innerHTML = contenido; };
@@ -261,7 +262,7 @@ export class VistaServicios {
                 this.app.ingreso.crearServicio();
             }
 
-            const ingresos = servicioIngresos || this.app.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+            const ingresos = servicioIngresos || EstadoApp.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
             if (ingresos) {
                 const { estado, claseEstado, montoTexto, fechaTexto } = this.calcularEstadoServicio(ingresos);
 
@@ -487,6 +488,6 @@ export class VistaServicios {
     }
 
     obtenerUltimaFactura(servicioId) {
-        return EstadoFacturas.ultimaFactura(this.app.servicios.find(s => s.id === servicioId));
+        return EstadoFacturas.ultimaFactura(EstadoApp.servicios.find(s => s.id === servicioId));
     }
 }

@@ -1,3 +1,4 @@
+import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
@@ -13,9 +14,9 @@ export class StorageService {
     }
 
     // ── Getters de conveniencia ───────────────────────────────
-    get servicios() { return this.app.servicios; }
-    set servicios(v) { this.app.servicios = v; }
-    get perfilActivo() { return this.app.perfilActivo; }
+    get servicios() { return EstadoApp.servicios; }
+    set servicios(v) { EstadoApp.servicios = v; }
+    get perfilActivo() { return EstadoApp.perfilActivo; }
     get INGRESOS_ID() { return this.app.SERVICIO_INGRESOS_ID; }
 
     // ── Carga / guardado por perfil ───────────────────────────
@@ -244,27 +245,27 @@ export class StorageService {
         if (!confirmado) return;
 
         if (tipo === 'todo') {
-            this.app.servicios = [];
+            EstadoApp.servicios = [];
             this.app.categoria.saveCategorias([]);
         } else if (tipo === 'servicios') {
             // Eliminar todos los servicios excepto el de ingresos
-            this.app.servicios = this.app.servicios.filter(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+            EstadoApp.servicios = EstadoApp.servicios.filter(s => s.id === this.app.SERVICIO_INGRESOS_ID);
         } else if (tipo === 'facturas') {
             // Vaciar facturas de todos los servicios normales (no ingresos)
-            this.app.servicios = this.app.servicios.map(s => {
+            EstadoApp.servicios = EstadoApp.servicios.map(s => {
                 if (s.id === this.app.SERVICIO_INGRESOS_ID) return s;
                 return { ...s, facturas: [] };
             });
         } else if (tipo === 'ingresos') {
             // Eliminar todas las facturas del servicio de ingresos
-            const servicioIngresos = this.app.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
+            const servicioIngresos = EstadoApp.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
             if (servicioIngresos) {
                 servicioIngresos.facturas = [];
             }
         } else if (tipo === 'categorias') {
             // Limpiar categorías y quitar la categoría asignada a los servicios
             this.app.categoria.saveCategorias([]);
-            this.app.servicios = this.app.servicios.map(s => ({ ...s, categoria: '' }));
+            EstadoApp.servicios = EstadoApp.servicios.map(s => ({ ...s, categoria: '' }));
         }
 
         const etiquetas = { todo: 'todos los datos', servicios: 'servicios', facturas: 'facturas', ingresos: 'ingresos', categorias: 'categorías' };
