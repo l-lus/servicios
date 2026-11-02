@@ -1,3 +1,4 @@
+import { urlScriptConfiable } from '../core/html.js';
 import { ToastManager } from './toast.js';
 
 // ============================================================
@@ -9,7 +10,7 @@ export const InstaladorPWA = {
         let newWorker;
 
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
+            navigator.serviceWorker.register(urlScriptConfiable('./sw.js'))
                 .then(registration => {
                     registration.addEventListener('updatefound', () => {
                         newWorker = registration.installing;

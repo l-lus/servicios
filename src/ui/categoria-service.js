@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -25,7 +26,7 @@ export class CategoriaService {
         const sel = document.getElementById(selectId);
         if (!sel) return;
         const cats = this.getCategorias();
-        sel.innerHTML = `<option value="">Sin categoría</option>`;
+        montar(sel, crudo(`<option value="">Sin categoría</option>`));
         cats.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -62,16 +63,16 @@ export class CategoriaService {
         if (!lista) return;
         const cats = this.getCategorias();
         if (cats.length === 0) {
-            lista.innerHTML = `<span class="sin-categorias-text">Sin categorías definidas</span>`;
+            montar(lista, crudo(`<span class="sin-categorias-text">Sin categorías definidas</span>`));
             return;
         }
-        lista.innerHTML = cats.map(c => `
+        montar(lista, crudo(cats.map(c => `
         <span class="categoria-tag">
             <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${this.app.utils.escaparAtributoHTML(c)}" title="Eliminar">
                 <svg class="icon"><use href="#icon-cancel" /></svg>
             </button>
             ${this.app.utils.escaparHTML(c)}
-        </span>`).join('');
+        </span>`).join('')));
     }
 
     // ── CRUD ──────────────────────────────────────────────────

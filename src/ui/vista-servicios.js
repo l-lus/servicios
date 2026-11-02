@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -114,7 +115,7 @@ export class VistaServicios {
         const servicioIngresos = EstadoApp.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
 
         const pintar = (contenido) => {
-            const fn = () => { lista.innerHTML = contenido; };
+            const fn = () => { montar(lista, crudo(contenido)); };
             if (this.app._animarRender) Anim.diffLista(lista, '.servicio-wrapper', 'data-id', fn);
             else fn();
         };

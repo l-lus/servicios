@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
 
@@ -88,14 +89,14 @@ export class FacturaService {
         document.getElementById('modal-facturas-servicio').dataset.servicioId = servicioId;
         if (btnBorrar) btnBorrar.style.display = servicio.facturas.length > 0 ? '' : 'none';
         if (servicio.facturas.length === 0) {
-            lista.innerHTML = '<div class="empty-state"><p>No hay facturas registradas</p></div>';
+            montar(lista, crudo('<div class="empty-state"><p>No hay facturas registradas</p></div>'));
         } else {
             const ordenadas = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
             const grupos = this.agruparPorAno(ordenadas);
-            lista.innerHTML = grupos.map((grupo, index) => {
+            montar(lista, crudo(grupos.map((grupo, index) => {
                 const html = grupo.items.map(f => this.app.vista.generarHTMLFactura(f, 'editar-factura')).join('');
                 return this.generarGrupoAno(grupo.ano, grupo.items, html, 'factura', index);
-            }).join('');
+            }).join('')));
         }
         this.app.ui.abrirModal('modal-facturas-servicio');
         const anoGuardado = this.app._anoExpandidoFacturas[servicioId];
@@ -187,7 +188,7 @@ export class FacturaService {
             }
             // Poblar select de servicios en modal editar
             const selEdit = document.getElementById(ids.servicio);
-            if (selEdit) selEdit.innerHTML = optsHTML;
+            if (selEdit) montar(selEdit, crudo(optsHTML));
             // Refrescar CustomSelects del modal editar-factura
             const csdSvcEdit = document.getElementById('editar-factura-servicio-csd');
             if (csdSvcEdit?._customSelect) csdSvcEdit._customSelect.refresh();
@@ -197,10 +198,10 @@ export class FacturaService {
         } else {
             // Poblar select ANTES de reset para que reset no lo borre
             const selectSvc = document.getElementById('factura-servicio');
-            if (selectSvc) selectSvc.innerHTML = optsHTML;
+            if (selectSvc) montar(selectSvc, crudo(optsHTML));
             document.getElementById('form-factura').reset();
             // Restaurar valores que reset borró
-            if (selectSvc) selectSvc.innerHTML = optsHTML;
+            if (selectSvc) montar(selectSvc, crudo(optsHTML));
             this.app.utils.setMonedaBtn('factura-moneda', 'btn-factura-moneda', 'ars');
             document.getElementById('factura-fecha').value = this.app.utils.obtenerFechaLocal();
             document.getElementById('btn-toggle-pagada').classList.remove('pagada');

@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -272,7 +273,7 @@ export class GistService {
                     if (diff.facturasActualizadas) chips.push(`<div class="gist-novedades-chip"><span>Actualizadas</span><span class="gist-novedades-chip-count">${diff.facturasActualizadas}</span></div>`);
                     if (diff.ingresosAgregados) chips.push(`<div class="gist-novedades-chip"><span>Ingresos</span><span class="gist-novedades-chip-count">+${diff.ingresosAgregados}</span></div>`);
                     if (nuevasCats) chips.push(`<div class="gist-novedades-chip"><span>Categorías</span><span class="gist-novedades-chip-count">+${nuevasCats}</span></div>`);
-                    detalle.innerHTML = chips.join('');
+                    montar(detalle, crudo(chips.join('')));
                 }
 
                 this.app._gistDatosPendientes = data;

@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 // ============================================================
 // INGRESO SERVICE — ciclo de vida de ingresos
@@ -19,11 +20,11 @@ export class IngresoService {
         if (!servicio) return;
         const lista = document.getElementById('lista-ingresos-modal');
         if (servicio.facturas.length === 0) {
-            lista.innerHTML = '<div class="empty-state"><p>No hay ingresos registrados</p></div>';
+            montar(lista, crudo('<div class="empty-state"><p>No hay ingresos registrados</p></div>'));
         } else {
             const ordenados = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
             const grupos = this.app.factura.agruparPorAno(ordenados);
-            lista.innerHTML = grupos.map((grupo, index) => {
+            montar(lista, crudo(grupos.map((grupo, index) => {
                 const html = grupo.items.map(ingreso => {
                     const tipo   = ingreso.tipo === 'complementario' ? 'Complementario' : ingreso.tipo === 'transferencia' ? 'Transferencia' : 'Regular';
                     const emoji  = ingreso.tipo === 'complementario' ? '💼' : ingreso.tipo === 'transferencia' ? '🔄' : '💵';
@@ -38,7 +39,7 @@ export class IngresoService {
                 </div>`;
                 }).join('');
                 return this.app.factura.generarGrupoAno(grupo.ano, grupo.items, html, 'ingreso', index);
-            }).join('');
+            }).join('')));
         }
         document.getElementById('modal-ingresos-lista').dataset.servicioId = servicioId;
         this.app.ui.abrirModal('modal-ingresos-lista');

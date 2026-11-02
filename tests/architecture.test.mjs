@@ -251,3 +251,22 @@ test('Capas: src/core no toca el DOM de la app (document.getElementById / queryS
     const violaciones = srcFiles.filter(f => f.startsWith('src/core/') && !permitidos.has(f) && re.test(fs.readFileSync(f, 'utf8')));
     assert.deepEqual(violaciones, []);
 });
+
+test('HTML seguro: innerHTML, outerHTML= e insertAdjacentHTML solo dentro de core/html.js (montar)', () => {
+    const SINK = /\.(innerHTML|outerHTML)\s*=(?!=)|insertAdjacentHTML\s*\(|\binnerHTML\s*:/;
+    const violaciones = srcFiles
+        .filter(f => f !== 'src/core/html.js')
+        .flatMap(f => fs.readFileSync(f, 'utf8').split('\n')
+            .map((l, i) => [l, i + 1])
+            .filter(([l]) => SINK.test(l) && !l.trim().startsWith('//') && !l.trim().startsWith('*'))
+            .map(([, n]) => `${f}:${n}`));
+    assert.deepEqual(violaciones, [], 'Usá montar(el, html`...`) o replaceChildren() para limpiar');
+});
+
+test('CSP: index.html exige Trusted Types con la única política de core/html.js', () => {
+    const htmlIndex = fs.readFileSync('index.html', 'utf8');
+    const csp = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(htmlIndex)?.[1] ?? '';
+    assert.match(csp, /require-trusted-types-for 'script'/);
+    assert.match(csp, /trusted-types servicios;/);
+    assert.match(fs.readFileSync('src/core/html.js', 'utf8'), /createPolicy\?\.\('servicios'/);
+});

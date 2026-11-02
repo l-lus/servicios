@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 
 // ============================================================
@@ -27,10 +28,10 @@ export class CustomSelect {
 
     refresh() {
         const options = Array.from(this.native.options);
-        this.dropdown.innerHTML = options.map(opt =>
+        montar(this.dropdown, crudo(options.map(opt =>
             // opt.value y opt.text vienen decodificados: hay que volver a escaparlos
             `<div class="custom-select-option${opt.selected ? ' selected' : ''}" data-value="${SecurityAndUtils.escapeHtml(opt.value)}">${SecurityAndUtils.escapeHtml(opt.text)}</div>`
-        ).join('');
+        ).join('')));
         this.dropdown.querySelectorAll('.custom-select-option').forEach(el => {
             el.addEventListener('pointerdown', e => {
                 e.stopPropagation();

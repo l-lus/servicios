@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { Motion } from '../core/movimiento.js';
 
 // ============================================================
@@ -203,11 +204,11 @@ export const Anim = (function () {
     function morph(cont, html, selValores) {
         if (!cont) return;
         if (Motion.reducido() || !cont.offsetParent || !cont.firstElementChild) {
-            cont.innerHTML = html;
+            montar(cont, crudo(html));
             return;
         }
         const nuevo = document.createElement('div');
-        nuevo.innerHTML = html;
+        montar(nuevo, crudo(html));
 
         // Los style inline los pone JS después de renderizar (la CSP no deja
         // escribirlos en el HTML), así que no cuentan como estructura.
@@ -221,7 +222,7 @@ export const Anim = (function () {
         };
 
         if (firma(cont) !== firma(nuevo)) {
-            mutacion(cont, () => { cont.innerHTML = html; });
+            mutacion(cont, () => { montar(cont, crudo(html)); });
             return;
         }
 

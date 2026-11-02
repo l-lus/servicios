@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ReportesTexto } from '../services/reportes-texto.js';
 import { Calculadora } from '../services/calculadora.js';
@@ -125,7 +126,7 @@ ${_varUSDItem}`;
             Anim.morph(resultadosContainer, html, '.calculador-resultado-valor');
             this.app.ultimoEstadoCalculador = estadoCalculador;
         } else {
-            resultadosContainer.innerHTML = html;
+            montar(resultadosContainer, crudo(html));
         }
     }
 

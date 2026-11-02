@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -97,7 +98,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
 </div>`;
         const contResumen = document.getElementById('resumen-mes');
         if (debeAnimar) Anim.morph(contResumen, resumenHTML, '.resumen-valor, .resumen-valor-usd, .resumen-label');
-        else contResumen.innerHTML = resumenHTML;
+        else montar(contResumen, crudo(resumenHTML));
         const barra = document.getElementById('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
         StorageHelper.setItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO, esPendiente ? 'false' : 'true');
@@ -124,7 +125,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         if (vencenEsteMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Vencen este mes</div>${vencenEsteMes.map(renderFila).join('')}</div>`;
         if (pagadasOtroMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes).join('')}</div>`;
         if (!html) html = '<div class="text-center-muted">Sin movimientos este mes</div>';
-        document.getElementById('modal-info-resumen-body').innerHTML = html;
+        montar(document.getElementById('modal-info-resumen-body'), crudo(html));
         this.app.ui.abrirModal('modal-info-resumen');
     }
 
@@ -191,18 +192,18 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
             const lista = document.querySelector('#estadisticas-mensual-container .estadisticas-lista');
             if (!lista) return;
             if (estadoCambio) Anim.morph(lista, itemsHTML, '.estadistica-valor');
-            else lista.innerHTML = itemsHTML;
+            else montar(lista, crudo(itemsHTML));
         };
 
         const hayDatos = this.servicios.length > 0 && this.servicios.some(s => s.facturas?.length > 0);
         if (!yaExisteSelector || !hayDatos) {
-            document.getElementById('estadisticas-mensual-container').innerHTML = `
+            montar(document.getElementById('estadisticas-mensual-container'), crudo(`
 <div class="calculador-campo"><label class="calculador-label">Mes</label>
 <div class="custom-select-wrapper" id="select-mes-estadisticas-csd"><div class="custom-select-trigger"><span class="csd-label"></span><svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div><div class="custom-select-dropdown"></div></div>
 <select id="select-mes-estadisticas" class="select-mes-oculto"></select></div>
-<div id="estadisticas-categorias-tags"></div><div class="estadisticas-lista"></div>`;
+<div id="estadisticas-categorias-tags"></div><div class="estadisticas-lista"></div>`));
             const select = document.getElementById('select-mes-estadisticas');
-            select.innerHTML = this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado);
+            montar(select, crudo(this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado)));
             const wrapper = document.getElementById('select-mes-estadisticas-csd');
             const cs = new CustomSelect(wrapper, select, () => this.actualizarEstadisticas());
             wrapper._customSelect = cs;
@@ -213,7 +214,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
             const selectActual = document.getElementById('select-mes-estadisticas');
             if (selectActual) {
                 const valorActual = selectActual.value;
-                selectActual.innerHTML = this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado);
+                montar(selectActual, crudo(this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado)));
                 if (Array.from(selectActual.options).some(opt => opt.value === valorActual)) selectActual.value = valorActual;
                 const csd = document.getElementById('select-mes-estadisticas-csd');
                 if (csd?._customSelect) csd._customSelect.refresh();
@@ -229,10 +230,10 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         if (!container) return;
         const cats = this.app.categoria.getCategorias();
         const catsUsadas = cats.filter(c => this.servicios.some(s => s.id !== this.app.SERVICIO_INGRESOS_ID && s.categoria === c));
-        if (catsUsadas.length === 0) { container.innerHTML = ''; return; }
+        if (catsUsadas.length === 0) { container.replaceChildren(); return; }
         const activa = this.app._estadisticaCategoriaActiva || null;
         const tagsHTML = catsUsadas.map(c => `<button class="est-cat-tag${c === activa ? ' est-cat-tag--activa' : ''}" data-cat="${this.app.utils.escaparAtributoHTML(c)}">${this.app.utils.escaparHTML(c)}</button>`).join('');
-        container.innerHTML = `<div class="est-cat-tags-row">${tagsHTML}</div>`;
+        montar(container, crudo(`<div class="est-cat-tags-row">${tagsHTML}</div>`));
         container.querySelectorAll('.est-cat-tag').forEach(btn => {
             btn.addEventListener('click', () => {
                 const cat = btn.dataset.cat;
@@ -287,7 +288,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         if (this.app.ui.ingresosHabilitado() && this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID)) {
             html += `<option value="${this.app.SERVICIO_INGRESOS_ID}" ${this.app.SERVICIO_INGRESOS_ID === valorActual ? 'selected' : ''}>Ingresos</option>`;
         }
-        select.innerHTML = html;
+        montar(select, crudo(html));
         const csd = document.getElementById('calculador-servicio-csd');
         if (csd?._customSelect) csd._customSelect.refresh();
         if (valorActual && !this.servicios.find(s => s.id === valorActual)) {
@@ -430,9 +431,9 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
 
         const lista = document.getElementById('modal-debug-lista');
         if (items.length === 0) {
-            lista.innerHTML = `<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`;
+            montar(lista, crudo(`<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`));
         } else {
-            lista.innerHTML = items.map(({ servicio, factura }) => {
+            montar(lista, crudo(items.map(({ servicio, factura }) => {
                 const moneda = factura.moneda || 'ars';
                 const estadoBadge = factura.pagada
                     ? `<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.app.utils.formatearFecha(factura.fechaPago) : ''}</span>`
@@ -446,7 +447,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         </div>
         <div class="mt-1">${estadoBadge}</div>
     </div>`;
-            }).join('');
+            }).join('')));
         }
 
         this.app.ui.abrirModal('modal-debug-estadisticas');

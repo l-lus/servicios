@@ -1,3 +1,4 @@
+import { crudo, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -58,7 +59,7 @@ export class PerfilService {
             inputNuevo.disabled = maxAlcanzado;
             inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
         }
-        lista.innerHTML = perfilesArray.map(perfil => {
+        montar(lista, crudo(perfilesArray.map(perfil => {
             const esActivo = perfil.id === this.perfilActivo;
             const esDefault = perfil.id === 'default';
             const cantidadServicios = GestorPerfiles.cantidadServicios(perfil.id);
@@ -82,7 +83,7 @@ export class PerfilService {
         </button>
     </div>
 </div>`;
-        }).join('');
+        }).join('')));
     }
 
     crearInline() {

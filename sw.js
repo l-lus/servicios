@@ -13,6 +13,7 @@ const urlsToCache = [
   './src/core/eventos.js',
   './src/core/fechas.js',
   './src/core/formato.js',
+  './src/core/html.js',
   './src/core/movimiento.js',
   './src/core/seguridad.js',
   './src/core/tema-inicial.js',
