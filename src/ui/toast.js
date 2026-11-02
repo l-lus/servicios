@@ -10,6 +10,16 @@ export const ToastManager = (function () {
     let _toastTimeout = null;
     let _mensajeActual = null;
     const MAX_TOAST_QUEUE = 5;
+    const ESPERA_ANIM_MS = 350;
+
+    // Toast con barra de progreso (p. ej. descarga de una actualización): entra en la cola como cualquier otro y se
+    // queda en pantalla hasta que termina (tocarlo o deslizarlo no lo cierra); los que lleguen mientras tanto esperan
+    // detrás. Si algo se cuelga, se retira solo pasado un tiempo.
+    const PROGRESO_MAX_MS = 45000;
+    let _timerProgreso = null;
+    /** @type {{ mensaje: string, porcentaje: number | null } | null} */
+    let _progreso = null;
+    let _progresoVisible = false;
 
     // accion (opcional): { label, fn } muestra un botón dentro del toast
     // (p. ej. "Deshacer"). Tocar el resto del toast solo lo cierra.
@@ -30,6 +40,7 @@ export const ToastManager = (function () {
         if (_toastQueue.length === 0) {
             _toastRunning = false;
             _mensajeActual = null;
+            if (_progreso) _mostrarProgreso();
             return;
         }
 
@@ -74,7 +85,73 @@ export const ToastManager = (function () {
         }, 10);
     }
 
+    function _pintarProgreso() {
+        const toast = document.getElementById('toast');
+        if (!toast || !_progreso) return;
+        const texto = toast.querySelector('.toast-texto');
+        const barra = /** @type {HTMLProgressElement | null} */ (toast.querySelector('.toast-progreso'));
+        const { mensaje, porcentaje } = _progreso;
+        if (texto) texto.textContent = porcentaje === null ? mensaje : `${mensaje} ${porcentaje} %`;
+        if (barra) { if (porcentaje === null) barra.removeAttribute('value'); else barra.value = porcentaje; }
+    }
+
+    function _mostrarProgreso() {
+        const toast = document.getElementById('toast');
+        if (!toast || !_progreso) return;
+        _toastRunning = true;
+        _progresoVisible = true;
+        _habilitarCierreToast();
+        toast.className = 'toast info toast-con-progreso';
+        const texto = document.createElement('span');
+        texto.className = 'toast-texto';
+        const barra = document.createElement('progress');
+        barra.className = 'toast-progreso';
+        barra.max = 100;
+        toast.replaceChildren(texto, barra);
+        _pintarProgreso();
+        requestAnimationFrame(() => { if (_progresoVisible) toast.classList.add('show'); });
+        // seguro contra una descarga que nunca termina: no deja la cola bloqueada
+        clearTimeout(_timerProgreso);
+        _timerProgreso = setTimeout(_descartarProgreso, PROGRESO_MAX_MS);
+    }
+
+    function _ocultarProgreso() {
+        clearTimeout(_timerProgreso);
+        _progresoVisible = false;
+        document.getElementById('toast')?.classList.remove('show');
+    }
+
+    function _descartarProgreso() {
+        if (!_progresoVisible) return;
+        _progreso = null;
+        _ocultarProgreso();
+        setTimeout(() => _procesarToastQueue(), ESPERA_ANIM_MS);
+    }
+
+    /** Muestra un toast con barra de progreso (indeterminada hasta que se informe un porcentaje). */
+    function iniciarProgreso(mensaje) {
+        _progreso = { mensaje: SecurityAndUtils.sanitizeString(mensaje, 200), porcentaje: null };
+        if (!_toastRunning) _mostrarProgreso();
+    }
+
+    /** @param {number} porcentaje entero de 0 a 100 */
+    function actualizarProgreso(porcentaje) {
+        if (!_progreso) return;
+        _progreso.porcentaje = porcentaje;
+        if (_progresoVisible) _pintarProgreso();
+    }
+
+    /** Retira el toast de progreso (si estaba a la vista); lo que siga se muestra con `mostrarToast`. */
+    function finalizarProgreso() {
+        _progreso = null;
+        if (!_progresoVisible) return;
+        _ocultarProgreso();
+        setTimeout(() => _procesarToastQueue(), ESPERA_ANIM_MS);
+    }
+
     function _cerrarToastActual() {
+        // el toast de progreso no se cierra al tocarlo ni al deslizarlo: se retira solo al terminar
+        if (_progresoVisible) return;
         if (_toastTimeout) { clearTimeout(_toastTimeout); _toastTimeout = null; }
         const toast = document.getElementById('toast');
         if (!toast || !toast.classList.contains('show')) return;
@@ -92,6 +169,9 @@ export const ToastManager = (function () {
 
     return {
         mostrarToast,
+        iniciarProgreso,
+        actualizarProgreso,
+        finalizarProgreso,
         cerrarActual: _cerrarToastActual
     };
 })();

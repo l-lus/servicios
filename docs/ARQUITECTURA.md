@@ -40,7 +40,7 @@ src/services/  estado-facturas (EstadoFacturas: estado, última factura, filtro 
 | 2 | Extraer `core/` y utilidades genéricas de `ui/`; quitar `window.app` | ✅ |
 | 3 | Dominio en `services/` sin DOM + tests: `EstadoFacturas`, `ResumenMes`, `ImportarExportar`, `Calculadora`, `ReportesTexto`, `GestorPerfiles`, `PilaHistorial` y el store `EstadoApp` | ✅ |
 | 4 | `GestionServicios` (2.146 → 493 líneas): 75 pasamanos eliminados; vistas en `VistaServicios`, `ListenersApp`, `ServicioService` | ✅ |
-| 5 | Hecho: `core/html.js` (`html```, `montar`, Trusted Types en la CSP), import/restore único (`ImportarExportar`), CSS en 5 capas, versión dinámica, e2e en Firefox. Pendiente: migrar las plantillas con `crudo()` restantes a `html```, aviso de actualización con progreso, push de vencimientos (opcional, requiere backend) | 🔶 |
+| 5 | Hecho: `core/html.js` (`html```, `montar`, Trusted Types en la CSP), import/restore único (`ImportarExportar`), CSS en 5 capas, versión dinámica, e2e en Firefox. Aviso de actualización con progreso (`aviso-actualizacion.js`, `instalador-pwa.js`, `sw.js` como en *horarios*). Pendiente: migrar las plantillas con `crudo()` restantes a `html``; push de vencimientos: ver [PUSH-VENCIMIENTOS.md](PUSH-VENCIMIENTOS.md) | 🔶 |
 
 ## Verificación
 - `npm test`: arquitectura (capas, ciclos, precache, CSP/Trusted Types, CSS) y dominio sin DOM.

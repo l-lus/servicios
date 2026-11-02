@@ -911,6 +911,56 @@
     border-color: var(--c-blue);
 }
 
+/* Toast con barra de progreso (p. ej. descarga de una actualización): el mismo toast, con una barra fina debajo del texto */
+.toast.toast-con-progreso {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+}
+
+.toast-con-progreso .toast-texto {
+    font-variant-numeric: tabular-nums;
+}
+
+.toast-progreso {
+    width: 100%;
+    height: 4px;
+    border: none;
+    border-radius: 999px;
+    overflow: hidden;
+    appearance: none;
+    -webkit-appearance: none;
+    background: color-mix(in srgb, var(--text-muted) 24%, transparent);
+    color: var(--c-blue);
+}
+
+.toast-progreso::-webkit-progress-bar {
+    background: color-mix(in srgb, var(--text-muted) 24%, transparent);
+}
+
+.toast-progreso::-webkit-progress-value {
+    background: var(--c-blue);
+    border-radius: 999px;
+    transition: width var(--dur-fast) ease;
+}
+
+.toast-progreso::-moz-progress-bar {
+    background: var(--c-blue);
+    border-radius: 999px;
+}
+
+/* sin valor: barra indeterminada */
+.toast-progreso:indeterminate {
+    background: linear-gradient(90deg, transparent 0 30%, var(--c-blue) 30% 60%, transparent 60%) 0 0 / 200% 100% no-repeat,
+        color-mix(in srgb, var(--text-muted) 24%, transparent);
+    animation: toastBarraIndeterminada 1.2s linear infinite;
+}
+
+@keyframes toastBarraIndeterminada {
+    from { background-position: 150% 0, 0 0; }
+    to { background-position: -50% 0, 0 0; }
+}
+
 /* Toast con acción ("Deshacer"): texto + botón en línea */
 .toast.toast-con-accion {
     justify-content: space-between;

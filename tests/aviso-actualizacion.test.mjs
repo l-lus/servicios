@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+// El módulo importa toast.js, que no toca el DOM al cargarse: alcanza con globals mínimos.
+globalThis.window = globalThis;
+globalThis.localStorage = { getItem: () => null, setItem() { }, removeItem() { } };
+globalThis.matchMedia = () => ({ matches: false, addEventListener() { } });
+
+const { porcentajeValido } = await import('../src/ui/aviso-actualizacion.js');
+
+test('porcentajeValido: acota a 0–100, redondea y descarta lo que no es número', () => {
+    assert.equal(porcentajeValido(0), 0);
+    assert.equal(porcentajeValido(42.6), 43);
+    assert.equal(porcentajeValido('55'), 55);
+    assert.equal(porcentajeValido(250), 100);
+    assert.equal(porcentajeValido(-3), 0);
+    assert.equal(porcentajeValido(null), null);
+    assert.equal(porcentajeValido(undefined), null);
+    assert.equal(porcentajeValido(''), null);
+    assert.equal(porcentajeValido('abc'), null);
+    assert.equal(porcentajeValido(NaN), null);
+});

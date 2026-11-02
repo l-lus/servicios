@@ -2,7 +2,7 @@
 // así que solo se tocan las cachés que empiezan con CACHE_PREFIX
 // (CACHE_NAME tiene que empezar con ese prefijo).
 const CACHE_PREFIX = 'SERVICIOS-';
-const CACHE_NAME = `${CACHE_PREFIX}v261101.2246`;
+const CACHE_NAME = `${CACHE_PREFIX}v261101.2251`;
 
 const urlsToCache = [
   './',
@@ -27,6 +27,7 @@ const urlsToCache = [
   './src/services/reportes-texto.js',
   './src/services/resumen-mes.js',
   './src/ui/animaciones.js',
+  './src/ui/aviso-actualizacion.js',
   './src/ui/calculador-service.js',
   './src/ui/categoria-service.js',
   './src/ui/custom-select.js',
@@ -59,19 +60,43 @@ const urlsToCache = [
   './assets/styles/vistas.css',
 ];
 
-// Instalación: cache: 'reload' evita que addAll tome versiones viejas de la
-// caché HTTP. skipWaiting solo si todo se cacheó: si falla, la versión
-// anterior sigue activa con su caché completa.
+// Avisa a las pestañas abiertas cómo va la descarga de la versión nueva (la página muestra el aviso con barra de progreso)
+function avisarAClientes(mensaje) {
+  return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then(clientes => clientes.forEach(c => c.postMessage(mensaje)))
+    .catch(() => { });
+}
+
+// Instalación: descarga todos los archivos en paralelo (sin usar la caché HTTP) e informa el avance.
+// Es todo o nada: si falla uno, la instalación falla y se conserva la versión anterior.
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' }))))
-      .then(() => self.skipWaiting())
-      .catch(err => {
-        console.error('SW: error cacheando archivos críticos:', err);
-        throw err;
-      })
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const total = urlsToCache.length;
+    let descargados = 0;
+    let ultimoAviso = -1;
+    const informar = () => {
+      const porcentaje = Math.floor((descargados / total) * 100);
+      if (porcentaje === ultimoAviso) return;
+      ultimoAviso = porcentaje;
+      avisarAClientes({ tipo: 'sw-progreso', progreso: porcentaje, version: CACHE_NAME });
+    };
+    try {
+      informar();
+      await Promise.all(urlsToCache.map(async url => {
+        const respuesta = await fetch(new Request(url, { cache: 'reload' }));
+        if (!respuesta.ok) throw new Error(`${url}: HTTP ${respuesta.status}`);
+        await cache.put(url, respuesta);
+        descargados++;
+        informar();
+      }));
+    } catch (err) {
+      console.error('SW: falló la descarga de archivos en el install:', err);
+      await avisarAClientes({ tipo: 'sw-error', version: CACHE_NAME });
+      throw err;
+    }
+    await self.skipWaiting();
+  })());
 });
 
 // Activación: borra solo las cachés viejas de esta app
@@ -95,24 +120,29 @@ self.addEventListener('fetch', event => {
   // Fuera del scope del SW (otras apps del mismo origen): no intervenir
   if (!url.href.startsWith(self.registration.scope)) return;
 
+  const matchOpts = { cacheName: CACHE_NAME, ignoreSearch: true };
+
   event.respondWith(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.match(event.request, { ignoreSearch: true }).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request)
-          .then(networkResponse => {
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-              return networkResponse;
-            }
-            cache.put(event.request, networkResponse.clone());
+    caches.match(event.request, matchOpts).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request)
+        .then(networkResponse => {
+          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
             return networkResponse;
-          })
-          .catch(() => {
-            if (event.request.mode === 'navigate') return cache.match('./index.html');
-            return Response.error();
-          });
-      })
-    )
+          }
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return networkResponse;
+        })
+        .catch(async () => {
+          // Sin conexión: una navegación cae a la app precacheada; cualquier otro recurso falla como error de red
+          if (event.request.mode === 'navigate') {
+            const app = (await caches.match('./index.html', matchOpts)) || (await caches.match('./', matchOpts));
+            if (app) return app;
+          }
+          return Response.error();
+        });
+    })
   );
 });
 
