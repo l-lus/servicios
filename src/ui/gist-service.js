@@ -108,7 +108,7 @@ export class GistService {
             btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
         } else {
             btnRespaldar.onclick = () => this.app.respaldo.abrir();
-            btnRestaurar.onclick = () => this.app.storage.mostrarOpcionesImportacion();
+            btnRestaurar.onclick = () => this.app.storage.importarDatos('combinar');
             btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
             btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
         }
@@ -124,10 +124,10 @@ export class GistService {
 
     // ── Spinner en el botón de ajustes ──────────────────────
     _spinStart() {
-        document.getElementById('btn-ajustes')?.classList.add('icon-btn-spinning');
+        document.getElementById('header-profile-btn')?.classList.add('icon-btn-spinning');
     }
     _spinStop() {
-        document.getElementById('btn-ajustes')?.classList.remove('icon-btn-spinning');
+        document.getElementById('header-profile-btn')?.classList.remove('icon-btn-spinning');
     }
 
     _setBusy(busy) {

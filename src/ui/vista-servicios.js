@@ -98,12 +98,8 @@ export class VistaServicios {
     }
 
     renderServicios() {
-        const indicador = document.getElementById('perfil-indicador');
-        if (indicador && EstadoApp.perfilActivo !== 'default') {
-            indicador.textContent = `${EstadoApp.perfiles[EstadoApp.perfilActivo].nombre}`;
-        } else if (indicador) {
-            indicador.textContent = '';
-        }
+        const nombrePerfil = document.getElementById('nombre-perfil-header');
+        if (nombrePerfil) nombrePerfil.textContent = EstadoApp.perfiles[EstadoApp.perfilActivo]?.nombre || '';
 
         const lista = document.getElementById('servicios-lista');
         if (!lista) return;

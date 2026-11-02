@@ -1,0 +1,41 @@
+// Header → Perfiles → Ajustes → cada opción: navegación con retorno, toggles que no cierran, perfiles (crear/editar/eliminar) y vista móvil.
+export default async (b) => {
+    const v = async (e) => (await b.eval(e)).value;
+    const click = async (sel) => { await b.eval(`document.querySelector(${JSON.stringify(sel)})?.click(); true`); await b.sleep(550); };
+    const abiertos = () => v(`[...document.querySelectorAll('.modal.show,.modal.active')].map(m=>m.id).join(',')||'(ninguno)'`);
+    await b.eval(`localStorage.clear(); localStorage.setItem('bienvenida-vista','true'); localStorage.setItem('gestion_servicios_datos_default', JSON.stringify([{id:'a',nombre:'Luz',categoria:'',facturas:[{id:'f',monto:100,fecha:'2026-11-20',pagada:false,fechaPago:null}]}])); true`);
+    await b.setViewport(1000, 900); await b.ir(b.url); await b.sleep(1300);
+    console.log('header:', await v(`document.getElementById('nombre-perfil-header').textContent`));
+    await click('#header-profile-btn'); console.log('perfiles:', await abiertos(), '| items:', await v(`document.querySelectorAll('.btn-perfil-select').length`));
+    await b.shot('/tmp/aj_perfiles.png');
+    await click('#btn-perfiles-ajustes'); console.log('ajustes:', await abiertos());
+    await b.shot('/tmp/aj_config_pc.png');
+    console.log('indicadores:', await v(`['tema-indicator','blur-indicator','animaciones-indicator','ingresos-indicator','dolar-hora'].map(i=>i+'='+document.getElementById(i).textContent).join(' ')`));
+    await click('#menu-toggle-blur'); console.log('privacidad (sigue abierto):', await abiertos(), await v(`document.getElementById('blur-indicator').textContent`));
+    await click('#menu-toggle-ingresos'); console.log('ingresos:', await v(`document.getElementById('ingresos-indicator').textContent`), '|', await abiertos());
+    await click('#menu-tema'); console.log('tema (hijo de ajustes):', await abiertos());
+    await click('.tema-opcion[data-tema="green"]'); await click('#modal-temas-close'); console.log('volver de tema →', await abiertos());
+    await click('#menu-limpiar'); console.log('borrar:', await abiertos());
+    await click('#menu-borrar-categorias'); await b.sleep(300); console.log('confirmar borrar categorías:', await abiertos());
+    await click('#modal-confirmar-cancel'); console.log('cancelar confirmación →', await abiertos());
+    await click('#btn-cerrar-borrar'); console.log('volver de borrar →', await abiertos());
+    await click('#menu-tarjetas'); console.log('tarjetas:', await abiertos()); await click('#modal-tarjetas-close');
+    await click('#menu-atajos'); console.log('atajos:', await abiertos()); await click('#modal-atajos-close');
+    await click('#menu-categorias'); console.log('categorías:', await abiertos()); await b.eval(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); true`); await b.sleep(500); console.log('Esc en categorías →', await abiertos());
+    await click('#menu-gist'); console.log('gist:', await abiertos()); await click('#btn-gist-cerrar'); console.log('cerrar gist →', await abiertos());
+    await click('#btn-ayuda-config'); console.log('ayuda desde ajustes:', await abiertos()); await click('#modal-ayuda-close'); console.log('cerrar ayuda →', await abiertos());
+    await click('#menu-exportar'); console.log('respaldar:', await abiertos()); await click('#btn-respaldo-cancelar'); console.log('cancelar →', await abiertos());
+    await click('#theme-toggle-config'); console.log('toggle tema → data-theme:', await v(`document.documentElement.getAttribute('data-theme')||'-'`), 'dark:', await v(`document.documentElement.classList.contains('dark-mode')`));
+    await click('#btn-cerrar-config'); console.log('cerrar ajustes → vuelve a:', await abiertos());
+    // perfiles: crear, editar, eliminar
+    await b.eval(`(()=>{const i=document.getElementById('perfil-nuevo-nombre'); i.value='Negocio'; return true})()`); await click('#btn-crear-perfil-inline');
+    console.log('crear perfil → items:', await v(`document.querySelectorAll('.btn-perfil-select').length`));
+    await click('.btn-perfil-select:not(.activo) [data-action="editar-perfil"]'); console.log('editar:', await abiertos(), '| eliminar visible:', await v(`!document.getElementById('btn-eliminar-perfil-editor').hidden`));
+    await b.eval(`(()=>{const i=document.getElementById('perfil-nombre'); i.value='Negocio 2'; return true})()`); await b.eval(`document.getElementById('form-perfil').requestSubmit(); true`); await b.sleep(500);
+    console.log('guardar → vuelve a:', await abiertos(), '|', await v(`[...document.querySelectorAll('.btn-perfil-nombre')].map(n=>n.textContent).join()`));
+    await click('.btn-perfil-select:not(.activo) [data-action="editar-perfil"]'); await click('#btn-eliminar-perfil-editor'); await click('#modal-confirmar-ok'); await b.sleep(400);
+    console.log('eliminar →', await abiertos(), '| perfiles:', await v(`document.querySelectorAll('.btn-perfil-select').length`));
+    await click('.btn-perfil-select.activo'); console.log('tocar el activo (no cambia) →', await abiertos());
+    await click('#btn-cerrar-modal-perfiles');
+    await b.setViewport(420, 900); await b.sleep(400); await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await b.shot('/tmp/aj_config_movil.png'); console.log('móvil:', await abiertos());
+};

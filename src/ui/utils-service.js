@@ -85,24 +85,6 @@ export class UtilsService {
         };
     }
 
-    toggleSubMenuAjustes(opcionesId, padreId) {
-        const subMenus = [
-            ['opciones-importacion', 'menu-importar'],
-            ['opciones-borrar', 'menu-limpiar'],
-            ['opciones-dolar', 'menu-dolar'],
-        ];
-        const abriendo = !document.getElementById(opcionesId).classList.contains('open');
-        subMenus.forEach(([oId, pId]) => {
-            if (oId !== opcionesId) {
-                document.getElementById(oId).classList.remove('open');
-                document.getElementById(pId).classList.remove('open');
-            }
-        });
-        document.getElementById(opcionesId).classList.toggle('open', abriendo);
-        document.getElementById(padreId).classList.toggle('open', abriendo);
-        if (abriendo) Anim.scrollAlExpandir(document.getElementById(opcionesId));
-    }
-
     setMonedaBtn(hiddenId, btnId, moneda) {
         const hidden = document.getElementById(hiddenId);
         const btn = document.getElementById(btnId);

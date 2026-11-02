@@ -38,16 +38,14 @@ export class PerfilService {
         this.app._estadisticaCategoriaActiva = null;
         this.app.ultimoEstadoEstadisticas = null;
         this.app.vista.renderServicios();
-        this.app.ui.cerrarModal('modal-perfiles');
-        this.app.ui.cerrarMenuAjustes();
+        this.app.ui.cerrarModal('modal-selector-perfiles');
         this.app.ui.mostrarToast(`Cambiado a perfil: ${this.perfiles[perfilId].nombre}`, 'success');
     }
 
     // ── UI — modal lista ──────────────────────────────────────
     abrirModal() {
         this.renderLista();
-        this.app.ui.cerrarMenuAjustes();
-        this.app.ui.abrirModal('modal-perfiles');
+        ModalManager.abrir('modal-selector-perfiles');
     }
 
     renderLista() {
@@ -61,27 +59,17 @@ export class PerfilService {
         }
         montar(lista, html`${perfilesArray.map(perfil => {
             const esActivo = perfil.id === this.perfilActivo;
-            const esDefault = perfil.id === 'default';
             const cantidadServicios = GestorPerfiles.cantidadServicios(perfil.id);
             return html`
-<div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
-     data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
-    <div class="flex-1">
-        <div class="perfil-header d-flex align-items-center gap-2">
-            ${perfil.nombre}
-            ${esActivo ? html`<span class="perfil-activo-badge">● Activo</span>` : ''}
-        </div>
-        <div class="perfil-stats">${this.app.utils.plural(cantidadServicios, 'servicio', 'servicios')}</div>
-    </div>
-    <div class="d-flex gap-2" data-action="stop-propagation">
-        ${!esDefault ? html`
-            <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${perfil.id}" title="Eliminar perfil">
-                <svg class="icon"><use href="#icon-trash" /></svg>
-            </button>` : ''}
-        <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${perfil.id}" title="Editar perfil">
-            <svg class="icon"><use href="#icon-edit" /></svg>
-        </button>
-    </div>
+<div class="btn-perfil-select ${esActivo ? 'activo' : ''}" role="button" tabindex="0" data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
+    <span class="btn-perfil-info">
+        <span class="btn-perfil-nombre">${perfil.nombre}</span>
+        <span class="perfil-stats">${this.app.utils.plural(cantidadServicios, 'servicio', 'servicios')}</span>
+    </span>
+    ${esActivo ? html`<span class="btn-perfil-estado">Activo</span>` : ''}
+    <button type="button" class="icon-btn" data-action="editar-perfil" data-perfil-id="${perfil.id}" title="Editar perfil" aria-label="Editar perfil ${perfil.nombre}">
+        <svg class="icon"><use href="#icon-edit" /></svg>
+    </button>
 </div>`;
         })}`);
     }
@@ -96,24 +84,21 @@ export class PerfilService {
         GestorPerfiles.crear(this.perfiles, nombre);
         input.value = '';
         this.app.ui.mostrarToast('Perfil creado', 'success');
-        this.abrirModal();
+        this.renderLista();
     }
 
     // ── UI — modal editar ─────────────────────────────────────
     abrirModalEditar(perfilId) {
         this.app.perfilEditando = perfilId;
         const perfil = this.perfiles[perfilId];
-        document.getElementById('titulo-editar-perfil').textContent = 'Editar Perfil';
         document.getElementById('perfil-nombre').value = perfil.nombre;
-        const inputNuevo = document.getElementById('perfil-nuevo-nombre');
-        if (inputNuevo) inputNuevo.value = '';
-        this.app.ui.cerrarModal('modal-perfiles');
-        this.app.ui.abrirModal('modal-editar-perfil');
+        document.getElementById('btn-eliminar-perfil-editor').hidden = perfilId === 'default';
+        ModalManager.abrirConPadre('modal-editar-perfil', 'modal-selector-perfiles');
     }
 
     cancelarEditar() {
-        this.app.ui.cerrarModal('modal-editar-perfil');
-        this.abrirModal();
+        ModalManager.cerrarConRetorno('modal-editar-perfil');
+        this.renderLista();
     }
 
     guardarEdicion(e) {
@@ -131,8 +116,8 @@ export class PerfilService {
             GestorPerfiles.crear(this.perfiles, nombre);
             this.app.ui.mostrarToast('Perfil creado', 'success');
         }
-        this.app.ui.cerrarModal('modal-editar-perfil');
-        this.abrirModal();
+        ModalManager.cerrarConRetorno('modal-editar-perfil');
+        this.renderLista();
     }
 
     async eliminar(perfilId) {
@@ -147,6 +132,7 @@ export class PerfilService {
             { titulo: 'Eliminar perfil' }
         );
         if (!confirmado) return;
+        ModalManager.cerrarConRetorno('modal-editar-perfil');
         if (perfilId === this.perfilActivo) this.cambiar('default');
         GestorPerfiles.eliminar(this.perfiles, perfilId);
         this.app.historial_mgr.eliminarDePerfil(perfilId);

@@ -42,7 +42,9 @@ export class CategoriaService {
     // ── Modal ─────────────────────────────────────────────────
     abrirModal(targetSelectId) {
         this.app._categoriaTargetSelect = targetSelectId;
-        this.app._modalServicioOrigen = document.querySelector('.modal.active')?.id || null;
+        // Desde Ajustes no hace falta recordar el origen: abrirModal lo deja como padre y al cerrar se vuelve solo
+        const origen = document.querySelector('.modal.active')?.id || null;
+        this.app._modalServicioOrigen = origen === 'modal-config' ? null : origen;
         if (this.app._modalServicioOrigen) this.app.ui.cerrarModal(this.app._modalServicioOrigen);
         document.getElementById('nueva-categoria-nombre').value = '';
         this.renderLista();

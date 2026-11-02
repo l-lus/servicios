@@ -27,7 +27,7 @@ function _seleccionar(modo) {
 function _cerrar(resultado) {
     const resolver = _resolver;
     _resolver = null;
-    ModalManager.cerrar(ID_MODAL);
+    ModalManager.cerrarConRetorno(ID_MODAL);
     if (resolver) resolver(resultado);
 }
 
@@ -72,7 +72,7 @@ export function preguntarMerge({ origen, locales, categoriasLocales, remotos, ca
     return new Promise(resolve => {
         if (_resolver) _resolver(null);
         _resolver = resolve;
-        ModalManager.abrir(ID_MODAL);
+        ModalManager.abrirConPadre(ID_MODAL, 'modal-config');
     });
 }
 

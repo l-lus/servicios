@@ -22,9 +22,16 @@ export class ListenersApp {
                 this.app.ui.toggleMenuAgregar();
             }
         });
-        document.getElementById('btn-ajustes').addEventListener('click', () => this.app.ui.toggleMenuAjustes());
-        document.getElementById('menu-overlay').addEventListener('click', () => this.app.ui.cerrarMenuAjustes());
-        document.getElementById('btn-cerrar-menu').addEventListener('click', () => this.app.ui.cerrarMenuAjustes());
+        // Header → Perfiles → Ajustes (cada uno vuelve al anterior al cerrarse)
+        document.getElementById('header-profile-btn').addEventListener('click', () => this.app.ui.abrirPerfiles());
+        document.getElementById('btn-perfiles-ajustes').addEventListener('click', () => this.app.ui.abrirAjustes());
+        document.getElementById('btn-cerrar-config').addEventListener('click', () => this.app.ui.cerrarModal('modal-config'));
+        document.getElementById('btn-ayuda-perfiles').addEventListener('click', () => this.app.ui.abrirAyuda());
+        document.getElementById('btn-ayuda-config').addEventListener('click', () => this.app.ui.abrirAyuda());
+        ['theme-toggle-perfiles', 'theme-toggle-config'].forEach(id =>
+            document.getElementById(id).addEventListener('click', () => GestorTemas.alternarClaroOscuro()));
+        document.getElementById('menu-atajos').addEventListener('click', () => this.app.atajos.abrirSelector());
+        document.getElementById('btn-cerrar-borrar').addEventListener('click', () => this.app.ui.cerrarModal('modal-borrar'));
 
         // Undo/Redo
         document.getElementById('btn-undo').addEventListener('click', () => this.app.historial_mgr.deshacer());
@@ -32,7 +39,6 @@ export class ListenersApp {
 
         // Menú ajustes
         document.getElementById('menu-tema').addEventListener('click', () => {
-            this.app.ui.cerrarMenuAjustes();
             this.app.ui.abrirModal('modal-temas');
         });
         document.getElementById('temas-lista').addEventListener('click', (e) => {
@@ -43,11 +49,9 @@ export class ListenersApp {
         document.getElementById('menu-exportar').addEventListener('click', () => this.app.respaldo.abrir());
         this.app.respaldo.bindEventos();
         ResumenMerge.bindEventos();
-        document.getElementById('menu-importar').addEventListener('click', () => this.app.storage.mostrarOpcionesImportacion());
-        document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.app.storage.importarDatos('reemplazar'));
-        document.getElementById('menu-importar-combinar').addEventListener('click', () => this.app.storage.importarDatos('combinar'));
-        document.getElementById('menu-limpiar').addEventListener('click', () => this.app.storage.mostrarOpcionesBorrar());
-        document.getElementById('menu-dolar').addEventListener('click', () => this.app.storage.toggleMenuDolar());
+        document.getElementById('menu-importar').addEventListener('click', () => this.app.storage.importarDatos('combinar'));
+        document.getElementById('menu-limpiar').addEventListener('click', () => this.app.ui.abrirModal('modal-borrar'));
+        document.getElementById('menu-dolar').addEventListener('click', () => this.app.ui.cargarCotizacionDolar());
         document.getElementById('menu-borrar-todo').addEventListener('click', () => this.app.storage.limpiarDatos('todo'));
         document.getElementById('menu-borrar-servicios').addEventListener('click', () => this.app.storage.limpiarDatos('servicios'));
         document.getElementById('menu-borrar-facturas').addEventListener('click', () => this.app.storage.limpiarDatos('facturas'));
@@ -128,12 +132,7 @@ export class ListenersApp {
 
         // Menú de perfiles
         document.getElementById('menu-gist').addEventListener('click', () => {
-            this.app.ui.cerrarMenuAjustes();
             this.app.gist.abrirModal();
-        });
-
-        document.getElementById('menu-perfiles').addEventListener('click', () => {
-            this.app.perfil.abrirModal();
         });
 
         // Event listener para el botón volver del grid (modo agregar)
@@ -224,7 +223,7 @@ export class ListenersApp {
             // ESC: cerrar modales, menús, modo calculadora o búsqueda
             if (e.key === 'Escape') {
                 const hayCapaAbierta = document.querySelector(
-                    '.modal.show, .modal.active, .menu-ajustes.active, .menu-ajustes.show, .menu-agregar.active, .menu-agregar.show, #ctx-menu-servicio.active, #ctx-menu-servicio.show'
+                    '.modal.show, .modal.active, .menu-agregar.active, .menu-agregar.show, #ctx-menu-servicio.active, #ctx-menu-servicio.show'
                 );
 
                 if (this.app.modoCalculadora) { this.app.desactivarModoCalculadora(); return; }
@@ -259,7 +258,6 @@ export class ListenersApp {
             // Atajo de letra suelta → foco al buscador (solo desktop, sin modales/menús)
             if (window.innerWidth < 768) return;
             if (document.querySelector('.modal.active')) return;
-            if (document.getElementById('menu-ajustes').classList.contains('active')) return;
             if (document.getElementById('menu-agregar').classList.contains('active')) return;
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
             if (e.altKey) return;
@@ -282,16 +280,10 @@ export class ListenersApp {
         });
 
         document.getElementById('menu-categorias').addEventListener('click', () => {
-            this.app.ui.cerrarMenuAjustes();
             this.app.categoria.abrirModal(null);
         });
 
         // Ayuda con buscador
-        document.getElementById('menu-ayuda').addEventListener('click', () => {
-            this.app.ui.cerrarMenuAjustes();
-            AyudaBuscador.limpiar();
-            this.app.ui.abrirModal('modal-ayuda');
-        });
         document.getElementById('modal-ayuda-close').addEventListener('click', () => {
             this.app.ui.cerrarModal('modal-ayuda');
         });
@@ -333,7 +325,6 @@ export class ListenersApp {
         document.getElementById('btn-gist-guardar')?.addEventListener('click', () => this.app.gist.guardarConfig());
         document.getElementById('btn-gist-cerrar')?.addEventListener('click', () => {
             this.app.ui.cerrarModal('modal-gist');
-            this.app.ui.toggleMenuAjustes();
         });
         document.getElementById('btn-gist-crear-token')?.addEventListener('click', () => {
             window.open('https://github.com/settings/tokens/new?description=Servicios+sync&scopes=gist', '_blank');
@@ -429,10 +420,11 @@ export class ListenersApp {
             this.app.perfil.crearInline();
         });
         document.getElementById('btn-cerrar-modal-perfiles').addEventListener('click', () => {
-            this.app.ui.cerrarModal('modal-perfiles');
+            this.app.ui.cerrarModal('modal-selector-perfiles');
         });
 
         // Modal editar-perfil: submit + volver
+        document.getElementById('btn-eliminar-perfil-editor').addEventListener('click', () => this.app.perfil.eliminar(this.app.perfilEditando));
         document.getElementById('form-perfil').addEventListener('submit', (e) => {
             this.app.perfil.guardarEdicion(e);
         });
@@ -450,10 +442,7 @@ export class ListenersApp {
         // Perfiles: cambiar / eliminar / editar
         document.getElementById('perfiles-lista')?.addEventListener('click', (e) => {
             const card = e.target.closest('[data-action="cambiar-perfil"]');
-            const btnEliminar = e.target.closest('[data-action="eliminar-perfil"]');
             const btnEditar = e.target.closest('[data-action="editar-perfil"]');
-            const stop = e.target.closest('[data-action="stop-propagation"]');
-            if (btnEliminar) { e.stopPropagation(); this.app.perfil.eliminar(btnEliminar.dataset.perfilId); return; }
             if (btnEditar) { e.stopPropagation(); this.app.perfil.abrirModalEditar(btnEditar.dataset.perfilId); return; }
             if (card) this.app.perfil.cambiar(card.dataset.perfilId);
         });

@@ -60,11 +60,11 @@ export class AtajosCard {
             { id: 'categorias', nombre: 'Categorías', descripcion: 'Crea o borra categorías',
                 estado: () => ({ icono: '#icon-categorias', titulo: 'Categorías' }), accion: () => this.app.categoria.abrirModal(null) },
             { id: 'perfiles', nombre: 'Perfiles', descripcion: 'Cambia o administra los perfiles',
-                estado: () => ({ icono: '#icon-users', titulo: 'Perfiles' }), accion: () => this.app.perfil.abrirModal() },
+                estado: () => ({ icono: '#icon-users', titulo: 'Perfiles' }), accion: () => this.app.ui.abrirPerfiles() },
             { id: 'ayuda', nombre: 'Ayuda', descripcion: 'Abre la ayuda con buscador',
-                estado: () => ({ icono: '#icon-help', titulo: 'Ayuda' }), accion: click('menu-ayuda') },
+                estado: () => ({ icono: '#icon-help', titulo: 'Ayuda' }), accion: () => this.app.ui.abrirAyuda() },
             { id: 'ajustes', nombre: 'Ajustes', descripcion: 'Abre el menú de ajustes',
-                estado: () => ({ icono: '#icon-menu', titulo: 'Ajustes' }), accion: () => this.app.ui.toggleMenuAjustes() },
+                estado: () => ({ icono: '#icon-settings', titulo: 'Ajustes' }), accion: () => this.app.ui.abrirAjustes() },
         ];
         this._ids = this.catalogo.map(a => a.id);
     }

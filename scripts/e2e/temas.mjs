@@ -3,7 +3,7 @@ export default async (b) => {
     const v = async (e) => (await b.eval(e)).value;
     const click = async (sel) => { await b.eval(`document.querySelector(${JSON.stringify(sel)})?.click(); true`); await b.sleep(450); };
     console.log('tema inicial:', await v(`document.documentElement.className+' | '+(document.documentElement.getAttribute('data-theme')||'-')`), '| fondo', await v(`getComputedStyle(document.body).getPropertyValue('--bg-body').trim()`));
-    await click('#btn-ajustes'); await click('#menu-tema');
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-tema');
     console.log('muestras:', await v(`document.querySelectorAll('#temas-lista .tema-opcion').length`), '| seleccionada:', await v(`document.querySelector('.tema-opcion[aria-pressed=true]')?.dataset.tema`));
     for (const t of ['medianoche', 'pink', 'light', 'crema']) {
         await click(`.tema-opcion[data-tema="${t}"]`);

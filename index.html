@@ -43,6 +43,19 @@
 
     <!-- ICONOS SVG -->
     <svg class="hidden">
+        <symbol id="icon-settings" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0" />
+            <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z" />
+        </symbol>
+        <symbol id="icon-back" viewBox="0 0 16 16" fill="currentColor">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8" />
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z" />
+        </symbol>
+        <symbol id="icon-bolt" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09zM4.157 8.5H7a.5.5 0 0 1 .478.647L6.11 13.59l5.732-6.09H9a.5.5 0 0 1-.478-.647L9.89 2.41z" />
+        </symbol>
         <symbol id="icon-moon" viewBox="0 0 24 24">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="icon-line" stroke-width="2"
                 stroke="currentColor" fill="none"></path>
@@ -291,168 +304,14 @@
         <h1> <span>Servicios</span>
         </h1>
         <div class="header-actions">
-            <span id="perfil-indicador"></span>
-            <button class="icon-btn" id="btn-ajustes" aria-label="Ajustes">
-                <svg class="icon">
-                    <use href="#icon-menu" />
+            <button type="button" class="header-profile-btn" id="header-profile-btn" aria-label="Perfiles y ajustes">
+                <span id="nombre-perfil-header">…</span>
+                <svg class="icon" id="header-profile-icon">
+                    <use href="#icon-briefcase" />
                 </svg>
             </button>
         </div>
     </header>
-
-    <!-- Overlay del menú -->
-    <div class="menu-overlay" id="menu-overlay"></div>
-    <!-- Menú de Ajustes -->
-    <div class="menu-ajustes" id="menu-ajustes">
-        <div class="menu-header"><svg class="icon">
-                <use href="#icon-menu" />
-            </svg> Ajustes</div>
-        <div class="menu-content custom-scroll">
-            <div class="menu-item" id="menu-perfiles">
-                <svg class="icon">
-                    <use href="#icon-users" />
-                </svg>
-                <span>Perfiles</span>
-            </div>
-            <div class="menu-item" id="menu-tema">
-                <svg class="icon">
-                    <use id="icon-tema-use" href="#icon-moon" />
-                </svg>
-                <span>Tema</span>
-                <span id="tema-indicator"></span>
-            </div>
-            <div class="menu-item" id="menu-gist">
-                <svg class="icon">
-                    <use href="#icon-cloud-sync" />
-                </svg>
-                <span>Sincronización</span>
-            </div>
-            <div class="menu-item" id="menu-exportar">
-                <svg class="icon">
-                    <use href="#icon-download" />
-                </svg>
-                <span>Respaldar</span>
-            </div>
-            <div class="menu-item menu-item-parent" id="menu-importar">
-                <svg class="icon">
-                    <use href="#icon-upload" />
-                </svg>
-                <span>Restaurar</span>
-                <svg class="icon menu-chevron">
-                    <use href="#icon-chevron-down" />
-                </svg>
-            </div>
-            <div id="opciones-importacion" class="menu-submenu">
-                <div class="collapsible-inner">
-                    <div class="menu-item" id="menu-importar-reemplazar">
-                        <span>Reemplazar</span>
-                    </div>
-                    <div class="menu-item" id="menu-importar-combinar">
-                        <span>Combinar</span>
-                    </div>
-                </div>
-            </div>
-            <div class="menu-item menu-item-parent" id="menu-limpiar">
-                <svg class="icon">
-                    <use href="#icon-trash" />
-                </svg>
-                <span>Borrar</span>
-                <svg class="icon menu-chevron">
-                    <use href="#icon-chevron-down" />
-                </svg>
-            </div>
-            <div id="opciones-borrar" class="menu-submenu">
-                <div class="collapsible-inner">
-                    <div class="menu-item" id="menu-borrar-todo">
-                        <span>Todo</span>
-                    </div>
-                    <div class="menu-item" id="menu-borrar-servicios">
-                        <span>Servicios</span>
-                    </div>
-                    <div class="menu-item" id="menu-borrar-facturas">
-                        <span>Facturas</span>
-                    </div>
-                    <div class="menu-item" id="menu-borrar-ingresos">
-                        <span>Ingresos</span>
-                    </div>
-                    <div class="menu-item" id="menu-borrar-categorias">
-                        <span>Categorías</span>
-                    </div>
-                </div>
-            </div>
-            <div class="menu-item menu-item-parent" id="menu-dolar">
-                <svg class="icon">
-                    <use href="#icon-dollar" />
-                </svg>
-                <span>Dólar</span>
-                <span class="dolar-widget-hora" id="dolar-hora">-</span>
-                <svg class="icon menu-chevron">
-                    <use href="#icon-chevron-down" />
-                </svg>
-            </div>
-            <div id="opciones-dolar" class="menu-submenu">
-                <div class="collapsible-inner">
-                    <div class="menu-item cursor-default justify-content-between">
-                        <span class="text-muted">Oficial</span>
-                        <span class="dolar-widget-valor" id="dolar-oficial">-</span>
-                    </div>
-                    <div class="menu-item cursor-default justify-content-between">
-                        <span class="text-muted">MEP</span>
-                        <span class="dolar-widget-valor" id="dolar-mep">-</span>
-                    </div>
-                </div>
-            </div>
-            <div class="menu-item" id="menu-categorias">
-                <svg class="icon">
-                    <use href="#icon-categorias" />
-                </svg>
-                <span>Categorías</span>
-            </div>
-
-            <div class="menu-item" id="menu-tarjetas">
-                <svg class="icon">
-                    <use href="#icon-menu" />
-                </svg>
-                <span>Tarjetas y orden</span>
-            </div>
-            <div class="menu-item" id="menu-toggle-blur">
-                <svg class="icon">
-                    <use href="#icon-eye" />
-                </svg>
-                <span>Privacidad</span>
-                <span id="blur-indicator"></span>
-            </div>
-            <div class="menu-item" id="menu-toggle-animaciones">
-                <svg class="icon">
-                    <use href="#icon-clock" />
-                </svg>
-                <span>Reducir animaciones</span>
-                <span id="animaciones-indicator"></span>
-            </div>
-            <div class="menu-item" id="menu-toggle-ingresos">
-                <svg class="icon">
-                    <use href="#icon-dollar" />
-                </svg>
-                <span>Ingresos</span>
-                <span id="ingresos-indicator"></span>
-            </div>
-            <div class="menu-item" id="menu-ayuda">
-                <svg class="icon">
-                    <use href="#icon-info" />
-                </svg>
-                <span>Ayuda</span>
-            </div>
-        </div>
-        <div class="menu-footer">
-            <button class="btn-cerrar-menu" id="btn-cerrar-menu">
-                <svg class="icon">
-                    <use href="#icon-cancel" />
-                </svg>
-                Cerrar menú
-            </button>
-            <div class="menu-version" id="menu-version"></div>
-        </div>
-    </div>
 
     <!-- Contenedor Principal -->
     <div class="container">
@@ -1576,56 +1435,224 @@
     </div>
 
     <!-- Modal de Perfiles -->
-    <div class="modal" id="modal-perfiles">
+    <div class="modal modal-scrollable" id="modal-selector-perfiles" role="dialog" aria-modal="true" aria-labelledby="modal-selector-perfiles-titulo">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>Perfiles</h2>
+            <div class="modal-panel-header">
+                <h3 id="modal-selector-perfiles-titulo">
+                    <span class="modal-title-block"><svg class="icon"><use href="#icon-briefcase" /></svg> Perfiles</span>
+                </h3>
             </div>
-            <div class="modal-body d-flex flex-column gap-3">
-                <div id="perfiles-lista" class="d-flex flex-column gap-2"></div>
-                <div class="d-flex align-items-center gap-2">
-                    <input type="text" id="perfil-nuevo-nombre" maxlength="20" placeholder="Nombre del perfil..."
-                        class="flex-1">
-                    <button class="icon-btn" id="btn-crear-perfil-inline" title="Agregar perfil">
-                        <svg class="icon">
-                            <use href="#icon-plus" />
-                        </svg>
+            <div class="modal-panel-body custom-scroll">
+                <div id="perfiles-lista" class="perfil-list-container"></div>
+                <div class="form-group form-group-border-top">
+                    <label for="perfil-nuevo-nombre">Agregar perfil</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="perfil-nuevo-nombre" placeholder="Nombre del perfil, lugar..." maxlength="30" autocomplete="off">
+                        <button type="button" class="time-btn" id="btn-crear-perfil-inline" title="Crear perfil" aria-label="Crear perfil">
+                            <svg class="icon"><use href="#icon-plus" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-panel-footer">
+                <div class="btn-group">
+                    <button type="button" class="btn-settings flex-1" id="btn-perfiles-ajustes">
+                        <svg class="icon"><use href="#icon-settings" /></svg> Ajustes
+                    </button>
+                    <button type="button" class="time-btn" id="theme-toggle-perfiles" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">
+                        <svg class="icon"><use href="#icon-moon" /></svg>
                     </button>
                 </div>
-                <button type="button" id="btn-cerrar-modal-perfiles">
-                    <svg class="icon">
-                        <use href="#icon-cancel" />
-                    </svg> Cerrar
-                </button>
+                <div class="btn-group">
+                    <button type="button" class="btn-cancel flex-1" id="btn-cerrar-modal-perfiles">
+                        <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
+                    </button>
+                    <button type="button" class="time-btn" id="btn-ayuda-perfiles" title="Ayuda" aria-label="Ayuda">
+                        <svg class="icon"><use href="#icon-help" /></svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Crear/Editar Perfil -->
-    <div class="modal" id="modal-editar-perfil">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="titulo-editar-perfil">Editar Perfil</h2>
+    <div class="modal modal-scrollable" id="modal-editar-perfil" role="dialog" aria-modal="true" aria-labelledby="titulo-editar-perfil">
+        <form class="modal-content" id="form-perfil">
+            <div class="modal-panel-header">
+                <h3 id="titulo-editar-perfil">
+                    <span class="modal-title-block"><svg class="icon"><use href="#icon-edit" /></svg> Editar perfil</span>
+                </h3>
             </div>
-            <div class="modal-body">
-                <form id="form-perfil">
-                    <div class="form-group">
-                        <label>Nombre del perfil</label>
-                        <input type="text" id="perfil-nombre" maxlength="20" required
-                            placeholder="Ej: Trabajo, Personal, Hogar...">
+            <div class="modal-panel-body custom-scroll">
+                <div class="form-group">
+                    <label for="perfil-nombre">Nombre del perfil</label>
+                    <input type="text" id="perfil-nombre" maxlength="30" required placeholder="Ej: Casa, Negocio..." autocomplete="off">
+                </div>
+            </div>
+            <div class="modal-panel-footer">
+                <div class="btn-group">
+                    <button type="submit" class="btn-edit flex-1"><svg class="icon"><use href="#icon-check" /></svg> Guardar</button>
+                    <button type="button" class="btn-delete flex-1" id="btn-eliminar-perfil-editor"><svg class="icon"><use href="#icon-trash" /></svg> Eliminar</button>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-cancel flex-1" id="btn-cancelar-editar-perfil"><svg class="icon"><use href="#icon-back" /></svg> Volver</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal modal-scrollable" id="modal-config" role="dialog" aria-modal="true" aria-labelledby="modal-config-titulo">
+        <div class="modal-content">
+            <div class="modal-panel-header">
+                <h3 id="modal-config-titulo">
+                    <span class="modal-title-block"><svg class="icon"><use href="#icon-settings" /></svg> Ajustes</span>
+                    <span class="version-text" id="menu-version"></span>
+                </h3>
+            </div>
+            <div class="modal-panel-body custom-scroll">
+                <div class="modal-config-cols">
+                    <div>
+                        <div class="config-actions form-group">
+                            <label>Interfaz</label>
+                            <div class="settings-list">
+                            <button type="button" id="menu-tema">
+                                <svg class="icon"><use href="#icon-sun" /></svg>
+                                <span class="settings-list-text"><span>Tema</span><span class="settings-list-desc">Colores de la app</span></span>
+                                <span class="settings-valor" id="tema-indicator"></span>
+                            </button>
+                            <button type="button" id="menu-tarjetas">
+                                <svg class="icon"><use href="#icon-menu" /></svg>
+                                <span class="settings-list-text"><span>Tarjetas y orden</span><span class="settings-list-desc">Mostrar, ocultar y mover</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-atajos">
+                                <svg class="icon"><use href="#icon-bolt" /></svg>
+                                <span class="settings-list-text"><span>Atajos</span><span class="settings-list-desc">Botones rápidos</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-toggle-blur">
+                                <svg class="icon"><use href="#icon-eye" /></svg>
+                                <span class="settings-list-text"><span>Privacidad</span><span class="settings-list-desc">Desenfoca los montos del resumen</span></span>
+                                <span class="settings-valor" id="blur-indicator"></span>
+                            </button>
+                            <button type="button" id="menu-toggle-animaciones">
+                                <svg class="icon"><use href="#icon-clock" /></svg>
+                                <span class="settings-list-text"><span>Reducir animaciones</span><span class="settings-list-desc">Auto, sí o no</span></span>
+                                <span class="settings-valor" id="animaciones-indicator"></span>
+                            </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-actions d-grid grid-cols-2 gap-2">
-                        <button type="submit">
-                            <svg class="icon">
-                                <use href="#icon-save" />
-                            </svg>Guardar</button>
-                        <button type="button" class="btn btn-secondary" id="btn-cancelar-editar-perfil">
-                            <svg class="icon">
-                                <use href="#icon-undo" />
-                            </svg>Volver
-                        </button>
+                    <div>
+                        <div class="config-actions form-group">
+                            <label>Datos de la app</label>
+                            <div class="settings-list">
+                            <button type="button" id="menu-toggle-ingresos">
+                                <svg class="icon"><use href="#icon-cash" /></svg>
+                                <span class="settings-list-text"><span>Registrar ingresos</span><span class="settings-list-desc">Compara tus facturas con lo que cobrás</span></span>
+                                <span class="settings-valor" id="ingresos-indicator"></span>
+                            </button>
+                            <button type="button" id="menu-categorias">
+                                <svg class="icon"><use href="#icon-categorias" /></svg>
+                                <span class="settings-list-text"><span>Categorías</span><span class="settings-list-desc">Crear y borrar categorías</span></span>
+                                
+                            </button>
+                                <button type="button" id="menu-dolar">
+                                    <svg class="icon"><use href="#icon-dollar" /></svg>
+                                    <span class="settings-list-text">
+                                        <span>Dólar</span>
+                                        <span class="settings-list-desc">Oficial <b id="dolar-oficial">-</b> · MEP <b id="dolar-mep">-</b></span>
+                                    </span>
+                                    <span class="settings-valor" id="dolar-hora">-</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="config-actions form-group">
+                            <label>Respaldo y sincronización</label>
+                            <div class="settings-list">
+                            <button type="button" id="menu-gist">
+                                <svg class="icon"><use href="#icon-cloud-sync" /></svg>
+                                <span class="settings-list-text"><span>Sincronización</span><span class="settings-list-desc">Respaldo en un Gist de GitHub</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-exportar">
+                                <svg class="icon"><use href="#icon-download" /></svg>
+                                <span class="settings-list-text"><span>Respaldar</span><span class="settings-list-desc">Todo, un mes o un rango de fechas</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-importar">
+                                <svg class="icon"><use href="#icon-upload" /></svg>
+                                <span class="settings-list-text"><span>Restaurar</span><span class="settings-list-desc">Desde un archivo, con resumen previo</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-limpiar" class="btn-delete">
+                                <svg class="icon"><use href="#icon-trash" /></svg>
+                                <span class="settings-list-text"><span>Borrar datos</span><span class="settings-list-desc">Todo o por tipo</span></span>
+                                
+                            </button>
+                            </div>
+                        </div>
                     </div>
-                </form>
+                </div>
+            </div>
+            <div class="modal-panel-footer">
+                <div class="btn-group">
+                    <button type="button" class="btn-cancel flex-1" id="btn-cerrar-config">
+                        <svg class="icon"><use href="#icon-cancel" /></svg> Cerrar
+                    </button>
+                    <button type="button" class="time-btn" id="theme-toggle-config" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">
+                        <svg class="icon"><use href="#icon-moon" /></svg>
+                    </button>
+                    <button type="button" class="time-btn" id="btn-ayuda-config" title="Ayuda" aria-label="Ayuda">
+                        <svg class="icon"><use href="#icon-help" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal modal-scrollable" id="modal-borrar" role="dialog" aria-modal="true" aria-labelledby="modal-borrar-titulo">
+        <div class="modal-content">
+            <div class="modal-panel-header">
+                <h3 id="modal-borrar-titulo">
+                    <span class="modal-title-block"><svg class="icon"><use href="#icon-trash" /></svg> Borrar datos</span>
+                </h3>
+                <p class="text-muted">Se pide confirmación antes de borrar. Podés deshacerlo con el botón de la barra.</p>
+            </div>
+            <div class="modal-panel-body custom-scroll">
+                <div class="config-actions form-group">
+                    <div class="settings-list">
+                            <button type="button" id="menu-borrar-todo" class="btn-delete">
+                                <svg class="icon"><use href="#icon-trash" /></svg>
+                                <span class="settings-list-text"><span>Todo</span><span class="settings-list-desc">Servicios, facturas, ingresos y categorías</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-borrar-servicios" class="btn-delete">
+                                <svg class="icon"><use href="#icon-trash" /></svg>
+                                <span class="settings-list-text"><span>Servicios</span><span class="settings-list-desc">Con todas sus facturas</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-borrar-facturas" class="btn-delete">
+                                <svg class="icon"><use href="#icon-trash" /></svg>
+                                <span class="settings-list-text"><span>Facturas</span><span class="settings-list-desc">Deja los servicios sin facturas</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-borrar-ingresos" class="btn-delete">
+                                <svg class="icon"><use href="#icon-trash" /></svg>
+                                <span class="settings-list-text"><span>Ingresos</span><span class="settings-list-desc">Todos los cobros registrados</span></span>
+                                
+                            </button>
+                            <button type="button" id="menu-borrar-categorias" class="btn-delete">
+                                <svg class="icon"><use href="#icon-trash" /></svg>
+                                <span class="settings-list-text"><span>Categorías</span><span class="settings-list-desc">Los servicios quedan sin categoría</span></span>
+                                
+                            </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-panel-footer">
+                <div class="btn-group">
+                    <button type="button" class="btn-cancel flex-1" id="btn-cerrar-borrar"><svg class="icon"><use href="#icon-back" /></svg> Volver</button>
+                </div>
             </div>
         </div>
     </div>

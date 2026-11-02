@@ -7,7 +7,7 @@ export default async (b) => {
     await b.eval(`localStorage.clear(); localStorage.setItem('bienvenida-vista','true'); true`);
     await b.setViewport(1000, 900); await b.ir(b.url); await b.sleep(1300);
     console.log('PC inicial:', await dist());
-    await click('#btn-ajustes'); await click('#menu-tarjetas');
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-tarjetas');
     console.log('modal:', await abierto('modal-tarjetas'), '|', await v(`document.getElementById('orden-cards-contexto').textContent`), '| filas:', await v(`document.querySelectorAll('.orden-card-item').length`));
     await click('.orden-card-item[data-card="servicios"] [data-mover="-1"]');
     console.log('subir servicios:', await dist());
@@ -31,7 +31,7 @@ export default async (b) => {
     // móvil: todo apilado en una columna, con su propio orden (parte del de PC)
     await b.setViewport(420, 900); await b.ir(b.url); await b.sleep(1300);
     console.log('móvil:', await dist());
-    await click('#btn-ajustes'); await click('#menu-tarjetas'); console.log('contexto:', await v(`document.getElementById('orden-cards-contexto').textContent`));
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-tarjetas'); console.log('contexto:', await v(`document.getElementById('orden-cards-contexto').textContent`));
     await click('#btn-tarjetas-restablecer');
     console.log('restablecer:', await dist(), '|', await v(`localStorage.getItem('orden-tarjetas')`));
     await b.setViewport(1000, 900); await b.sleep(600);

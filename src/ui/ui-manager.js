@@ -1,6 +1,7 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { AyudaBuscador } from './ayuda-buscador.js';
 import { GestorTemas } from './gestor-temas.js';
 import { Motion } from '../core/movimiento.js';
 import { ModalManager } from './gestor-modales.js';
@@ -32,7 +33,6 @@ export class UIManager {
             if (el) el.classList.add('resumen-blur');
         }
         this.mostrarToast(`Privacidad ${this.app.blurHabilitado ? 'habilitado' : 'deshabilitado'}`, 'success');
-        this.cerrarMenuAjustes();
     }
 
     // ── Animaciones ───────────────────────────────────────────
@@ -62,7 +62,6 @@ export class UIManager {
         this.app.atajos?.actualizarEstados();
         if (!silencioso) {
             this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
-            this.cerrarMenuAjustes();
         }
         this.app.estadisticas.actualizarSelectServicios();
         const selectServicio = document.getElementById('calculador-servicio');
@@ -73,41 +72,34 @@ export class UIManager {
     }
 
     // ── Modales ───────────────────────────────────────────────
+    /** Abre un modal; si Ajustes está abierto lo reemplaza y al cerrar el modal se vuelve a Ajustes. */
     abrirModal(modalId) {
-        ModalManager.abrir(modalId);
+        ModalManager.abrirConPadre(modalId, 'modal-config');
     }
 
     cerrarModal(modalId) {
-        ModalManager.cerrar(modalId);
+        ModalManager.cerrarConRetorno(modalId);
     }
 
     cerrarTodosLosModales() {
         ModalManager.cerrarTodos();
     }
 
-    // ── Menú ajustes ──────────────────────────────────────────
-    toggleMenuAjustes() {
-        const menu = document.getElementById('menu-ajustes');
-        if (menu.classList.contains('active') || menu.classList.contains('show')) {
-            this.cerrarMenuAjustes();
-            return;
-        }
-        document.getElementById('menu-overlay')?.classList.add('active');
-        ModalManager.abrir('menu-ajustes');
+    // ── Perfiles y ajustes (modales: header → Perfiles → Ajustes → cada opción) ──
+    abrirPerfiles() {
+        this.app.perfil.abrirModal();
     }
 
-    cerrarMenuAjustes() {
-        const menu = document.getElementById('menu-ajustes');
-        const overlay = document.getElementById('menu-overlay');
-        const estabaAbierto = menu && (menu.classList.contains('active') || menu.classList.contains('show'));
-        if (!estabaAbierto) return;
+    /** Ajustes: si Perfiles está abierto se pasa de uno a otro (y Cerrar vuelve); si no, se abre directo. */
+    abrirAjustes() {
+        ModalManager.abrirConPadre('modal-config', 'modal-selector-perfiles');
+    }
 
-        overlay?.classList.remove('active');
-        ['opciones-importacion', 'opciones-borrar', 'opciones-dolar',
-            'menu-importar', 'menu-limpiar', 'menu-dolar'].forEach(id => {
-                document.getElementById(id)?.classList.remove('open');
-            });
-        ModalManager.cerrar('menu-ajustes');
+    abrirAyuda() {
+        AyudaBuscador.limpiar();
+        const padre = ['modal-config', 'modal-selector-perfiles'].find(id => document.getElementById(id)?.classList.contains('show'));
+        if (padre) ModalManager.alternar(padre, 'modal-ayuda');
+        else ModalManager.abrir('modal-ayuda');
     }
 
     // ── Menú agregar ──────────────────────────────────────────
@@ -203,12 +195,6 @@ export class UIManager {
         }
 
         // 3. Paneles laterales
-        const menuAjustes = document.getElementById('menu-ajustes');
-        if (menuAjustes && (menuAjustes.classList.contains('active') || menuAjustes.classList.contains('show'))) {
-            ModalManager.ejecutarAccionCierre('menu-ajustes');
-            return;
-        }
-
         const menuAgregar = document.getElementById('menu-agregar');
         if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
             ModalManager.ejecutarAccionCierre('menu-agregar');

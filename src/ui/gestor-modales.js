@@ -16,7 +16,9 @@ export const ModalManager = (function () {
         'modal-editar-ingreso': () => document.getElementById('modal-ingreso-volver')?.click(),
         'modal-ordenar': () => document.getElementById('btn-cerrar-modal-ordenar')?.click(),
         'modal-nueva-categoria': () => document.getElementById('btn-cerrar-modal-categorias')?.click(),
-        'modal-perfiles': () => document.getElementById('btn-cerrar-modal-perfiles')?.click(),
+        'modal-selector-perfiles': () => document.getElementById('btn-cerrar-modal-perfiles')?.click(),
+        'modal-config': () => document.getElementById('btn-cerrar-config')?.click(),
+        'modal-borrar': () => document.getElementById('btn-cerrar-borrar')?.click(),
         'modal-editar-perfil': () => document.getElementById('btn-cancelar-editar-perfil')?.click(),
         'modal-temas': () => document.getElementById('modal-temas-close')?.click(),
         'modal-ayuda': () => document.getElementById('modal-ayuda-close')?.click(),
@@ -31,7 +33,7 @@ export const ModalManager = (function () {
         'modal-reporte': () => document.getElementById('btn-reporte-cancelar')?.click(),
         'modal-respaldo': () => document.getElementById('btn-respaldo-cancelar')?.click(),
         'modal-debug-estadisticas': () => document.getElementById('btn-cerrar-modal-debug')?.click(),
-        // 'menu-ajustes' y 'menu-agregar' los registra la app con registrarAccionVolver
+        // 'menu-agregar' lo registra la app con registrarAccionVolver
     };
 
     function registrarAccionVolver(modalId, fn) {
@@ -39,7 +41,8 @@ export const ModalManager = (function () {
     }
 
     let _navegandoHaciaAtras = false;
-    let _ignorandoPopstate = false;
+    // Cuántos popstate provocados por nuestro propio history.back() hay que ignorar (pueden encadenarse dos seguidos)
+    let _popstatesAIgnorar = 0;
     let _enAlternanciaHaciaAdelante = false;
     let _enAlternanciaHaciaAtras = false;
     let _cierrePendiente = false;
@@ -52,7 +55,7 @@ export const ModalManager = (function () {
             _commitProgramado = false;
             if (!_cierrePendiente) return;
             _cierrePendiente = false;
-            _ignorandoPopstate = true;
+            _popstatesAIgnorar++;
             history.back();
         });
     }
@@ -175,8 +178,8 @@ export const ModalManager = (function () {
     }
 
     window.addEventListener('popstate', (event) => {
-        if (_ignorandoPopstate) {
-            _ignorandoPopstate = false;
+        if (_popstatesAIgnorar > 0) {
+            _popstatesAIgnorar--;
             return;
         }
 
@@ -201,13 +204,6 @@ export const ModalManager = (function () {
         }
 
         // Paneles laterales
-        const menuAjustes = document.getElementById('menu-ajustes');
-        if (menuAjustes && (menuAjustes.classList.contains('active') || menuAjustes.classList.contains('show'))) {
-            _ejecutarAccionCierre('menu-ajustes');
-            setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
-            return;
-        }
-
         const menuAgregar = document.getElementById('menu-agregar');
         if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
             _ejecutarAccionCierre('menu-agregar');
@@ -313,6 +309,21 @@ export const ModalManager = (function () {
         _enAlternanciaHaciaAtras = false;
     }
 
+    /** Abre `modalId`; si `padreId` está abierto lo reemplaza y, al cerrar el hijo, se vuelve a él (como en Horarios). */
+    function abrirConPadre(modalId, padreId) {
+        const padre = document.getElementById(padreId);
+        const abierto = padre && (padre.classList.contains('show') || padre.classList.contains('active'));
+        if (abierto && modalId !== padreId) alternar(padreId, modalId);
+        else abrir(modalId);
+    }
+
+    /** Cierra `modalId` y, si se había abierto desde otro modal, vuelve a ese. */
+    function cerrarConRetorno(modalId) {
+        const padre = _padres[modalId];
+        if (padre) alternar(modalId, padre);
+        else cerrar(modalId);
+    }
+
     function cerrarTodos() {
         _cierrePendiente = false;
         document.querySelectorAll('.custom-select-dropdown.csd-fixed').forEach(dd => {
@@ -395,6 +406,8 @@ export const ModalManager = (function () {
         abrir,
         cerrar,
         alternar,
+        abrirConPadre,
+        cerrarConRetorno,
         cerrarTodos,
         confirmar,
         ejecutarAccionCierre: _ejecutarAccionCierre,

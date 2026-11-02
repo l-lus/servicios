@@ -225,7 +225,6 @@ export class OrdenTarjetas {
     bindEventos() {
         this.iniciarArrastre();
         $('menu-tarjetas').addEventListener('click', () => {
-            this.app.ui.cerrarMenuAjustes();
             this.renderLista();
             this.app.ui.abrirModal('modal-tarjetas');
         });

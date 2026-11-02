@@ -709,3 +709,310 @@ body.tarjeta-arrastrando-activa * {
     margin: var(--space-xs) 0 0;
     font-size: var(--text-sm);
 }
+
+/* ============================================================
+           PERFILES Y AJUSTES (modales con encabezado, cuerpo con scroll y pie fijo)
+        ============================================================ */
+.header-profile-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: auto;
+    max-width: 180px;
+    padding: var(--space-xs) var(--space-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--text-main);
+    font-weight: var(--fw-medium);
+    transition: border-color var(--dur-slow);
+}
+
+.header-profile-btn span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal-scrollable > .modal-content,
+form.modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow: hidden;
+}
+
+.modal-scrollable .modal-panel-header,
+.modal-scrollable .modal-panel-footer {
+    flex-shrink: 0;
+    background: var(--bg-card);
+    z-index: 2;
+}
+
+.modal-scrollable .modal-panel-header {
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-scrollable .modal-panel-header p {
+    margin: var(--space-xs) 0 0;
+    font-size: var(--text-sm);
+}
+
+.modal-scrollable .modal-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+}
+
+.modal-scrollable .modal-panel-footer {
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border);
+}
+
+.modal-panel-header h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin: 0;
+    font-size: var(--text-md);
+    color: var(--text-main);
+}
+
+.modal-title-block {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.modal-panel-header .version-text {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-muted);
+}
+
+.btn-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+.btn-group:first-child {
+    margin-top: 0;
+}
+
+.btn-group > .flex-1 {
+    flex: 1;
+}
+
+.time-btn {
+    width: auto;
+    min-width: var(--touch-target);
+    height: var(--touch-target);
+    padding: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.btn-cancel,
+.btn-settings,
+.btn-edit {
+    min-height: var(--touch-target);
+}
+
+.btn-delete {
+    color: var(--c-red);
+}
+
+.input-with-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.input-with-btn input {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-group-border-top {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border);
+}
+
+/* Lista de perfiles */
+.perfil-list-container {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--input-bg);
+}
+
+.btn-perfil-select {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-md);
+    color: var(--text-main);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--dur-fast);
+}
+
+.btn-perfil-select:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.btn-perfil-select:hover {
+    background: var(--surface-row-hover);
+}
+
+.btn-perfil-select.activo {
+    font-weight: var(--fw-bold);
+}
+
+.btn-perfil-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.btn-perfil-nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.perfil-stats {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-muted);
+}
+
+.btn-perfil-estado {
+    flex-shrink: 0;
+    padding: 1px var(--space-sm);
+    border-radius: var(--radius-full);
+    background: var(--c-active);
+    color: var(--c-white);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-bold);
+}
+
+/* Lista de ajustes */
+.config-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.config-actions > label {
+    padding-left: var(--space-xs);
+    margin-bottom: -0.125rem;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--input-bg);
+}
+
+.settings-list > button {
+    justify-content: flex-start;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-lg) var(--space-md);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    text-align: left;
+}
+
+.settings-list > button:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-list > button:hover:not(:disabled),
+.settings-list > button:active:not(:disabled) {
+    background: var(--surface-row-hover);
+}
+
+.settings-list > button .icon:first-child {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.settings-list > button.btn-delete,
+.settings-list > button.btn-delete .icon:first-child {
+    color: var(--c-red);
+}
+
+.settings-list-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.settings-list-desc {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-normal);
+    color: var(--text-muted);
+}
+
+.settings-list-desc b {
+    font-weight: var(--fw-semibold);
+    color: var(--c-green);
+}
+
+.settings-valor {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-muted);
+}
+
+@media (min-width: 768px) {
+    #modal-config > .modal-content {
+        max-width: 800px;
+    }
+
+    #modal-config .modal-config-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 var(--space-xl);
+        align-items: start;
+    }
+
+    #modal-config .modal-panel-footer .btn-cancel {
+        flex: 0 1 50%;
+        margin: 0 auto;
+    }
+}
+
+.settings-list > button.btn-delete {
+    background: transparent !important;
+    color: var(--c-red) !important;
+}
+
+.settings-list > button.btn-delete:hover:not(:disabled) {
+    background: var(--surface-row-hover) !important;
+}

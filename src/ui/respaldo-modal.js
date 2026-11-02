@@ -56,7 +56,6 @@ export class RespaldoModal {
         $('respaldo-mes').value = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
         $('respaldo-desde').value = '';
         $('respaldo-hasta').value = '';
-        this.app.ui.cerrarMenuAjustes();
         this.seleccionarTipo('completo');
         this.app.ui.abrirModal('modal-respaldo');
     }

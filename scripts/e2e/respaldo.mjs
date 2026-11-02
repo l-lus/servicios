@@ -15,7 +15,7 @@ export default async (b) => {
 
     // ---- respaldo por rango
     await b.eval(`window.__blobs=[]; const o=URL.createObjectURL.bind(URL); URL.createObjectURL=(bl)=>{window.__blobs.push(bl); return o(bl)}; HTMLAnchorElement.prototype.click=function(){}; true`);
-    await click('#btn-ajustes'); await click('#menu-exportar');
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-exportar');
     console.log('modal respaldo abierto:', await abierto('modal-respaldo'), '|', await v(`document.getElementById('respaldo-contenido').textContent`));
     await click('.respaldo-tipo[data-tipo="mes"]'); await set('respaldo-mes', '2026-11');
     console.log('mes 2026-11:', await v(`document.getElementById('respaldo-contenido').textContent`), '| campos mes visibles:', await v(`!document.getElementById('respaldo-campos-mes').hidden`));
@@ -42,7 +42,7 @@ export default async (b) => {
         await b.eval(`(()=>{ const inp=window.__inputs.at(-1); const dt=new DataTransfer(); dt.items.add(new File([${JSON.stringify(JSON.stringify(archivo))}], 'respaldo.json', {type:'application/json'})); inp.files=dt.files; inp.dispatchEvent(new Event('change')); return true })()`);
         await b.sleep(900);
     };
-    await click('#btn-ajustes'); await click('#menu-importar'); await click('#menu-importar-combinar'); await subir();
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-importar'); await subir();
     console.log('resumen abierto:', await abierto('modal-resumen-merge'));
     console.log('origen:', await v(`document.getElementById('merge-origen').textContent`));
     console.log('aviso parcial:', await v(`document.getElementById('merge-aviso-parcial').hidden`), await v(`document.getElementById('merge-aviso-parcial').textContent`));
@@ -55,16 +55,17 @@ export default async (b) => {
     await click('#btn-resumen-merge-cancelar');
     console.log('cancelar → datos intactos:', await v(`JSON.parse(localStorage.getItem('gestion_servicios_datos_default')).map(s=>s.id).join()`), '| modal cerrado:', !(await abierto('modal-resumen-merge')));
     // combinar
-    await click('#btn-ajustes'); await click('#menu-importar'); await click('#menu-importar-combinar'); await subir();
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-importar'); await subir();
     await click('#btn-resumen-merge-aplicar'); await b.sleep(400);
     console.log('tras combinar:', await v(`JSON.parse(localStorage.getItem('gestion_servicios_datos_default')).map(s=>s.id+':'+s.facturas.map(x=>x.id+'/'+x.monto)).join(' ')`));
     // reemplazar
-    await click('#btn-ajustes'); await click('#menu-importar'); await click('#menu-importar-reemplazar'); await subir();
-    console.log('modo inicial desde menú reemplazar:', await v(`document.querySelector('.merge-opcion[aria-pressed=true]').dataset.modo`));
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-importar'); await subir();
+    console.log('modo inicial:', await v(`document.querySelector('.merge-opcion[aria-pressed=true]').dataset.modo`));
+    await click('.merge-opcion[data-modo="reemplazar"]');
     await click('#btn-resumen-merge-aplicar'); await b.sleep(400);
     console.log('tras reemplazar:', await v(`JSON.parse(localStorage.getItem('gestion_servicios_datos_default')).map(s=>s.id).join()`), '| cats:', await v(`localStorage.getItem('categorias-servicios')`));
     // Escape cancela
-    await click('#btn-ajustes'); await click('#menu-importar'); await click('#menu-importar-combinar'); await subir();
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-importar'); await subir();
     await b.eval(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); true`); await b.sleep(500);
     console.log('Escape cierra:', !(await abierto('modal-resumen-merge')));
 };

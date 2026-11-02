@@ -41,7 +41,6 @@ export class GestionServicios {
         StorageHelper.setProfileKeyResolver(() => EstadoApp.perfilActivo);
 
         // Acciones de "volver" que dependen de servicios de la app
-        ModalManager.registrarAccionVolver('menu-ajustes', () => this.ui.cerrarMenuAjustes());
         ModalManager.registrarAccionVolver('menu-agregar', () => this.ui.cerrarMenuAgregar());
 
         // Eventos del gestor de modales (el gestor ya no conoce a la app)

@@ -2,7 +2,7 @@
 export default async (b) => {
     const click = async (sel) => { await b.eval(`document.querySelector(${JSON.stringify(sel)})?.click(); true`); await b.sleep(500); };
     const v = async (e) => (await b.eval(e)).value;
-    await click('#btn-ajustes'); await click('#menu-ayuda');
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#btn-ayuda-config');
     console.log('abierto:', await v(`document.getElementById('modal-ayuda').classList.contains('show')||document.getElementById('modal-ayuda').classList.contains('active')`));
     console.log('secciones visibles:', await v(`[...document.querySelectorAll('.ayuda-seccion')].filter(s=>!s.hidden).length`));
     await b.eval(`(()=>{const i=document.getElementById('ayuda-buscar'); i.value='VARIACIÓN'; i.dispatchEvent(new Event('input',{bubbles:true})); return true})()`); await b.sleep(500);

@@ -27,8 +27,8 @@ export default async (b) => {
     await esc(); await esc();
     await click('#servicios-lista [data-id="servicio-ingresos-especial"]'); console.log('== ingresos'); console.log(await html('#lista-ingresos-modal'));
     await esc(); await esc();
-    await click('#btn-ajustes'); await click('#menu-perfiles'); console.log('== perfiles'); console.log(await html('#perfiles-lista')); await esc(); await esc();
-    await click('#btn-ajustes'); await click('#menu-categorias'); console.log('== categorias'); console.log(await html('#categorias-lista')); await esc(); await esc();
+    await click('#header-profile-btn'); console.log('== perfiles'); console.log(await html('#perfiles-lista')); await esc(); await esc();
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-categorias'); console.log('== categorias'); console.log(await html('#categorias-lista')); await esc(); await esc();
     console.log('== estadisticas'); console.log(await html('#estadisticas-content'));
     console.log('== resumen'); console.log(await html('#resumen-mes'));
     await click('#btn-info-resumen'); console.log('== info resumen'); console.log(await html('#modal-info-resumen-body')); await esc();

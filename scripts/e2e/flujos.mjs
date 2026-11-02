@@ -19,9 +19,9 @@ export default async (b) => {
     await log('inicio');
     console.log('resumen', await txt('#resumen-mes'));
     // menús y modales
-    for (const [paso, sel] of [['perfiles','#menu-perfiles'],['gist','#menu-gist'],['categorias','#menu-categorias'],['ayuda','#menu-ayuda'],['ordenar','#btn-sort']]) {
-        await click('#btn-ajustes'); if (sel==='#btn-sort') await esc();
-        await click(sel); await log('abrir ' + paso); await esc(); await esc(); await log('cerrar ' + paso);
+    for (const [paso, sel] of [['perfiles','#header-profile-btn'],['gist','#menu-gist'],['categorias','#menu-categorias'],['ayuda','#btn-ayuda-config'],['ordenar','#btn-sort']]) {
+        if (sel !== '#header-profile-btn') { await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); if (sel==='#btn-sort') { await esc(); await esc(); } }
+        await click(sel); await log('abrir ' + paso); await esc(); await esc(); await esc(); await log('cerrar ' + paso);
     }
     await click('#btn-info-resumen'); await log('info resumen'); await esc();
     await click('#resumen-toggle'); console.log('toggle resumen', await txt('#resumen-mes'));
@@ -57,7 +57,7 @@ export default async (b) => {
     console.log('estadisticas', (await txt('#estadisticas-content')).slice(0, 260));
     await click('#btn-reporte-estadisticas');
     // exportar: validar armado de respaldo sin descargar
-    await click('#btn-ajustes'); await click('#menu-limpiar'); await log('submenu limpiar'); await esc(); await esc();
+    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-limpiar'); await log('submenu limpiar'); await esc(); await esc();
     console.log('localStorage keys:', (await b.eval(`Object.keys(localStorage).sort().join(',')`)).value);
     console.log('datos guardados:', (await b.eval(`JSON.parse(localStorage.getItem('gestion_servicios_datos_default')).map(s=>s.nombre+':'+s.facturas.length).join(',')`)).value);
 };

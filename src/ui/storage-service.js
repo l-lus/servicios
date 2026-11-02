@@ -113,7 +113,6 @@ export class StorageService {
                 : (rango.desde && rango.hasta ? `${rango.desde}_${rango.hasta}` : (rango.desde ? `desde_${rango.desde}` : `hasta_${rango.hasta}`));
             this.app.utils.descargarBlob(JSON.stringify(datos, null, 2), `servicios_${sufijo}.json`, 'application/json');
             this.app.ui.mostrarToast(rango ? 'Respaldo parcial exportado' : 'Datos exportados correctamente', 'success');
-            this.app.ui.cerrarMenuAjustes();
         } catch (error) {
             console.error('Error al exportar:', error);
             this.app.ui.mostrarToast('Error al exportar datos', 'error');
@@ -163,9 +162,6 @@ export class StorageService {
         });
 
         input.click();
-        document.getElementById('opciones-importacion').classList.remove('open');
-        document.getElementById('menu-importar').classList.remove('open');
-        this.app.ui.cerrarMenuAjustes();
     }
 
     // ── Merge helpers ─────────────────────────────────────────
@@ -202,18 +198,6 @@ export class StorageService {
         const { combinar, reemplazar } = ImportarExportar.compararRespaldo(
             this.servicios, serviciosRemoto, this.app.categoria.getCategorias(), categoriasRemoto);
         return `<strong>Combinar:</strong> ${combinar}<br><strong>Reemplazar:</strong> ${reemplazar}`;
-    }
-
-    mostrarOpcionesImportacion() {
-        this.app.utils.toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
-    }
-
-    mostrarOpcionesBorrar() {
-        this.app.utils.toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
-    }
-
-    toggleMenuDolar() {
-        this.app.utils.toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
     }
 
     async limpiarDatos(tipo = 'todo') {
@@ -269,8 +253,5 @@ export class StorageService {
         this.app._postGuardado(`borrar ${etiquetas[tipo] || etiquetas.todo}`);
         this.app.historial_mgr.actualizarBotones();
         this.app.toastConDeshacer(toasts[tipo] || toasts.todo);
-        document.getElementById('opciones-borrar').classList.remove('open');
-        document.getElementById('menu-limpiar').classList.remove('open');
-        this.app.ui.cerrarMenuAjustes();
     }
 }
