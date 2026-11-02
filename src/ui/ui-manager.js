@@ -1,6 +1,7 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { GestorTemas } from './gestor-temas.js';
 import { Motion } from '../core/movimiento.js';
 import { ModalManager } from './gestor-modales.js';
 import { ToastManager } from './toast.js';
@@ -14,43 +15,7 @@ export class UIManager {
     }
 
     // ── Tema ──────────────────────────────────────────────────
-    cargarTema() {
-        const tema = StorageHelper.getItem(STORAGE_KEYS.TEMA);
-        if (tema === 'dark' || tema === null) {
-            document.body.classList.add('dark-mode');
-            if (tema === null) StorageHelper.setItem(STORAGE_KEYS.TEMA, 'dark');
-        }
-        this._actualizarIconoTema(document.body.classList.contains('dark-mode'));
-        this.sincronizarBarraDelSistema();
-    }
-
-    toggleTema() {
-        document.body.classList.toggle('dark-mode');
-        const esDark = document.body.classList.contains('dark-mode');
-        document.documentElement.classList.toggle('dark-mode', esDark);
-        StorageHelper.setItem(STORAGE_KEYS.TEMA, esDark ? 'dark' : 'light');
-        this._actualizarIconoTema(esDark);
-        this.sincronizarBarraDelSistema();
-        this.mostrarToast(`Tema ${esDark ? 'oscuro' : 'claro'} activado`, 'success');
-        this.cerrarMenuAjustes();
-    }
-
-    sincronizarBarraDelSistema() {
-        const color = getComputedStyle(document.body).getPropertyValue('--bg-body').trim();
-        if (!/^#[0-9a-f]{3,8}$/i.test(color)) return;
-        let meta = document.querySelector('meta[name="theme-color"]');
-        if (!meta) {
-            meta = document.createElement('meta');
-            meta.name = 'theme-color';
-            document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', color);
-    }
-
-    _actualizarIconoTema(esDark) {
-        const use = document.getElementById('icon-tema-use');
-        if (use) use.setAttribute('href', esDark ? '#icon-sun' : '#icon-moon');
-    }
+    cargarTema() { GestorTemas.cargar(); }
 
     // ── Blur / privacidad ─────────────────────────────────────
     toggleBlur() {

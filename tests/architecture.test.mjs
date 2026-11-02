@@ -296,3 +296,18 @@ test('HTML seguro: no quedan escapes manuales (escaparHTML / escapeHtml) fuera d
         .filter(f => /escaparHTML|escaparAtributoHTML|escapeHtml/.test(fs.readFileSync(f, 'utf8')));
     assert.deepEqual(violaciones, [], 'Usá html`...`: escapa cada interpolación');
 });
+
+test('tema-inicial.js: su lista de temas coincide con core/temas.js', async () => {
+    const codigo = fs.readFileSync('src/core/tema-inicial.js', 'utf8');
+    const lista = JSON.parse(/var TEMAS_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
+    const { TEMAS } = await import('../src/core/temas.js');
+    assert.deepEqual(lista, TEMAS.map(t => t.id));
+});
+
+test('Temas: cada tema tiene su bloque de variables en tokens.css', async () => {
+    const css = fs.readFileSync('assets/styles/tokens.css', 'utf8');
+    const { TEMAS } = await import('../src/core/temas.js');
+    for (const { id } of TEMAS.filter(t => t.id !== 'light' && t.id !== 'dark')) {
+        assert.match(css, new RegExp(`html\\[data-theme="${id}"\\] body`), `falta el tema ${id} en tokens.css`);
+    }
+});

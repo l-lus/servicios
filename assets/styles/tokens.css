@@ -138,3 +138,99 @@ body[data-theme="lilac"] {
     --shadow: 0 1px 4px rgba(120, 80, 180, 0.1), 0 0 0 1px rgba(120, 80, 180, 0.05);
     --hover: brightness(0.95);
 }
+
+/* ─── TEMA ROSA (pastel) ───────────────────────────────────────────────── */
+html[data-theme="pink"] body,
+body[data-theme="pink"] {
+    --bg-body: #fdf1f6;
+    --bg-card: #ffffff;
+    --bg-header: #fdf1f6ee;
+    --text-main: #4a2c39;
+    --text-muted: #8a6572;
+    --text-disabled: #8a657299;
+    --border: #f4d9e5;
+    --input-bg: #fbe7f0;
+    --c-gray-btn: #fbe7f0;
+    --shadow: 0 1px 4px rgba(172, 76, 130, 0.1), 0 0 0 1px rgba(172, 76, 130, 0.05);
+    --hover: brightness(0.95);
+}
+
+/* ─── TEMA CREMA (Cálido / Vainilla) ───────────────────────────────────── */
+html[data-theme="crema"] body,
+body[data-theme="crema"] {
+    --bg-body: #fbf6ee;
+    --bg-card: #ffffff;
+    --bg-header: #fbf6eeee;
+    --text-main: #423223;
+    --text-muted: #85705d;
+    --text-disabled: #85705d99;
+    --border: #ede1cc;
+    --input-bg: #f7eee1;
+    --c-gray-btn: #f7eee1;
+    --shadow: 0 1px 4px rgba(140, 100, 60, 0.1), 0 0 0 1px rgba(140, 100, 60, 0.05);
+    --hover: brightness(0.95);
+}
+
+/* ─── TEMA VERDE (pastel) ──────────────────────────────────────────────── */
+html[data-theme="green"] body,
+body[data-theme="green"] {
+    --bg-body: #f0f8f2;
+    --bg-card: #ffffff;
+    --bg-header: #f0f8f2ee;
+    --text-main: #24402c;
+    --text-muted: #53755c;
+    --text-disabled: #628a6d99;
+    --border: #d9ecdd;
+    --input-bg: #e7f5eb;
+    --c-gray-btn: #e7f5eb;
+    --shadow: 0 1px 4px rgba(76, 152, 100, 0.1), 0 0 0 1px rgba(76, 152, 100, 0.05);
+    --hover: brightness(0.95);
+}
+
+/* ─── TEMA AZUL (pastel) ───────────────────────────────────────────────── */
+html[data-theme="blue"] body,
+body[data-theme="blue"] {
+    --bg-body: #eef4fc;
+    --bg-card: #ffffff;
+    --bg-header: #eef4fcee;
+    --text-main: #223449;
+    --text-muted: #5f7691;
+    --text-disabled: #5f769199;
+    --border: #d7e6f6;
+    --input-bg: #e5eff9;
+    --c-gray-btn: #e5eff9;
+    --shadow: 0 1px 4px rgba(76, 114, 172, 0.1), 0 0 0 1px rgba(76, 114, 172, 0.05);
+    --hover: brightness(0.95);
+}
+
+/* ─── TEMA VIOLETA PASTEL (Lilac / Lavanda) ───────────────────────────── */
+html[data-theme="lilac"] body,
+body[data-theme="lilac"] {
+    --bg-body: #f6f3fc;
+    --bg-card: #ffffff;
+    --bg-header: #f6f3fcee;
+    --text-main: #3a2e4f;
+    --text-muted: #7b6894;
+    --text-disabled: #7b689499;
+    --border: #e6def2;
+    --input-bg: #f0e9fa;
+    --c-gray-btn: #f0e9fa;
+    --shadow: 0 1px 4px rgba(120, 80, 180, 0.1), 0 0 0 1px rgba(120, 80, 180, 0.05);
+    --hover: brightness(0.95);
+}
+
+/* ─── TEMA MEDIANOCHE (azul marino con cian) ───────────────────────────── */
+html[data-theme="medianoche"] body,
+body[data-theme="medianoche"] {
+    --bg-body: #0b1120;
+    --bg-card: #131c2e;
+    --bg-header: #0b1120ee;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-disabled: #94a3b8a2;
+    --border: #1f2a40;
+    --input-bg: #1c2638;
+    --c-gray-btn: #1c2638;
+    --shadow: 0 4px 20px rgba(2, 6, 23, 0.6), 0 0 0 1px rgba(34, 211, 238, 0.05);
+    --hover: brightness(1.2);
+}

@@ -85,6 +85,7 @@
 }
 
 #ingresos-indicator,
+#tema-indicator,
 #blur-indicator {
     margin-left: auto;
     padding-right: 1rem;
@@ -434,4 +435,66 @@ mark.ayuda-resaltado--activa {
         max-height: calc(100vh - 260px);
         overflow-y: auto;
     }
+}
+
+/* ============================================================
+           SELECTOR DE TEMAS
+        ============================================================ */
+.temas-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: var(--space-md);
+    padding: var(--space-sm) 0 var(--space-lg);
+}
+
+.tema-opcion {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: border-color var(--transition-ui), color var(--transition-ui);
+}
+
+.tema-opcion[aria-pressed="true"] {
+    border-color: var(--c-blue);
+    color: var(--text-main);
+}
+
+.tema-muestra {
+    --muestra-fondo: #888;
+    --muestra-tarjeta: #aaa;
+    --muestra-texto: #333;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    background: var(--muestra-fondo);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muestra-texto) 20%, transparent);
+    overflow: hidden;
+}
+
+.tema-muestra-tarjeta {
+    position: absolute;
+    inset: 22% 14% 40%;
+    border-radius: 6px;
+    background: var(--muestra-tarjeta);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muestra-texto) 15%, transparent);
+}
+
+.tema-muestra-linea {
+    position: absolute;
+    left: 14%;
+    right: 40%;
+    bottom: 20%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--muestra-texto);
+    opacity: 0.7;
 }

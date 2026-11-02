@@ -1,3 +1,4 @@
+import { GestorTemas } from './gestor-temas.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -29,7 +30,15 @@ export class ListenersApp {
         document.getElementById('btn-redo').addEventListener('click', () => this.app.historial_mgr.rehacer());
 
         // Menú ajustes
-        document.getElementById('menu-tema').addEventListener('click', () => this.app.ui.toggleTema());
+        document.getElementById('menu-tema').addEventListener('click', () => {
+            this.app.ui.cerrarMenuAjustes();
+            this.app.ui.abrirModal('modal-temas');
+        });
+        document.getElementById('temas-lista').addEventListener('click', (e) => {
+            const opcion = e.target.closest('.tema-opcion');
+            if (opcion) GestorTemas.elegirTema(opcion.dataset.tema);
+        });
+        document.getElementById('modal-temas-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-temas'));
         document.getElementById('menu-exportar').addEventListener('click', () => this.app.storage.exportarDatos());
         document.getElementById('menu-importar').addEventListener('click', () => this.app.storage.mostrarOpcionesImportacion());
         document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.app.storage.importarDatos('reemplazar'));
