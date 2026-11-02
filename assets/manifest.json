@@ -1,12 +1,12 @@
 {
   "name": "Servicios",
   "short_name": "Servicios",
-  "start_url": "./index.html",
+  "start_url": "../index.html",
   "display": "standalone",
   "background_color": "#131314",
   "theme_color": "#131314",
   "orientation": "portrait",
-  "scope": "./",
+  "scope": "../",
   "id": "/deltaf-app",
   "icons": [
     {

@@ -1,17 +1,44 @@
 // Prefijo propio: el origen (GitHub Pages) es compartido con otras apps,
 // así que solo se tocan las cachés que empiezan con CACHE_PREFIX
 // (CACHE_NAME tiene que empezar con ese prefijo).
-const CACHE_NAME = 'SERVICIOS-v261025.1950';
 const CACHE_PREFIX = 'SERVICIOS-';
+const CACHE_NAME = `${CACHE_PREFIX}v261101.2229`;
 
 const urlsToCache = [
   './',
   './index.html',
-  './manifest.json',
-  './icon.svg',
-  './app.js',
-  './styles.css',
-  './flash.js',
+  './src/core/almacenamiento.js',
+  './src/core/constantes.js',
+  './src/core/debounce.js',
+  './src/core/eventos.js',
+  './src/core/movimiento.js',
+  './src/core/seguridad.js',
+  './src/core/tema-inicial.js',
+  './src/main.js',
+  './src/ui/animaciones.js',
+  './src/ui/calculador-service.js',
+  './src/ui/categoria-service.js',
+  './src/ui/custom-select.js',
+  './src/ui/estadisticas-service.js',
+  './src/ui/factura-service.js',
+  './src/ui/gestion-servicios.js',
+  './src/ui/gestor-modales.js',
+  './src/ui/gestos.js',
+  './src/ui/gist-service.js',
+  './src/ui/historial-manager.js',
+  './src/ui/ingreso-service.js',
+  './src/ui/instalador-pwa.js',
+  './src/ui/menu-contextual.js',
+  './src/ui/perfil-service.js',
+  './src/ui/storage-service.js',
+  './src/ui/toast.js',
+  './src/ui/ui-manager.js',
+  './src/ui/utils-service.js',
+  './assets/icons/icon-192x192.png',
+  './assets/icons/icon-512x512.png',
+  './assets/icons/icon.svg',
+  './assets/manifest.json',
+  './assets/styles/app.css',
 ];
 
 // Instalación: cache: 'reload' evita que addAll tome versiones viejas de la
