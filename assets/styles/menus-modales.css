@@ -174,8 +174,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 18px;
-    height: 18px;
+    width: var(--icon-mid);
+    height: var(--icon-mid);
     padding: 0;
     border: none;
     border-radius: 50%;

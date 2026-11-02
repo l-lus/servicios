@@ -143,8 +143,8 @@ body.modal-open {
            ICONOS
         ============================================================ */
 .icon {
-    width: 1.2em;
-    height: 1.2em;
+    width: var(--icon-md);
+    height: var(--icon-md);
     vertical-align: text-bottom;
     fill: currentColor;
     stroke: currentColor;
@@ -209,8 +209,8 @@ select:disabled {
 }
 
 .icon-btn svg {
-    width: 20px;
-    height: 20px;
+    width: var(--icon-btn);
+    height: var(--icon-btn);
 }
 
 .icon-btn.transparent {
@@ -407,8 +407,8 @@ input[type="number"] {
 }
 
 .ctx-menu-item svg {
-    width: 16px;
-    height: 16px;
+    width: var(--icon-base);
+    height: var(--icon-base);
     flex-shrink: 0;
     opacity: 0.8;
 }

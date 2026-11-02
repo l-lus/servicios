@@ -70,6 +70,7 @@ Todo valor visual sale de `assets/styles/tokens.css`; lo vigilan los tests `Toke
 - Apilado: `--z-*` (locales: fondo < sobre < sticky < animando < elevado; globales: header < agregar-overlay < agregar < ajustes < modal < menu < calc < toast). Nada de `z-index` numérico.
 - Color y sombra: `--c-*`, `--c-*-soft` (fondos de badges), `--text-*`, `--shadow-*`, `--overlay-*`. Nada de `#hex` ni `rgba()` fuera de `tokens.css` (salvo `--muestra-*` de las vistas previas de tema).
 - Espacio: `--space-*` en gap/padding/margin (solo se admiten hairlines de 1px, negativos y huecos de layout ≥ 2rem). Tipografía: `--text-*`, `--fw-*`, `--lh-*`; radios: `--radius-*` (`50%` para círculos).
+- Íconos: `--icon-sm|base|mid|btn` (rem) y `--icon-md|lg` (em, acompañan al texto); el tamaño de un `svg`/`.icon*` nunca va en px (excepciones: caja del `.icon-btn`, ícono grande del estado vacío).
 - Tiempos y curvas: `--dur-*`, `--ease-*`, `--transition-*`.
-- Sin fallbacks en `var(--token, …)` para tokens definidos. Un token sin uso se borra (salvo escalas reservadas: `--fw-normal`, `--radius-xl`, `--icon-*`).
+- Sin fallbacks en `var(--token, …)` para tokens definidos. Un token sin uso se borra (salvo escalas reservadas: `--fw-normal`, `--radius-xl`, `--icon-sm`, `--icon-lg`).
 - Token nuevo: se define en `tokens.css` (y se redefine en cada tema si cambia con él) y se usa en el mismo cambio.

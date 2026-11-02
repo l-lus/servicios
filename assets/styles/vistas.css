@@ -153,8 +153,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
+    width: var(--icon-base);
+    height: var(--icon-base);
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -579,8 +579,8 @@
 
 .custom-select-trigger .csd-arrow {
     flex-shrink: 0;
-    width: 1.2em;
-    height: 1.2em;
+    width: var(--icon-md);
+    height: var(--icon-md);
     fill: currentColor;
     transition: transform var(--transition-fast);
 }
@@ -807,8 +807,8 @@
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 1.1rem;
-    height: 1.1rem;
+    width: var(--icon-mid);
+    height: var(--icon-mid);
     color: var(--text-muted);
     pointer-events: none;
 }
@@ -835,8 +835,8 @@
 }
 
 .search-clear .icon {
-    width: 1.1rem;
-    height: 1.1rem;
+    width: var(--icon-mid);
+    height: var(--icon-mid);
     pointer-events: none;
 }
 

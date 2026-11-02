@@ -372,7 +372,7 @@ test('Tokens: todo token definido en tokens.css se usa (en CSS, JS o HTML) o es 
     const todo = fs.readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`${CSS_DIR}/${f}`, 'utf8')).join('\n')
         + srcFiles.map(f => fs.readFileSync(f, 'utf8')).join('\n') + fs.readFileSync('index.html', 'utf8');
     // Escalas completas que se dejan definidas aunque hoy no se usen todos los escalones
-    const reservados = new Set(['--fw-normal', '--radius-xl', '--icon-sm', '--icon-md', '--icon-lg']);
+    const reservados = new Set(['--fw-normal', '--radius-xl', '--icon-sm', '--icon-lg']);
     const sinUso = definidos.filter(t => !reservados.has(t) && !new RegExp(`${t}(?![\\w-])`).test(todo.replace(new RegExp(`^\\s*${t}\\s*:.*$`, 'gm'), '')));
     assert.deepEqual(sinUso, [], 'borrar el token o usarlo');
 });
@@ -381,4 +381,17 @@ test('Tokens: espaciado (gap/padding/margin) con la escala --space-*; solo queda
     const v = violacionesCss(/(?:^|[{;])\s*(gap|row-gap|column-gap|padding|margin)[\w-]*:[^;]*(?<![\w.-])(?!1px\b)(0?\.\d+|[0-1](\.\d+)?)(rem|px)\b/,
         { permitir: l => /0\.875rem/.test(l) && /padding:/.test(l) });
     assert.deepEqual(v, [], 'usar var(--space-*) (xs, sm, md, lg…) o agregar el escalón a tokens.css');
+});
+
+test('Tokens: el tamaño de los íconos (svg / .icon*) sale de --icon-*; solo se admiten la caja del botón, el ícono grande del estado vacío y el punto de color de la ayuda', () => {
+    const permitido = /^\.icon-btn \{|^\.btn-add|^\.empty-state svg|^\.ayuda-color/;
+    const v = cssSinTokens().flatMap(({ f, lineas }) => {
+        let sel = '';
+        return lineas.flatMap((l, i) => {
+            if (l.includes('{')) sel = l.trim();
+            return /svg|icon|csd-arrow/.test(sel) && !permitido.test(sel) && /^\s*(width|height):\s*[\d.]+(px|rem|em)\s*;/.test(l)
+                ? [`${f}:${i + 1}: ${sel} ${l.trim()}`] : [];
+        });
+    });
+    assert.deepEqual(v, [], 'usar var(--icon-sm|base|mid|btn|md|lg)');
 });

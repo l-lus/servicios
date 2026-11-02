@@ -30,6 +30,9 @@
     /* Escala de íconos (todos los símbolos del sprite son 16×16).
        sm: tamaño fijo para etiquetas y badges chicos. md/lg: en em, acompañan al texto. */
     --icon-sm: 0.875rem;
+    --icon-base: 1rem;
+    --icon-mid: 1.125rem;
+    --icon-btn: 1.25rem;
     --icon-md: 1.2em;
     --icon-lg: 1.8em;
     --fw-normal: 400;

@@ -219,8 +219,8 @@
 
 /* --- Iconos tamaño --- */
 .icon-md {
-    width: 20px;
-    height: 20px;
+    width: var(--icon-btn);
+    height: var(--icon-btn);
     flex-shrink: 0;
 }
 
