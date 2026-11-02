@@ -21,3 +21,8 @@ export function formatearFecha(fecha) {
         day: '2-digit', month: '2-digit', year: 'numeric'
     });
 }
+
+/** '1 factura' / '3 facturas'. */
+export function plural(n, singular, plural) {
+    return `${n} ${n !== 1 ? plural : singular}`;
+}

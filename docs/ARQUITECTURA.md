@@ -21,7 +21,11 @@ src/ui/     animaciones (Anim), gestos, toast, gestor-modales (ModalManager/Back
             factura-service, ingreso-service, menu-contextual, categoria-service, estadisticas-service,
             ui-manager, utils-service, perfil-service, calculador-service, gist-service,
             historial-manager, storage-service
-src/services/  (vacío: destino de la Fase 3)
+src/core/   + fechas.js, formato.js (fechas ISO y formato es-AR, puros)
+src/services/  estado-facturas (EstadoFacturas: estado, última factura, filtro y orden)
+               resumen-mes (ResumenMes: resumen, borde, detalle y estadísticas mensuales)
+               importar-exportar (ImportarExportar: validación, respaldo, hash, fusión y comparación)
+               — puros: reciben `hoy` y los datos; probados en tests/*.test.mjs sin DOM
 ```
 
 ## Diagnóstico inicial (antes de migrar)
@@ -34,7 +38,7 @@ src/services/  (vacío: destino de la Fase 3)
 |---|---|---|
 | 1 | Módulos ES, `package.json`, tests de arquitectura, `release`, CI | ✅ |
 | 2 | Extraer `core/` y utilidades genéricas de `ui/`; quitar `window.app` | ✅ |
-| 3 | Mover dominio a `services/` sin DOM (estado de factura, estadísticas, calculadora, merge/import, perfiles, historial) + tests sin DOM; `EstadoApp` | ⏳ |
+| 3 | Mover dominio a `services/` sin DOM + tests. Hecho: estado de factura, resumen/estadísticas del mes, import/export/merge. Falta: calculadora y período, perfiles, historial, `EstadoApp` | 🔶 |
 | 4 | Dividir `GestionServicios`, eliminar pasamanos y `this.app.*` | ⏳ |
 | 5 | `html```/`montar` + Trusted Types, import/restore único, aviso de actualización, buscador de ayuda, CSS en capas, push opcional | ⏳ |
 

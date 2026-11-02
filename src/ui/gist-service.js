@@ -1,5 +1,6 @@
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 
 // ============================================================
@@ -226,9 +227,8 @@ export class GistService {
             if (!data) throw new Error('Formato inválido');
 
             // Hacemos un merge simulado para contar diferencias
-            const deepClone = JSON.parse(JSON.stringify(this.servicios));
-            const diff = this.app.storage._mergeServicios.call({ INGRESOS_ID: this.app.SERVICIO_INGRESOS_ID, servicios: deepClone }, data.servicios);
-            const diffCats = this.app.gist.mergeCategorias(data.categorias, true); // modo simulado si lo pasamos, sino contamos
+            const diff = ImportarExportar.simularFusion(this.servicios, data.servicios);
+            const diffCats = ImportarExportar.categoriasNuevas(this.app.categoria.getCategorias(), data.categorias).length;
 
             if (!diff.serviciosAgregados && !diff.facturasAgregadas && !diff.facturasActualizadas && !diff.ingresosAgregados && !diffCats) {
                 this.setPerfil({ gistLastSync: new Date().toISOString() });
@@ -257,13 +257,8 @@ export class GistService {
             if (!data) return;
 
             // Simular merge para ver qué es nuevo
-            const deepClone = JSON.parse(JSON.stringify(this.servicios));
-            const tempCtx = { INGRESOS_ID: this.app.SERVICIO_INGRESOS_ID, servicios: deepClone };
-            const diff = this.app.storage._mergeServicios.call(tempCtx, data.servicios);
-
-            // Calculamos diferencias de categorias manualmente para la UI
-            const actuales = this.app.categoria.getCategorias();
-            const nuevasCats = (data.categorias || []).filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase())).length;
+            const diff = ImportarExportar.simularFusion(this.servicios, data.servicios);
+            const nuevasCats = ImportarExportar.categoriasNuevas(this.app.categoria.getCategorias(), data.categorias).length;
 
             if (diff.serviciosAgregados || diff.facturasAgregadas || diff.facturasActualizadas || diff.ingresosAgregados || nuevasCats) {
 
@@ -315,7 +310,7 @@ export class GistService {
 
         const parsed = JSON.parse(content, SecurityAndUtils.reviverJSONSeguro);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato inválido');
-        const datos = this.app.storage.normalizarDatos(parsed.servicios, parsed.categorias);
+        const datos = ImportarExportar.normalizarDatos(parsed.servicios, parsed.categorias);
         await this.app.storage.advertirIntegridad(parsed, 'El archivo del Gist');
         return datos;
     }
@@ -336,13 +331,9 @@ export class GistService {
         this.app.mostrarToast('Datos combinados correctamente', 'success');
     }
 
-    mergeCategorias(catsNuevas, simulado = false) {
-        if (!Array.isArray(catsNuevas) || catsNuevas.length === 0) return 0;
-        const actuales = this.app.categoria.getCategorias();
-        const nuevas = catsNuevas.filter(c => !actuales.some(ca => ca.toLowerCase() === c.toLowerCase()));
-        if (!simulado && nuevas.length > 0) {
-            this.app.categoria.saveCategorias([...actuales, ...nuevas].sort((a, b) => a.localeCompare(b)));
-        }
-        return nuevas.length;
+    mergeCategorias(catsNuevas) {
+        const { lista, agregadas } = ImportarExportar.fusionarCategorias(this.app.categoria.getCategorias(), catsNuevas);
+        if (agregadas > 0) this.app.categoria.saveCategorias(lista);
+        return agregadas;
     }
 }
