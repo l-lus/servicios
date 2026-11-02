@@ -781,8 +781,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modal-tarjetas-titulo">Tarjetas y orden</h3>
-                <p class="text-muted"><span id="orden-cards-contexto"></span>. Elegí cuáles mostrar y su posición. También podés mantener presionado el título de una tarjeta y arrastrarla (o usar Alt + flechas).</p>
+                <p class="text-muted">Elegí cuáles mostrar y dónde va cada una. También podés mantener presionado el título de una tarjeta y arrastrarla (o usar Alt + flechas).</p>
             </div>
+            <div class="respaldo-tipos reporte-formatos" role="group" aria-label="Diseño a editar">
+                <button type="button" class="respaldo-tipo tarjetas-modo" data-modo="pc" aria-pressed="true">PC</button>
+                <button type="button" class="respaldo-tipo tarjetas-modo" data-modo="movil" aria-pressed="false">Celular</button>
+            </div>
+            <p class="text-muted orden-contexto" id="orden-cards-contexto"></p>
             <div class="orden-cards-lista" id="lista-orden-cards"></div>
             <div class="form-actions">
                 <button type="button" class="btn-secondary" id="btn-tarjetas-restablecer">Restablecer</button>
@@ -1748,8 +1753,8 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-tarjetas">
                             <h4>Tarjetas y orden</h4>
-                            <p>Desde Ajustes → <strong>Tarjetas y orden</strong> mostrás u ocultás cada tarjeta y la subís o bajás. También podés mantener presionado el título de una tarjeta y arrastrarla, o usar <strong>Alt + flechas</strong> con el teclado.</p>
-<p>En PC la última tarjeta visible va a la columna derecha. El orden del celular es independiente y parte del de PC hasta que lo cambies.</p>
+                            <p>Desde Ajustes → <strong>Tarjetas y orden</strong> mostrás u ocultás cada tarjeta, la subís o bajás y, en PC, elegís en cuál de las <strong>dos columnas</strong> va. También podés mantener presionado el título de una tarjeta y arrastrarla (incluso a la otra columna), o usar <strong>Alt + flechas</strong> con el teclado.</p>
+<p>El diseño del <strong>celular</strong> (una sola columna) es independiente del de PC: parte del de PC hasta que lo cambies y podés editarlo desde cualquiera de los dos con el selector PC / Celular.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-busqueda">
                             <h4>Buscar y ordenar</h4>
@@ -1782,7 +1787,7 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-perfiles">
                             <h4>Perfiles</h4>
-                            <p>Hasta 4 perfiles con datos separados (por ejemplo, casa y negocio). El perfil activo se cambia desde Ajustes → Perfiles.</p>
+                            <p>Hasta 4 perfiles con datos separados (por ejemplo, casa y negocio). Tocá el nombre del perfil, arriba a la derecha, para cambiar de perfil, crear uno nuevo o editar y eliminar los existentes. Desde ahí también se abren los <strong>Ajustes</strong>, y cada ventana que abras desde ellos vuelve al paso anterior al cerrarla.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-respaldo">
                             <h4>Respaldo y sincronización</h4>

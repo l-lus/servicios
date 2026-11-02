@@ -58,3 +58,9 @@ tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: 
 - Regla de negocio, cálculo, API externa → `src/services/` (sin `document`).
 - DOM, modales, eventos → `src/ui/`.
 - Todo `.js` nuevo: import con extensión `.js` y `npm run release`.
+
+## Navegación de ajustes
+Header (perfil) → modal Perfiles → modal Ajustes → cada opción. `ModalManager.abrirConPadre/cerrarConRetorno` (y `alternar`) recuerdan el modal padre: cerrar un hijo vuelve al anterior, como en Horarios. `UIManager.abrirModal/cerrarModal` aplican esa regla cuando Ajustes está abierto.
+
+## Disposición de tarjetas
+PC: dos columnas libres (`{ izq, der }`). Celular: una lista independiente. Lógica pura en `services/orden-cards.js`; UI en `ui/orden-tarjetas.js`.

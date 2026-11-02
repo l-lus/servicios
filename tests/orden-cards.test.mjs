@@ -1,32 +1,68 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizarOrdenCards, fusionarOrdenVisibles, columnaDeCard, CARDS_EN_DERECHA } from '../src/services/orden-cards.js';
+import {
+    DISPOSICION_POR_DEFECTO, normalizarDisposicion, normalizarOrdenMovil, columnaDe,
+    colocarEnLista, moverEnLista, colocarEnColumna, pasarAOtraColumna, moverEnColumna,
+} from '../src/services/orden-cards.js';
 import { CARDS } from '../src/core/constantes.js';
 
-test('orden de tarjetas: sin orden guardado o inválido queda el de por defecto', () => {
-    assert.deepEqual(normalizarOrdenCards(null), [...CARDS]);
-    assert.deepEqual(normalizarOrdenCards(['x', 'y']), [...CARDS]);
+const todas = d => [...d.izq, ...d.der].sort();
+
+test('disposición: sin nada guardado o inválido queda la de por defecto', () => {
+    assert.deepEqual(normalizarDisposicion(null), { izq: [...DISPOSICION_POR_DEFECTO.izq], der: [...DISPOSICION_POR_DEFECTO.der] });
+    assert.deepEqual(normalizarDisposicion('basura'), normalizarDisposicion(undefined));
+    assert.deepEqual(normalizarDisposicion({ izq: 'x', der: 7 }), normalizarDisposicion(null));
 });
 
-test('orden de tarjetas: una tarjeta que no existía al guardar entra en su lugar por defecto sin tocar lo elegido', () => {
-    // el calendario se agregó después: un orden viejo sin él lo incorpora
-    const orden = normalizarOrdenCards(['servicios', 'resumen', 'atajos', 'estadisticas']);
-    assert.equal(orden.length, CARDS.length);
-    assert.deepEqual(orden.filter(c => c !== 'calendario'), ['servicios', 'resumen', 'atajos', 'estadisticas']);
+test('disposición: una elección libre de columnas se respeta, sin repetidos ni desconocidos', () => {
+    const d = normalizarDisposicion({ izq: ['servicios', 'resumen', 'nada', 'resumen'], der: ['atajos', 'servicios', 'estadisticas', 'calendario'] });
+    assert.deepEqual(d, { izq: ['servicios', 'resumen'], der: ['atajos', 'estadisticas', 'calendario'] });
+    assert.deepEqual(todas(d), [...CARDS].sort());
 });
 
-test('orden de tarjetas: un orden completo se respeta y se descartan repetidos y desconocidos', () => {
-    const invertido = [...CARDS].reverse();
-    assert.deepEqual(normalizarOrdenCards(invertido), invertido);
-    assert.deepEqual(normalizarOrdenCards(['atajos', 'atajos', 'nada', ...CARDS.filter(c => c !== 'atajos')]), ['atajos', ...CARDS.filter(c => c !== 'atajos')]);
+test('disposición: una columna puede quedar vacía', () => {
+    const d = normalizarDisposicion({ izq: [...CARDS], der: [] });
+    assert.deepEqual(d.der, []);
+    assert.equal(d.izq.length, CARDS.length);
 });
 
-test('orden de tarjetas: reordenar las visibles deja las ocultas en su lugar', () => {
-    assert.deepEqual(fusionarOrdenVisibles(['a', 'oculta', 'b', 'c'], ['c', 'b', 'a']), ['c', 'oculta', 'b', 'a']);
-    assert.deepEqual(fusionarOrdenVisibles(['a', 'b'], ['b', 'a']), ['b', 'a']);
+test('disposición: una tarjeta que no existía al guardar entra al final de su columna por defecto', () => {
+    const d = normalizarDisposicion({ izq: ['resumen', 'atajos'], der: ['servicios'] });
+    assert.deepEqual(d, { izq: ['resumen', 'atajos', 'estadisticas', 'calendario'], der: ['servicios'] });
 });
 
-test('orden de tarjetas: en escritorio la última va a la columna derecha', () => {
-    assert.equal(CARDS_EN_DERECHA, 1);
-    assert.deepEqual([0, 1, 2, 3, 4].map(i => columnaDeCard(i, 5)), [0, 0, 0, 0, 1]);
+test('disposición: acepta el formato anterior (lista con la última a la derecha)', () => {
+    assert.deepEqual(normalizarDisposicion(['servicios', 'resumen', 'atajos', 'estadisticas', 'calendario']),
+        { izq: ['servicios', 'resumen', 'atajos', 'estadisticas'], der: ['calendario'] });
+});
+
+test('orden del celular: parte del de escritorio (izquierda y luego derecha) y respeta uno propio', () => {
+    const base = { izq: ['resumen', 'atajos'], der: ['servicios', 'estadisticas', 'calendario'] };
+    assert.deepEqual(normalizarOrdenMovil(null, base), ['resumen', 'atajos', 'servicios', 'estadisticas', 'calendario']);
+    assert.deepEqual(normalizarOrdenMovil(['servicios', 'nada', 'servicios', 'resumen'], base), ['servicios', 'resumen', 'atajos', 'estadisticas', 'calendario']);
+});
+
+test('colocar y mover en una lista', () => {
+    assert.deepEqual(colocarEnLista(['a', 'b', 'c'], 'c', 'a'), ['c', 'a', 'b']);
+    assert.deepEqual(colocarEnLista(['a', 'b', 'c'], 'a'), ['b', 'c', 'a']);
+    assert.deepEqual(colocarEnLista(['a', 'b'], 'x', 'inexistente'), ['a', 'b', 'x']);
+    assert.deepEqual(moverEnLista(['a', 'b', 'c'], 'b', -1), ['b', 'a', 'c']);
+    assert.deepEqual(moverEnLista(['a', 'b', 'c'], 'a', -1), ['a', 'b', 'c'], 'en el borde no hace nada');
+    assert.deepEqual(moverEnLista(['a', 'b', 'c'], 'c', 1), ['a', 'b', 'c']);
+});
+
+test('colocar entre columnas sin mutar la original', () => {
+    const d = normalizarDisposicion(null);
+    const copia = JSON.stringify(d);
+    const n1 = colocarEnColumna(d, 'resumen', 'der', 'servicios');
+    assert.deepEqual(n1.der, ['resumen', 'servicios']);
+    assert.ok(!n1.izq.includes('resumen'));
+    assert.equal(columnaDe(n1, 'resumen'), 'der');
+    const n2 = colocarEnColumna(d, 'servicios', 'izq', 'atajos');
+    assert.deepEqual(n2, { izq: ['resumen', 'servicios', 'atajos', 'estadisticas', 'calendario'], der: [] });
+    assert.deepEqual(pasarAOtraColumna(d, 'atajos').der, ['servicios', 'atajos']);
+    assert.deepEqual(pasarAOtraColumna(pasarAOtraColumna(d, 'atajos'), 'atajos').izq.slice(-1), ['atajos']);
+    assert.deepEqual(moverEnColumna(d, 'estadisticas', -1).izq, ['resumen', 'estadisticas', 'atajos', 'calendario']);
+    assert.equal(JSON.stringify(d), copia);
+    for (const x of [n1, n2]) assert.deepEqual(todas(x), [...CARDS].sort());
 });

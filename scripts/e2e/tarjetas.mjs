@@ -1,39 +1,50 @@
-// Tarjetas: orden y visibilidad desde Ajustes, Alt+flechas, arrastre con pulsación larga, orden aparte para móvil y restablecer.
+// Tarjetas: columnas libres en PC, orden propio en el celular (editable desde cualquier pantalla), arrastre entre columnas, teclado y restablecer.
 export default async (b) => {
     const v = async (e) => (await b.eval(e)).value;
     const click = async (sel) => { await b.eval(`document.querySelector(${JSON.stringify(sel)})?.click(); true`); await b.sleep(500); };
     const abierto = (id) => v(`(()=>{const m=document.getElementById('${id}'); return m.classList.contains('show')||m.classList.contains('active')})()`);
     const dist = () => v(`(()=>{const col=(s)=>[...document.querySelector(s).children].filter(e=>e.id.startsWith('card-')&&e.style.display!=='none').map(e=>e.id.slice(5)).join(','); return 'izq['+col('.sidebar-left')+'] der['+col('.main-content')+']'})()`);
+    const abrirTarjetas = async () => { await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-tarjetas'); };
     await b.eval(`localStorage.clear(); localStorage.setItem('bienvenida-vista','true'); true`);
     await b.setViewport(1000, 900); await b.ir(b.url); await b.sleep(1300);
     console.log('PC inicial:', await dist());
-    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-tarjetas');
-    console.log('modal:', await abierto('modal-tarjetas'), '|', await v(`document.getElementById('orden-cards-contexto').textContent`), '| filas:', await v(`document.querySelectorAll('.orden-card-item').length`));
-    await click('.orden-card-item[data-card="servicios"] [data-mover="-1"]');
-    console.log('subir servicios:', await dist());
-    await click('.orden-card-item[data-card="calendario"] [data-visible]');
-    console.log('ocultar calendario:', await dist(), '| guardado:', await v(`localStorage.getItem('tarjeta-visible-calendario')`));
-    await b.shot('/tmp/orden1.png');
+    await abrirTarjetas();
+    console.log('modal:', await abierto('modal-tarjetas'), '| columnas en la lista:', await v(`[...document.querySelectorAll('[data-columna-lista]')].map(c=>c.dataset.columnaLista+':'+[...c.querySelectorAll('.orden-card-item')].map(i=>i.dataset.card).join('/')).join('  ')`));
+    await b.shot('/tmp/orden_pc.png');
+    // elegir columna libremente
+    await click('.orden-card-item[data-card="resumen"] [data-columna]');
+    console.log('resumen → derecha:', await dist());
+    await click('.orden-card-item[data-card="servicios"] [data-columna]'); await click('.orden-card-item[data-card="calendario"] [data-columna]');
+    console.log('servicios y calendario → otra columna:', await dist());
+    await click('.orden-card-item[data-card="atajos"] [data-mover="1"]');
+    console.log('atajos baja un lugar:', await dist());
+    await click('.orden-card-item[data-card="atajos"] [data-visible]');
+    console.log('ocultar atajos:', await dist(), '| guardado:', await v(`localStorage.getItem('orden-tarjetas')`));
+    await click('.orden-card-item[data-card="atajos"] [data-visible]');
+    // el celular es independiente: se edita desde PC sin tocar lo que se ve
+    await click('.tarjetas-modo[data-modo="movil"]');
+    console.log('modo celular:', await v(`document.getElementById('orden-cards-contexto').textContent`), '| filas:', await v(`[...document.querySelectorAll('.orden-card-item')].map(i=>i.dataset.card).join()`));
+    await click('.orden-card-item[data-card="servicios"] [data-mover="-1"]'); await click('.orden-card-item[data-card="servicios"] [data-mover="-1"]');
+    console.log('PC sin cambios tras editar celular:', await dist(), '| celular guardado:', await v(`localStorage.getItem('orden-tarjetas-movil')`));
     await click('#modal-tarjetas-close');
-    // teclado: Alt + flecha en el encabezado de estadísticas
-    await b.eval(`document.getElementById('estadisticas-header').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',altKey:true,bubbles:true})); true`); await b.sleep(500);
-    console.log('Alt+↑ en estadísticas:', await dist());
-    // arrastre sintético con pulsación larga: soltar servicios sobre el resumen
-    await b.eval(`(()=>{ const h=document.querySelector('#card-servicios .card-header-collapsible'); const r=h.getBoundingClientRect(); window.__r=r; h.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,button:0,clientX:r.left+20,clientY:r.top+10,pointerType:'mouse'})); return true})()`);
+    // teclado en PC
+    await b.eval(`document.getElementById('servicios-header').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',altKey:true,bubbles:true})); true`); await b.sleep(500);
+    console.log('Alt+→ en servicios:', await dist());
+    // arrastre entre columnas: soltar estadísticas en la columna derecha (sobre el borde derecho)
+    await b.eval(`(()=>{ const h=document.querySelector('#card-estadisticas .card-header-collapsible'); const r=h.getBoundingClientRect(); h.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:5,button:0,clientX:r.left+20,clientY:r.top+10,pointerType:'mouse'})); return true})()`);
     await b.sleep(450);
-    console.log('arrastrando:', await v(`document.body.classList.contains('tarjeta-arrastrando-activa')`));
-    await b.eval(`(()=>{ const r=document.querySelector('#card-resumen').getBoundingClientRect(); window.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerId:7,clientX:r.left+20,clientY:r.top+10,pointerType:'mouse'})); return true})()`);
-    await b.sleep(500);
-    await b.eval(`window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:7})); true`); await b.sleep(700);
-    console.log('tras arrastrar:', await dist(), '| guardado:', await v(`localStorage.getItem('orden-tarjetas')`));
+    await b.eval(`(()=>{ const d=document.querySelector('.main-content').getBoundingClientRect(); window.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerId:5,clientX:d.left+60,clientY:d.top+20,pointerType:'mouse'})); return true})()`);
+    await b.sleep(600);
+    await b.eval(`window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:5})); true`); await b.sleep(700);
+    console.log('arrastre a la derecha:', await dist());
     await b.ir(b.url); await b.sleep(1300);
-    console.log('persiste:', await dist());
-    // móvil: todo apilado en una columna, con su propio orden (parte del de PC)
+    console.log('persiste en PC:', await dist());
+    // celular: usa su orden propio (no el de PC)
     await b.setViewport(420, 900); await b.ir(b.url); await b.sleep(1300);
-    console.log('móvil:', await dist());
-    await click('#header-profile-btn'); await click('#btn-perfiles-ajustes'); await click('#menu-tarjetas'); console.log('contexto:', await v(`document.getElementById('orden-cards-contexto').textContent`));
-    await click('#btn-tarjetas-restablecer');
-    console.log('restablecer:', await dist(), '|', await v(`localStorage.getItem('orden-tarjetas')`));
-    await b.setViewport(1000, 900); await b.sleep(600);
+    console.log('celular:', await dist());
+    // volver a PC sin recargar
+    await b.setViewport(1000, 900); await b.sleep(700);
     console.log('de vuelta a PC:', await dist());
+    await abrirTarjetas(); await click('#btn-tarjetas-restablecer');
+    console.log('restablecer:', await dist(), '|', await v(`localStorage.getItem('orden-tarjetas')`), await v(`localStorage.getItem('orden-tarjetas-movil')`));
 };
