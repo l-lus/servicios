@@ -51,7 +51,7 @@ test('ReportesTexto.mensual: secciones, totales y nombre de archivo', () => {
         srv(SERVICIO_INGRESOS_ID, [f('i', '2026-11-01', { monto: 900 })]),
     ];
     const { texto, nombreArchivo } = ReportesTexto.mensual({ servicios, mes: 10, anio: 2026, ingresosHabilitado: true, hoy: HOY, ahora: new Date(2026, 10, 15, 9) });
-    assert.match(nombreArchivo, /^reporte_noviembre_2026\.txt$/);
+    assert.match(nombreArchivo, /^reporte_noviembre_de_2026\.txt$/);
     assert.match(texto, /REPORTE DE ESTADÍSTICAS/);
     assert.match(texto, /Vencida \(pendiente\)/);
     assert.match(texto, /Pagada en noviembre/);

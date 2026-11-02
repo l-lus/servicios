@@ -1,5 +1,6 @@
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { GestorPerfiles } from '../services/gestor-perfiles.js';
 import { ModalManager } from './gestor-modales.js';
 
 // ============================================================
@@ -18,22 +19,11 @@ export class PerfilService {
 
     // ── Persistencia ──────────────────────────────────────────
     cargar() {
-        try {
-            const guardados = StorageHelper.getObject(STORAGE_KEYS.PERFILES, null);
-            if (guardados) return guardados;
-        } catch (error) {
-            console.error('Error al cargar perfiles:', error);
-        }
-        return { 'default': { id: 'default', nombre: 'Principal', creado: new Date().toISOString() } };
+        return GestorPerfiles.cargar();
     }
 
     guardar() {
-        try {
-            StorageHelper.setItem(STORAGE_KEYS.PERFILES, this.perfiles);
-        } catch (error) {
-            console.error('Error al guardar perfiles:', error);
-            this.app.ui.mostrarToast('Error al guardar perfiles', 'error');
-        }
+        if (!GestorPerfiles.guardar(this.perfiles)) this.app.ui.mostrarToast('Error al guardar perfiles', 'error');
     }
 
     // ── Cambio de perfil activo ───────────────────────────────
@@ -63,17 +53,14 @@ export class PerfilService {
         const perfilesArray = Object.values(this.perfiles);
         const inputNuevo = document.getElementById('perfil-nuevo-nombre');
         if (inputNuevo) {
-            const maxAlcanzado = perfilesArray.length >= 4;
+            const maxAlcanzado = !GestorPerfiles.puedeCrear(this.perfiles);
             inputNuevo.disabled = maxAlcanzado;
             inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
         }
         lista.innerHTML = perfilesArray.map(perfil => {
             const esActivo = perfil.id === this.perfilActivo;
             const esDefault = perfil.id === 'default';
-            let cantidadServicios = 0;
-            try {
-                cantidadServicios = StorageHelper.getObject(STORAGE_KEYS.DATOS_PERFIL(perfil.id), []).length;
-            } catch (e) { }
+            const cantidadServicios = GestorPerfiles.cantidadServicios(perfil.id);
             return `
 <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
      data-action="cambiar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}">
@@ -100,18 +87,12 @@ export class PerfilService {
     crearInline() {
         const input = document.getElementById('perfil-nuevo-nombre');
         const nombre = input.value.trim();
-        if (!nombre) { this.app.ui.mostrarToast('Ingresá un nombre', 'error'); return; }
-        if (Object.values(this.perfiles).some(p => p.nombre.toLowerCase() === nombre.toLowerCase())) {
-            this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return;
-        }
-        if (Object.keys(this.perfiles).length >= 4) {
-            this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
-        }
-        const nuevoId = 'perfil_' + Date.now();
-        this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
-        StorageHelper.setItem(STORAGE_KEYS.DATOS_PERFIL(nuevoId), []);
+        const error = GestorPerfiles.validarNombre(this.perfiles, nombre);
+        if (error === 'vacio') { this.app.ui.mostrarToast('Ingresá un nombre', 'error'); return; }
+        if (error === 'duplicado') { this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
+        if (!GestorPerfiles.puedeCrear(this.perfiles)) { this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return; }
+        GestorPerfiles.crear(this.perfiles, nombre);
         input.value = '';
-        this.guardar();
         this.app.ui.mostrarToast('Perfil creado', 'success');
         this.abrirModal();
     }
@@ -136,25 +117,18 @@ export class PerfilService {
     guardarEdicion(e) {
         e.preventDefault();
         const nombre = document.getElementById('perfil-nombre').value.trim();
-        if (!nombre) { this.app.ui.mostrarToast('El nombre es requerido', 'error'); return; }
-        const nombreExiste = Object.values(this.perfiles).some(p =>
-            p.nombre.toLowerCase() === nombre.toLowerCase() && p.id !== this.app.perfilEditando
-        );
-        if (nombreExiste) { this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
+        const error = GestorPerfiles.validarNombre(this.perfiles, nombre, this.app.perfilEditando);
+        if (error === 'vacio') { this.app.ui.mostrarToast('El nombre es requerido', 'error'); return; }
+        if (error === 'duplicado') { this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
         if (this.app.perfilEditando) {
-            this.perfiles[this.app.perfilEditando].nombre = nombre;
+            GestorPerfiles.renombrar(this.perfiles, this.app.perfilEditando, nombre);
             if (this.app.perfilEditando === this.perfilActivo) this.app.renderServicios();
             this.app.ui.mostrarToast('Perfil actualizado', 'success');
         } else {
-            if (Object.keys(this.perfiles).length >= 4) {
-                this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return;
-            }
-            const nuevoId = 'perfil_' + Date.now();
-            this.perfiles[nuevoId] = { id: nuevoId, nombre, creado: new Date().toISOString() };
-            StorageHelper.setItem(STORAGE_KEYS.DATOS_PERFIL(nuevoId), []);
+            if (!GestorPerfiles.puedeCrear(this.perfiles)) { this.app.ui.mostrarToast('Máximo 4 perfiles permitidos', 'error'); return; }
+            GestorPerfiles.crear(this.perfiles, nombre);
             this.app.ui.mostrarToast('Perfil creado', 'success');
         }
-        this.guardar();
         this.app.ui.cerrarModal('modal-editar-perfil');
         this.abrirModal();
     }
@@ -172,10 +146,8 @@ export class PerfilService {
         );
         if (!confirmado) return;
         if (perfilId === this.perfilActivo) this.cambiar('default');
-        StorageHelper.removeItem(STORAGE_KEYS.DATOS_PERFIL(perfilId));
+        GestorPerfiles.eliminar(this.perfiles, perfilId);
         this.app.historial_mgr.eliminarDePerfil(perfilId);
-        delete this.perfiles[perfilId];
-        this.guardar();
         this.app.ui.mostrarToast('Perfil eliminado', 'success');
         this.renderLista();
     }
