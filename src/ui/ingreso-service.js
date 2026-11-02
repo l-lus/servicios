@@ -10,7 +10,7 @@ export class IngresoService {
 
     crearServicio() {
         this.servicios.push({ id: this.app.SERVICIO_INGRESOS_ID, nombre: 'Ingresos', facturas: [], activo: false });
-        this.app.guardarDatos();
+        this\.app.storage.guardarDatos();
     }
 
     abrirModalLista(servicioId, { resaltar = null } = {}) {
@@ -40,7 +40,7 @@ export class IngresoService {
             }).join('');
         }
         document.getElementById('modal-ingresos-lista').dataset.servicioId = servicioId;
-        this.app.abrirModal('modal-ingresos-lista');
+        this\.app.ui.abrirModal('modal-ingresos-lista');
         const anoGuardado = this.app._anoExpandidoIngresos[servicioId];
         if (anoGuardado) { this.app._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoIngresos[servicioId] = null; }
         this.app._resaltarItemLista(lista, resaltar);
@@ -56,7 +56,7 @@ export class IngresoService {
                 this.app._anoExpandidoIngresos[sid] = ano;
             }
         }
-        this.app.cerrarModal('modal-ingresos-lista');
+        this\.app.ui.cerrarModal('modal-ingresos-lista');
         this.app.ingresoActual    = ingresoId;
         this.app.ingresoDesdeMenu = desdeMenu;
         if (ingresoId) {
@@ -71,14 +71,14 @@ export class IngresoService {
                 const csdEditTipo = document.getElementById('editar-ingreso-tipo-csd');
                 if (csdEditTipo?._customSelect) csdEditTipo._customSelect.refresh();
             }
-            this.app.abrirModal('modal-editar-ingreso');
+            this\.app.ui.abrirModal('modal-editar-ingreso');
         } else {
             document.getElementById('form-ingreso').reset();
             this.app.utils.setMonedaBtn('ingreso-moneda', 'btn-ingreso-moneda', 'ars');
             // Refrescar CustomSelect ingreso-tipo (reset puede haber alterado la opción visible)
             const csdTipo = document.getElementById('ingreso-tipo-csd');
             if (csdTipo?._customSelect) csdTipo._customSelect.refresh();
-            this.app.abrirModal('modal-agregar-ingreso');
+            this\.app.ui.abrirModal('modal-agregar-ingreso');
         }
     }
 
@@ -99,7 +99,7 @@ export class IngresoService {
             if (ingreso) {
                 if (ingreso.monto === monto && ingreso.tipo === tipo && ingreso.fecha === fecha && (ingreso.moneda || 'ars') === moneda) {
                     this.app.ui.mostrarToast('Sin cambios', 'info');
-                    this.app.cerrarModal('modal-editar-ingreso');
+                    this\.app.ui.cerrarModal('modal-editar-ingreso');
                     this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID); return;
                 }
                 Object.assign(ingreso, { monto, tipo, fecha, moneda });
@@ -108,10 +108,10 @@ export class IngresoService {
             ingresoId = this.app.utils.generarId();
             servicio.facturas.push({ id: ingresoId, monto, tipo, fecha, moneda, pagada: true });
         }
-        this.app.guardarDatos();
+        this\.app.storage.guardarDatos();
         this.app.guardarEstado(this.app.ingresoActual ? 'editar ingreso' : 'agregar ingreso');
         this.app.renderServicios();
-        this.app.cerrarModal(esEditar ? 'modal-editar-ingreso' : 'modal-agregar-ingreso');
+        this\.app.ui.cerrarModal(esEditar ? 'modal-editar-ingreso' : 'modal-agregar-ingreso');
         if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID, { resaltar: ingresoId });
         this.app.ui.mostrarToast(this.app.ingresoActual ? 'Ingreso actualizado' : 'Ingreso agregado', 'success');
     }
@@ -120,10 +120,10 @@ export class IngresoService {
         const servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
         if (!servicio) return;
         servicio.facturas = servicio.facturas.filter(f => f.id !== this.app.ingresoActual);
-        this.app.guardarDatos();
+        this\.app.storage.guardarDatos();
         this.app.guardarEstado('eliminar ingreso');
         this.app.renderServicios();
-        this.app.cerrarModal('modal-editar-ingreso');
+        this\.app.ui.cerrarModal('modal-editar-ingreso');
         if (!this.app.ingresoDesdeMenu) this.abrirModalLista(this.app.SERVICIO_INGRESOS_ID);
         this.app.toastConDeshacer('Ingreso eliminado');
     }

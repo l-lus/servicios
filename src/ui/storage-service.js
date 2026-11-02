@@ -23,11 +23,11 @@ export class StorageService {
         try {
             const key = STORAGE_KEYS.DATOS_PERFIL(this.perfilActivo);
             this.servicios = StorageHelper.getObject(key, []);
-            this.app.inicializarHistorial();
+            this\.app.historial_mgr.inicializarHistorial();
         } catch (error) {
             console.error('Error al cargar datos del perfil:', error);
             this.servicios = [];
-            this.app.inicializarHistorial();
+            this\.app.historial_mgr.inicializarHistorial();
         }
     }
 
@@ -179,7 +179,7 @@ export class StorageService {
         const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
         if (modo === 'combinar') {
             const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
-            const categoriasAgregadas = this.app._mergeCategorias(datos.categorias);
+            const categoriasAgregadas = this\.app.gist.mergeCategorias(datos.categorias);
             if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
                 this.app.ui.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
             }

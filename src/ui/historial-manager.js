@@ -48,7 +48,7 @@ export class HistorialManager {
     _aplicarEstado(estado) {
         this.app.servicios = estado.servicios;
         this.app.categoria.saveCategorias(estado.categorias);
-        this.app.guardarDatos();
+        this\.app.storage.guardarDatos();
         this.app._marcarRenderAnimado();
         this.app.renderServicios();
         this.app.ui.cerrarTodosLosModales();

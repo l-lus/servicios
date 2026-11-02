@@ -123,7 +123,7 @@ export class UtilsService {
     }
 
     postGuardado(descripcion = null) {
-        this.app.guardarDatos();
+        this\.app.storage.guardarDatos();
         this.app.guardarEstado(descripcion);
         this.app.renderServicios();
     }

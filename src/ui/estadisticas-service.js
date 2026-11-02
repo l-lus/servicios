@@ -124,7 +124,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         if (pagadasOtroMes.length > 0) html += `<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes).join('')}</div>`;
         if (!html) html = '<div class="text-center-muted">Sin movimientos este mes</div>';
         document.getElementById('modal-info-resumen-body').innerHTML = html;
-        this.app.abrirModal('modal-info-resumen');
+        this\.app.ui.abrirModal('modal-info-resumen');
     }
 
     toggleResumen() {
@@ -267,7 +267,7 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         } else {
             mensualContainer.classList.add('hidden'); mensualContainer.classList.remove('visible');
             individualContainer.classList.add('visible'); individualContainer.classList.remove('hidden');
-            this.app.calcularPeriodo();
+            this\.app.calculador.calcularPeriodo();
         }
     }
 
@@ -290,8 +290,8 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         const csd = document.getElementById('calculador-servicio-csd');
         if (csd?._customSelect) csd._customSelect.refresh();
         if (valorActual && !this.servicios.find(s => s.id === valorActual)) {
-            select.value = ''; this.app.calcularPeriodo();
-        } else if (valorActual) { this.app.calcularPeriodo(); }
+            select.value = ''; this\.app.calculador.calcularPeriodo();
+        } else if (valorActual) { this\.app.calculador.calcularPeriodo(); }
     }
 
     inicializarCalculador() {
@@ -300,20 +300,20 @@ ${(hayARS && hayUSD) ? valorMostrar : `<div class="resumen-valor">${valorMostrar
         this.actualizarSelectServicios();
         const csdWrapper = document.getElementById('calculador-servicio-csd');
         if (csdWrapper && !csdWrapper._customSelect) {
-            csdWrapper._customSelect = new CustomSelect(csdWrapper, selectServicio, () => this.app.calcularPeriodo());
+            csdWrapper._customSelect = new CustomSelect(csdWrapper, selectServicio, () => this\.app.calculador.calcularPeriodo());
         }
         const inputDesde = document.getElementById('calculador-desde');
         const inputHasta = document.getElementById('calculador-hasta');
-        selectServicio.addEventListener('change', () => this.app.calcularPeriodo());
-        inputDesde.addEventListener('change', () => this.app.calcularPeriodo());
-        inputHasta.addEventListener('change', () => this.app.calcularPeriodo());
+        selectServicio.addEventListener('change', () => this\.app.calculador.calcularPeriodo());
+        inputDesde.addEventListener('change', () => this\.app.calculador.calcularPeriodo());
+        inputHasta.addEventListener('change', () => this\.app.calculador.calcularPeriodo());
         document.getElementById('btn-calculador-desde-hoy').addEventListener('click', () => {
             inputDesde.value = inputDesde.value ? '' : this.app.utils.obtenerFechaLocal();
-            this.app.calcularPeriodo();
+            this\.app.calculador.calcularPeriodo();
         });
         document.getElementById('btn-calculador-hasta-hoy').addEventListener('click', () => {
             inputHasta.value = inputHasta.value ? '' : this.app.utils.obtenerFechaLocal();
-            this.app.calcularPeriodo();
+            this\.app.calculador.calcularPeriodo();
         });
     }
 

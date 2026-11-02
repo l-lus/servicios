@@ -131,7 +131,7 @@ export class GestionServicios {
         this.storage = new StorageService(this);
 
         // Cargar datos del perfil activo - NUEVO (debe ir después de instanciar this.storage)
-        this.cargarDatosPerfilActivo();
+        this.storage.cargarDatosPerfilActivo();
 
         this.init();
         this.gistAutoSyncInit();
@@ -145,17 +145,17 @@ export class GestionServicios {
         Motion.init();
         Anim.initColapsables();
         this.ui.cargarTema();
-        this.actualizarResumenMes();
+        this.estadisticas.actualizarResumenMes();
         this.renderServicios();
         this.setupEventListeners();
-        this.actualizarBotonesHistorial();
-        this.cargarCotizacionDolar();
+        this.historial_mgr.actualizarBotones();
+        this.ui.cargarCotizacionDolar();
 
         // Inicializar indicador de ingresos
         if (StorageHelper.getItem(STORAGE_KEYS.INGRESOS_HABILITADO) === null) {
             StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, 'false');
         }
-        const ingresosHabilitado = this.ingresosHabilitado();
+        const ingresosHabilitado = this.ui.ingresosHabilitado();
         const indicator = document.getElementById('ingresos-indicator');
         if (indicator) {
             indicator.textContent = ingresosHabilitado ? 'SI' : 'NO';
@@ -175,7 +175,7 @@ export class GestionServicios {
             const tipoGuardado = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
             this.tipoEstadisticaActual = tipoGuardado;
             document.getElementById('estadisticas-tipo').value = tipoGuardado;
-            this.cambiarTipoEstadistica();
+            this.estadisticas.cambiarTipoEstadistica();
         }
 
         // Inicializar CustomSelect para estadisticas-tipo
@@ -185,7 +185,7 @@ export class GestionServicios {
             csdEstTipo._customSelect = new CustomSelect(csdEstTipo, selEstTipo, () => {
                 this.tipoEstadisticaActual = selEstTipo.value;
                 StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, selEstTipo.value);
-                this.cambiarTipoEstadistica();
+                this.estadisticas.cambiarTipoEstadistica();
             });
         }
 
@@ -212,7 +212,7 @@ export class GestionServicios {
             if (csdOrden?._customSelect) csdOrden._customSelect.refresh();
             const csdVista = document.getElementById('select-vista-csd');
             if (csdVista?._customSelect) csdVista._customSelect.refresh();
-            this.abrirModal('modal-ordenar');
+            this.ui.abrirModal('modal-ordenar');
         });
 
         document.getElementById('select-orden').addEventListener('change', () => {
@@ -282,13 +282,13 @@ export class GestionServicios {
         });
 
         searchClear.addEventListener('click', () => {
-            this._limpiarBusqueda();
+            this.utils.limpiarBusqueda();
         });
 
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') this._busquedaDebounced.flush();
             if (e.key === 'Escape') {
-                this._limpiarBusqueda();
+                this.utils.limpiarBusqueda();
                 searchInput.blur();
             }
         });
@@ -297,7 +297,7 @@ export class GestionServicios {
         this.gist.actualizarBotones();
 
         // Inicializar menú contextual
-        this._ctxInit();
+        this.ctx.init();
 
     }
 
@@ -306,12 +306,6 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a PerfilService ────────────────────────────
-    guardarPerfiles() { this.perfil.guardar(); }
-    crearPerfilInline() { this.perfil.crearInline(); }
-
-    cargarDatosPerfilActivo() { this.storage.cargarDatosPerfilActivo(); }
-    guardarDatosPerfilActivo() { this.storage.guardarDatosPerfilActivo(); }
-
     // ========================================
     // CUSTOM SELECTS — inicialización global
     // ========================================
@@ -365,14 +359,6 @@ export class GestionServicios {
     // ── Delegación a CalculadorService ───────────────────────
     activarModoCalculadora(silencioso = false) { this.calculador.activarModo(silencioso); }
     desactivarModoCalculadora(silencioso = false) { this.calculador.desactivarModo(silencioso); }
-    actualizarCalculadora() { this.calculador.actualizar(); }
-
-    validarMonto(monto, neg)                     { return this.factura.validarMonto(monto, neg); }
-
-    validarFecha(fecha)                          { return this.factura.validarFecha(fecha); }
-
-    validarFechaPago(fp)                         { return this.factura.validarFechaPago(fp); }
-
     setupEventListeners() {
         // Botones principales
         document.getElementById('btn-agregar-servicio').addEventListener('click', () => {
@@ -383,20 +369,20 @@ export class GestionServicios {
                 this.ui.toggleMenuAgregar();
             }
         });
-        document.getElementById('btn-ajustes').addEventListener('click', () => this.toggleMenuAjustes());
-        document.getElementById('menu-overlay').addEventListener('click', () => this.cerrarMenuAjustes());
-        document.getElementById('btn-cerrar-menu').addEventListener('click', () => this.cerrarMenuAjustes());
+        document.getElementById('btn-ajustes').addEventListener('click', () => this.ui.toggleMenuAjustes());
+        document.getElementById('menu-overlay').addEventListener('click', () => this.ui.cerrarMenuAjustes());
+        document.getElementById('btn-cerrar-menu').addEventListener('click', () => this.ui.cerrarMenuAjustes());
 
         // Undo/Redo
-        document.getElementById('btn-undo').addEventListener('click', () => this.deshacer());
-        document.getElementById('btn-redo').addEventListener('click', () => this.rehacer());
+        document.getElementById('btn-undo').addEventListener('click', () => this.historial_mgr.deshacer());
+        document.getElementById('btn-redo').addEventListener('click', () => this.historial_mgr.rehacer());
 
         // Menú ajustes
         document.getElementById('menu-tema').addEventListener('click', () => this.ui.toggleTema());
-        document.getElementById('menu-exportar').addEventListener('click', () => this.exportarDatos());
+        document.getElementById('menu-exportar').addEventListener('click', () => this.storage.exportarDatos());
         document.getElementById('menu-importar').addEventListener('click', () => this.mostrarOpcionesImportacion());
-        document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.importarDatos('reemplazar'));
-        document.getElementById('menu-importar-combinar').addEventListener('click', () => this.importarDatos('combinar'));
+        document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.storage.importarDatos('reemplazar'));
+        document.getElementById('menu-importar-combinar').addEventListener('click', () => this.storage.importarDatos('combinar'));
         document.getElementById('menu-limpiar').addEventListener('click', () => this.mostrarOpcionesBorrar());
         document.getElementById('menu-dolar').addEventListener('click', () => this.toggleMenuDolar());
         document.getElementById('menu-borrar-todo').addEventListener('click', () => this.limpiarDatos('todo'));
@@ -409,18 +395,18 @@ export class GestionServicios {
         document.getElementById('menu-toggle-animaciones').addEventListener('click', () => this.ui.toggleAnimaciones());
 
         // Menú agregar
-        document.getElementById('menu-agregar-overlay').addEventListener('click', () => this.cerrarMenuAgregar());
+        document.getElementById('menu-agregar-overlay').addEventListener('click', () => this.ui.cerrarMenuAgregar());
         document.getElementById('menu-agregar-servicio').addEventListener('click', () => {
-            this.cerrarMenuAgregar();
+            this.ui.cerrarMenuAgregar();
             this.abrirModalServicio();
         });
         document.getElementById('menu-agregar-factura').addEventListener('click', () => {
-            this.cerrarMenuAgregar();
+            this.ui.cerrarMenuAgregar();
             this.ui.abrirModalFacturaRapida();
         });
         document.getElementById('menu-agregar-recibo').addEventListener('click', () => {
-            this.cerrarMenuAgregar();
-            this.abrirModalIngreso(null, true);
+            this.ui.cerrarMenuAgregar();
+            this.ingreso.abrirModal(null, true);
         });
         document.getElementById('menu-agregar-calcular').addEventListener('click', () => {
             document.getElementById('menu-vista-principal').classList.add('hidden-vista');
@@ -443,13 +429,13 @@ export class GestionServicios {
 
         document.getElementById('menu-calcular-pendientes').addEventListener('click', () => {
             this.modoCalculadoraTipo = 'pendientes';
-            this.cerrarMenuAgregar();
+            this.ui.cerrarMenuAgregar();
             this.activarModoCalculadora();
         });
 
         document.getElementById('menu-calcular-pagados').addEventListener('click', () => {
             this.modoCalculadoraTipo = 'pagados';
-            this.cerrarMenuAgregar();
+            this.ui.cerrarMenuAgregar();
             this.activarModoCalculadora();
         });
 
@@ -461,25 +447,25 @@ export class GestionServicios {
         });
 
         // Modales
-        document.getElementById('modal-servicio-close').addEventListener('click', () => this.cerrarModal('modal-agregar-servicio'));
+        document.getElementById('modal-servicio-close').addEventListener('click', () => this.ui.cerrarModal('modal-agregar-servicio'));
         document.getElementById('modal-editar-servicio-close').addEventListener('click', () => {
-            this.cerrarModal('modal-editar-servicio');
+            this.ui.cerrarModal('modal-editar-servicio');
             // Volver al modal de facturas si venimos desde ahí
             if (this.servicioActual) {
-                this.abrirModalFacturasServicio(this.servicioActual);
+                this.factura.abrirModalLista(this.servicioActual);
             }
         });
         document.getElementById('modal-factura-close').addEventListener('click', () => {
-            this.cerrarModal('modal-agregar-factura');
+            this.ui.cerrarModal('modal-agregar-factura');
             // Solo reabrir el modal de servicio si vino desde ahí
             if (this.origenModalFactura === 'servicio') {
-                this.abrirModalFacturasServicio(this.servicioActual);
+                this.factura.abrirModalLista(this.servicioActual);
             }
         });
 
         // Menú de perfiles
         document.getElementById('menu-gist').addEventListener('click', () => {
-            this.cerrarMenuAjustes();
+            this.ui.cerrarMenuAjustes();
             this.gist.abrirModal();
         });
 
@@ -489,10 +475,10 @@ export class GestionServicios {
 
         // Event listener para el botón volver del grid (modo agregar)
         document.getElementById('modal-factura-close-en-grid').addEventListener('click', () => {
-            this.cerrarModal('modal-editar-factura');
+            this.ui.cerrarModal('modal-editar-factura');
             // Solo reabrir el modal de servicio si vino desde ahí
             if (this.origenModalFactura === 'servicio') {
-                this.abrirModalFacturasServicio(this.servicioActual);
+                this.factura.abrirModalLista(this.servicioActual);
             }
         });
 
@@ -515,35 +501,35 @@ export class GestionServicios {
         // Formularios
         document.getElementById('form-servicio').addEventListener('submit', (e) => this.guardarServicio(e));
         document.getElementById('form-editar-servicio').addEventListener('submit', (e) => this.guardarServicio(e));
-        document.getElementById('form-factura').addEventListener('submit', (e) => this.guardarFactura(e));
-        document.getElementById('form-editar-factura').addEventListener('submit', (e) => this.guardarFactura(e));
+        document.getElementById('form-factura').addEventListener('submit', (e) => this.factura.guardar(e));
+        document.getElementById('form-editar-factura').addEventListener('submit', (e) => this.factura.guardar(e));
         document.getElementById('btn-eliminar-servicio').addEventListener('click', () => this.eliminarServicio());
-        document.getElementById('btn-borrar-facturas-servicio').addEventListener('click', () => this.borrarFacturasServicio());
-        document.getElementById('btn-fecha-hoy').addEventListener('click', () => this.establecerFechaHoy('factura'));
-        document.getElementById('btn-editar-fecha-hoy').addEventListener('click', () => this.establecerFechaHoy('factura', 'editar'));
-        document.getElementById('btn-eliminar-factura-modal').addEventListener('click', () => this.eliminarFacturaDesdeModal());
+        document.getElementById('btn-borrar-facturas-servicio').addEventListener('click', () => this.factura.borrarTodas());
+        document.getElementById('btn-fecha-hoy').addEventListener('click', () => this.factura.establecerFechaHoy('factura'));
+        document.getElementById('btn-editar-fecha-hoy').addEventListener('click', () => this.factura.establecerFechaHoy('factura', 'editar'));
+        document.getElementById('btn-eliminar-factura-modal').addEventListener('click', () => this.factura.eliminar());
 
         // Formulario de ingresos
-        document.getElementById('form-ingreso').addEventListener('submit', (e) => this.guardarIngreso(e));
-        document.getElementById('form-editar-ingreso').addEventListener('submit', (e) => this.guardarIngreso(e));
-        document.getElementById('btn-eliminar-ingreso').addEventListener('click', () => this.eliminarIngreso());
+        document.getElementById('form-ingreso').addEventListener('submit', (e) => this.ingreso.guardar(e));
+        document.getElementById('form-editar-ingreso').addEventListener('submit', (e) => this.ingreso.guardar(e));
+        document.getElementById('btn-eliminar-ingreso').addEventListener('click', () => this.ingreso.eliminar());
         document.getElementById('btn-ingreso-fecha-hoy').addEventListener('click', () => {
-            this.establecerFechaHoy('ingreso');
+            this.factura.establecerFechaHoy('ingreso');
         });
         document.getElementById('btn-editar-ingreso-fecha-hoy').addEventListener('click', () => {
-            this.establecerFechaHoy('ingreso', 'editar');
+            this.factura.establecerFechaHoy('ingreso', 'editar');
         });
 
         document.getElementById('modal-ingreso-close').addEventListener('click', () => {
-            this.cerrarModal('modal-agregar-ingreso');
+            this.ui.cerrarModal('modal-agregar-ingreso');
             if (!this.ingresoDesdeMenu) {
-                this.abrirModalIngresosLista(this.SERVICIO_INGRESOS_ID);
+                this.ingreso.abrirModalLista(this.SERVICIO_INGRESOS_ID);
             }
         });
         document.getElementById('modal-ingreso-volver').addEventListener('click', () => {
-            this.cerrarModal('modal-editar-ingreso');
+            this.ui.cerrarModal('modal-editar-ingreso');
             if (!this.ingresoDesdeMenu) {
-                this.abrirModalIngresosLista(this.SERVICIO_INGRESOS_ID);
+                this.ingreso.abrirModalLista(this.SERVICIO_INGRESOS_ID);
             }
         });
 
@@ -555,12 +541,12 @@ export class GestionServicios {
         document.getElementById('estadisticas-tipo').addEventListener('change', (e) => {
             this.tipoEstadisticaActual = e.target.value;
             StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, e.target.value);
-            this.cambiarTipoEstadistica();
+            this.estadisticas.cambiarTipoEstadistica();
         });
 
         document.getElementById('btn-calculador-ver-facturas').addEventListener('click', () => {
             const servicioId = document.getElementById('calculador-servicio').value;
-            if (servicioId) this.abrirModalFacturasServicio(servicioId);
+            if (servicioId) this.factura.abrirModalLista(servicioId);
         });
 
         // Inicializar calculador individual
@@ -584,7 +570,7 @@ export class GestionServicios {
                     this.volverDesdeModalActivo();
                     return;
                 }
-                if (this.terminoBusqueda) { this._limpiarBusqueda(); return; }
+                if (this.terminoBusqueda) { this.utils.limpiarBusqueda(); return; }
             }
 
             // Enter en modal nueva categoría
@@ -592,7 +578,7 @@ export class GestionServicios {
                 const modalCat = document.getElementById('modal-nueva-categoria');
                 if (modalCat && (modalCat.classList.contains('active') || modalCat.classList.contains('show'))) {
                     e.preventDefault();
-                    this.guardarNuevaCategoria();
+                    this.categoria.guardarNueva();
                     return;
                 }
             }
@@ -600,9 +586,9 @@ export class GestionServicios {
             // Ctrl/Cmd + Z/Y para undo/redo
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z' && !e.shiftKey) {
-                    e.preventDefault(); this.deshacer();
+                    e.preventDefault(); this.historial_mgr.deshacer();
                 } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
-                    e.preventDefault(); this.rehacer();
+                    e.preventDefault(); this.historial_mgr.rehacer();
                 }
                 return; // no continuar al bloque de letra suelta
             }
@@ -633,19 +619,19 @@ export class GestionServicios {
         });
 
         document.getElementById('menu-categorias').addEventListener('click', () => {
-            this.cerrarMenuAjustes();
-            this.abrirModalNuevaCategoria(null);
+            this.ui.cerrarMenuAjustes();
+            this.categoria.abrirModal(null);
         });
 
         // Menu informacion
         document.getElementById('menu-informacion').addEventListener('click', () => {
-            this.cerrarMenuAjustes();
-            this.abrirModal('modal-informacion');
+            this.ui.cerrarMenuAjustes();
+            this.ui.abrirModal('modal-informacion');
         });
 
         // Cerrar modal informacion
         document.getElementById('modal-informacion-close').addEventListener('click', () => {
-            this.cerrarModal('modal-informacion');
+            this.ui.cerrarModal('modal-informacion');
         });
 
         // ---- Listeners migrados desde inline handlers en el HTML ----
@@ -657,10 +643,10 @@ export class GestionServicios {
 
         // Modal info-resumen (botón header + botón footer)
         document.getElementById('btn-cerrar-modal-info-resumen').addEventListener('click', () => {
-            this.cerrarModal('modal-info-resumen');
+            this.ui.cerrarModal('modal-info-resumen');
         });
         document.getElementById('btn-cerrar-modal-info-resumen-footer').addEventListener('click', () => {
-            this.cerrarModal('modal-info-resumen');
+            this.ui.cerrarModal('modal-info-resumen');
         });
 
         // btn-info-resumen: delegado en el contenedor estático para evitar
@@ -680,60 +666,60 @@ export class GestionServicios {
         document.getElementById('btn-gist-bajar')?.addEventListener('click', () => this.gist.bajar());
         document.getElementById('btn-gist-guardar')?.addEventListener('click', () => this.gist.guardarConfig());
         document.getElementById('btn-gist-cerrar')?.addEventListener('click', () => {
-            this.cerrarModal('modal-gist');
-            this.toggleMenuAjustes();
+            this.ui.cerrarModal('modal-gist');
+            this.ui.toggleMenuAjustes();
         });
         document.getElementById('btn-gist-crear-token')?.addEventListener('click', () => {
             window.open('https://github.com/settings/tokens/new?description=Servicios+sync&scopes=gist', '_blank');
         });
         document.getElementById('gist-novedades-ok')?.addEventListener('click', () => this.gist.aplicarNovedades());
-        document.getElementById('gist-novedades-ignorar-btn')?.addEventListener('click', () => this.cerrarModal('modal-gist-novedades'));
+        document.getElementById('gist-novedades-ignorar-btn')?.addEventListener('click', () => this.ui.cerrarModal('modal-gist-novedades'));
         document.getElementById('btn-agregar-cat-servicio').addEventListener('click', () => {
-            this.abrirModalNuevaCategoria('servicio-categoria');
+            this.categoria.abrirModal('servicio-categoria');
         });
         document.getElementById('btn-agregar-cat-editar-servicio').addEventListener('click', () => {
-            this.abrirModalNuevaCategoria('editar-servicio-categoria');
+            this.categoria.abrirModal('editar-servicio-categoria');
         });
 
         // Modal ordenar: cerrar
         document.getElementById('btn-cerrar-modal-ordenar').addEventListener('click', () => {
-            this.cerrarModal('modal-ordenar');
+            this.ui.cerrarModal('modal-ordenar');
         });
 
         // Modal nueva-categoria: guardar / cerrar
         document.getElementById('btn-guardar-nueva-categoria').addEventListener('click', () => {
-            this.guardarNuevaCategoria();
+            this.categoria.guardarNueva();
         });
         document.getElementById('btn-cerrar-modal-categorias').addEventListener('click', () => {
-            this.cerrarModalCategorias();
+            this.categoria.cerrarModal();
         });
 
         // Modal agregar-factura: toggle moneda / negativo / credito / pagada
         document.getElementById('btn-factura-moneda').addEventListener('click', () => {
-            this.toggleMoneda('factura-moneda', 'btn-factura-moneda');
+            this.utils.toggleMoneda('factura-moneda', 'btn-factura-moneda');
         });
         document.getElementById('btn-toggle-negativo').addEventListener('click', () => {
-            this.toggleMontoNegativo('factura-monto');
+            this.factura.toggleMontoNegativo('factura-monto');
         });
         document.getElementById('btn-toggle-credito').addEventListener('click', () => {
-            this.toggleConCredito();
+            this.factura.toggleConCredito();
         });
         document.getElementById('btn-toggle-pagada').addEventListener('click', () => {
-            this.toggleEstadoPago();
+            this.factura.toggleEstadoPago();
         });
 
         // Modal editar-factura: toggle moneda / negativo / credito / pagada
         document.getElementById('btn-editar-factura-moneda').addEventListener('click', () => {
-            this.toggleMoneda('editar-factura-moneda', 'btn-editar-factura-moneda');
+            this.utils.toggleMoneda('editar-factura-moneda', 'btn-editar-factura-moneda');
         });
         document.getElementById('btn-editar-toggle-negativo').addEventListener('click', () => {
-            this.toggleMontoNegativo('editar-factura-monto');
+            this.factura.toggleMontoNegativo('editar-factura-monto');
         });
         document.getElementById('btn-editar-toggle-credito').addEventListener('click', () => {
-            this.toggleConCredito('editar');
+            this.factura.toggleConCredito('editar');
         });
         document.getElementById('btn-editar-toggle-pagada').addEventListener('click', () => {
-            this.toggleEstadoPago('btn-editar-toggle-pagada', 'editar-factura-fecha-pago');
+            this.factura.toggleEstadoPago('btn-editar-toggle-pagada', 'editar-factura-fecha-pago');
         });
 
         // Modal facturas-servicio: editar servicio / nueva factura / cerrar
@@ -742,42 +728,42 @@ export class GestionServicios {
         });
         document.getElementById('btn-modal-facturas-nueva-factura').addEventListener('click', () => {
             const servicioId = document.getElementById('modal-facturas-servicio').dataset.servicioId;
-            this.abrirModalFactura(servicioId, null);
+            this.factura.abrirModal(servicioId, null);
         });
         document.getElementById('btn-cerrar-modal-facturas-servicio').addEventListener('click', () => {
-            this.cerrarModal('modal-facturas-servicio');
+            this.ui.cerrarModal('modal-facturas-servicio');
         });
 
         // Modal ingresos-lista: nuevo ingreso / cerrar
         document.getElementById('btn-modal-ingresos-nuevo').addEventListener('click', () => {
-            this.abrirModalIngreso(null);
+            this.ingreso.abrirModal(null);
         });
         document.getElementById('btn-cerrar-modal-ingresos-lista').addEventListener('click', () => {
-            this.cerrarModal('modal-ingresos-lista');
+            this.ui.cerrarModal('modal-ingresos-lista');
         });
 
         // Modal agregar-ingreso: toggle moneda
         document.getElementById('btn-ingreso-moneda').addEventListener('click', () => {
-            this.toggleMoneda('ingreso-moneda', 'btn-ingreso-moneda');
+            this.utils.toggleMoneda('ingreso-moneda', 'btn-ingreso-moneda');
         });
 
         // Modal editar-ingreso: toggle moneda
         document.getElementById('btn-editar-ingreso-moneda').addEventListener('click', () => {
-            this.toggleMoneda('editar-ingreso-moneda', 'btn-editar-ingreso-moneda');
+            this.utils.toggleMoneda('editar-ingreso-moneda', 'btn-editar-ingreso-moneda');
         });
 
         // Modal perfiles: input Enter + botón agregar + cerrar
         document.getElementById('perfil-nuevo-nombre').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                this.crearPerfilInline();
+                this.perfil.crearInline();
             }
         });
         document.getElementById('btn-crear-perfil-inline').addEventListener('click', () => {
-            this.crearPerfilInline();
+            this.perfil.crearInline();
         });
         document.getElementById('btn-cerrar-modal-perfiles').addEventListener('click', () => {
-            this.cerrarModal('modal-perfiles');
+            this.ui.cerrarModal('modal-perfiles');
         });
 
         // Modal editar-perfil: submit + volver
@@ -790,7 +776,7 @@ export class GestionServicios {
 
         // Modal debug-estadisticas: cerrar
         document.getElementById('btn-cerrar-modal-debug').addEventListener('click', () => {
-            this.cerrarModal('modal-debug-estadisticas');
+            this.ui.cerrarModal('modal-debug-estadisticas');
         });
 
         // ---- Delegación de eventos para HTML generado dinámicamente ----
@@ -871,13 +857,13 @@ export class GestionServicios {
             const headerAno = e.target.closest('[data-action="toggle-grupo-ano"]');
             if (headerAno) { this.toggleGrupoAno(headerAno); return; }
             const ingresoInfo = e.target.closest('[data-action="abrir-ingreso"]');
-            if (ingresoInfo) this.abrirModalIngreso(ingresoInfo.dataset.ingresoId);
+            if (ingresoInfo) this.ingreso.abrirModal(ingresoInfo.dataset.ingresoId);
         });
 
         // Modal categorías: eliminar categoría
         document.getElementById('categorias-lista')?.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action="eliminar-categoria"]');
-            if (btn) this.eliminarCategoria(btn.dataset.cat);
+            if (btn) this.categoria.eliminar(btn.dataset.cat);
         });
 
     }
@@ -887,11 +873,6 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a EstadisticasService ─────────────────────
-    actualizarResumenMes() { this.estadisticas.actualizarResumenMes(); }
-    cambiarTipoEstadistica() { this.estadisticas.cambiarTipoEstadistica(); }
-
-    calcularPeriodo() { this.calculador.calcularPeriodo(); }
-
     toggleServicios() {
         // Si estamos en expanded y hay timer activo (clic rápido después de abrir botones)
         if (this.serviciosCollapseState === 'expanded' && this.toggleServiciosTimer !== null) {
@@ -903,7 +884,7 @@ export class GestionServicios {
             StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'collapsed');
 
             // Limpiar búsqueda al colapsar
-            if (this.terminoBusqueda) this._limpiarBusqueda();
+            if (this.terminoBusqueda) this.utils.limpiarBusqueda();
             return;
         }
 
@@ -938,7 +919,7 @@ export class GestionServicios {
             StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, 'semi-collapsed');
 
             // Limpiar búsqueda al contraer
-            if (this.terminoBusqueda) this._limpiarBusqueda();
+            if (this.terminoBusqueda) this.utils.limpiarBusqueda();
         }
     }
 
@@ -1004,7 +985,7 @@ export class GestionServicios {
             else fn();
         };
 
-        if (serviciosNormales.length === 0 && !this.ingresosHabilitado()) {
+        if (serviciosNormales.length === 0 && !this.ui.ingresosHabilitado()) {
             pintar(`
                   <div class="empty-state">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1015,7 +996,7 @@ export class GestionServicios {
                       <p>No hay servicios registrados<br>Presiona el botón + para agregar uno</p>
                   </div>
               `);
-            this.actualizarResumenMes();
+            this.estadisticas.actualizarResumenMes();
             return;
         }
 
@@ -1030,9 +1011,9 @@ export class GestionServicios {
             const { estado, claseEstado, montoTexto, fechaTexto } = this.calcularEstadoServicio(servicio);
             const claseCalculando = this.serviciosSeleccionados.has(servicio.id) ? 'calculando' : '';
             return `
-   <div class="servicio-wrapper" data-id="${this.escaparAtributoHTML(servicio.id)}">
-  <div class="servicio-item ${claseEstado} ${claseCalculando}" data-id="${this.escaparAtributoHTML(servicio.id)}">
-                      <div class="servicio-nombre">${this.escaparHTML(servicio.nombre)}</div>
+   <div class="servicio-wrapper" data-id="${this.utils.escaparAtributoHTML(servicio.id)}">
+  <div class="servicio-item ${claseEstado} ${claseCalculando}" data-id="${this.utils.escaparAtributoHTML(servicio.id)}">
+                      <div class="servicio-nombre">${this.utils.escaparHTML(servicio.nombre)}</div>
                        <div class="servicio-info">
                           <span class="servicio-monto">${montoTexto}</span>
                            ${fechaTexto ? `<span class="servicio-fecha">${fechaTexto}</span>` : ''}
@@ -1116,10 +1097,10 @@ export class GestionServicios {
                 }
 
                 html += `
-    <div class="servicios-grupo-cat" data-cat="${this.escaparAtributoHTML(cat)}">
+    <div class="servicios-grupo-cat" data-cat="${this.utils.escaparAtributoHTML(cat)}">
         <div class="servicios-grupo-cat-header" data-action="toggle-grupo-cat" data-lp="true">
             <div class="servicios-grupo-cat-header-info">
-                <span class="servicios-grupo-cat-texto">${this.escaparHTML(catLabel)}</span>
+                <span class="servicios-grupo-cat-texto">${this.utils.escaparHTML(catLabel)}</span>
                 <span class="servicios-grupo-cat-contador">(${cantidad})</span>
             </div>
             <div class="d-flex align-items-center gap-1">
@@ -1136,7 +1117,7 @@ export class GestionServicios {
         }
 
         // Agregar servicio de ingresos si está habilitado Y (no hay búsqueda O coincide con la búsqueda)
-        if (this.ingresosHabilitado() && (!this.terminoBusqueda || 'ingresos'.includes(this.terminoBusqueda))) {
+        if (this.ui.ingresosHabilitado() && (!this.terminoBusqueda || 'ingresos'.includes(this.terminoBusqueda))) {
             // Línea separadora
             if (serviciosOrdenados.length > 0) {
                 html += `<div class="separator-line"></div>`;
@@ -1144,7 +1125,7 @@ export class GestionServicios {
 
             // Crear servicio de ingresos si no existe
             if (!servicioIngresos) {
-                this.crearServicioIngresos();
+                this.ingreso.crearServicio();
             }
 
             const ingresos = servicioIngresos || this.servicios.find(s => s.id === this.SERVICIO_INGRESOS_ID);
@@ -1154,9 +1135,9 @@ export class GestionServicios {
                 const claseCalculandoIngresos = this.serviciosSeleccionados.has(ingresos.id) ? 'calculando' : '';
 
                 html += `
-   <div class="servicio-wrapper" data-id="${this.escaparAtributoHTML(ingresos.id)}">
-  <div class="servicio-item ${claseEstado} ${claseCalculandoIngresos}" data-id="${this.escaparAtributoHTML(ingresos.id)}">
-                          <div class="servicio-nombre">${this.escaparHTML(ingresos.nombre)}</div>
+   <div class="servicio-wrapper" data-id="${this.utils.escaparAtributoHTML(ingresos.id)}">
+  <div class="servicio-item ${claseEstado} ${claseCalculandoIngresos}" data-id="${this.utils.escaparAtributoHTML(ingresos.id)}">
+                          <div class="servicio-nombre">${this.utils.escaparHTML(ingresos.nombre)}</div>
                            <div class="servicio-info">
                               <span class="servicio-monto">${montoTexto}</span>
                                ${fechaTexto ? `<span class="servicio-fecha">${fechaTexto}</span>` : ''}
@@ -1186,16 +1167,16 @@ export class GestionServicios {
                 }
 
                 if (esIngresos) {
-                    this.abrirModalIngresosLista(servicioId);
+                    this.ingreso.abrirModalLista(servicioId);
                 } else {
-                    this.abrirModalFacturasServicio(servicioId);
+                    this.factura.abrirModalLista(servicioId);
                 }
             });
 
             // Menú contextual (solo servicios normales, no ingresos)
             if (!esIngresos) {
                 item.addEventListener('contextmenu', (e) => {
-                    this._ctxAbrir(e, servicioId);
+                    this.ctx.abrir(e, servicioId);
                 });
             }
 
@@ -1210,13 +1191,11 @@ export class GestionServicios {
 
         // Solo actualizar resumen y calculador si no estamos filtrando por búsqueda
         if (!this.enModoBusqueda) {
-            this.actualizarResumenMes();
+            this.estadisticas.actualizarResumenMes();
             this.estadisticas.actualizarSelectServicios();
-            this.calcularPeriodo();
+            this.calculador.calcularPeriodo();
         }
     }
-
-    crearServicioIngresos()                      { this.ingreso.crearServicio(); }
 
     aplicarFiltro(servicios) {
         return EstadoFacturas.filtrar(servicios, this.terminoBusqueda);
@@ -1233,8 +1212,6 @@ export class GestionServicios {
         this.renderServicios();
         this.mostrarToast('Orden aplicado', 'success');
     }
-
-    abrirModalFacturasServicio(id)               { this.factura.abrirModalLista(id); }
 
     toggleGrupoCat(headerElement) {
         if (this._lpFired) { this._lpFired = false; return; }
@@ -1323,14 +1300,14 @@ export class GestionServicios {
             const servicio = this.servicios.find(s => s.id === servicioId);
             if (servicio) {
                 document.getElementById('editar-servicio-nombre').value = servicio.nombre;
-                this._poblarSelectCategorias('editar-servicio-categoria', servicio.categoria || '');
+                this.categoria.poblarSelect('editar-servicio-categoria', servicio.categoria || '');
             }
-            this.abrirModal('modal-editar-servicio');
+            this.ui.abrirModal('modal-editar-servicio');
         } else {
             // Modo nuevo
             document.getElementById('form-servicio').reset();
-            this._poblarSelectCategorias('servicio-categoria', '');
-            this.abrirModal('modal-agregar-servicio');
+            this.categoria.poblarSelect('servicio-categoria', '');
+            this.ui.abrirModal('modal-agregar-servicio');
         }
     }
 
@@ -1375,7 +1352,7 @@ export class GestionServicios {
 
     generarHTMLFactura(factura, accion = null) {
         const { estadoPago, claseMonto } = this.obtenerEstadoFactura(factura);
-        const esc = t => this.escaparAtributoHTML(t);
+        const esc = t => this.utils.escaparAtributoHTML(t);
         const dataAccion = accion ? `data-action="factura-click" data-factura-accion="${esc(accion)}" data-factura-id="${esc(factura.id)}"` : '';
         const moneda = factura.moneda === 'usd' ? 'usd' : 'ars';
         const badgeClass = moneda;
@@ -1388,9 +1365,9 @@ export class GestionServicios {
         return `
     <div class="factura-item" data-id="${esc(factura.id)}">
         <div class="factura-info" ${dataAccion}>
-            <div class="${claseMonto}">${this.formatearMoneda(factura.monto, moneda)}<span class="moneda-badge ${badgeClass}">${moneda.toUpperCase()}</span>${pagoBadge}</div>
+            <div class="${claseMonto}">${this.utils.formatearMoneda(factura.monto, moneda)}<span class="moneda-badge ${badgeClass}">${moneda.toUpperCase()}</span>${pagoBadge}</div>
             <div class="factura-fecha">
-                ${this.escaparHTML(factura.tipo || 'mensual')} | Vence: ${this.formatearFecha(factura.fecha)}
+                ${this.utils.escaparHTML(factura.tipo || 'mensual')} | Vence: ${this.utils.formatearFecha(factura.fecha)}
             </div>
             ${estadoPago}
         </div>
@@ -1398,21 +1375,8 @@ export class GestionServicios {
 `;
     }
 
-    agruparPorAno(items)                         { return this.factura.agruparPorAno(items); }
-
-    generarGrupoAno(ano, its, html, lbl, idx)    { return this.factura.generarGrupoAno(ano, its, html, lbl, idx); }
-
     // ── Categorías ──────────────────────────────────────────────
     // ── Delegación a CategoriaService ────────────────────────
-    _getCategorias() { return this.categoria.getCategorias(); }
-    _saveCategorias(cats) { this.categoria.saveCategorias(cats); }
-    _poblarSelectCategorias(id, val) { this.categoria.poblarSelect(id, val); }
-    abrirModalNuevaCategoria(targetSelectId) { this.categoria.abrirModal(targetSelectId); }
-    cerrarModalCategorias() { this.categoria.cerrarModal(); }
-    _renderCategorias() { this.categoria.renderLista(); }
-    eliminarCategoria(nombre) { this.categoria.eliminar(nombre); }
-    guardarNuevaCategoria() { this.categoria.guardarNueva(); }
-
     guardarServicio(e) {
         e.preventDefault();
 
@@ -1448,10 +1412,10 @@ export class GestionServicios {
                 // Verificar si hubo cambios
                 if (servicio.nombre === nombre && (servicio.categoria || '') === categoria) {
                     this.mostrarToast('Sin cambios', 'info');
-                    this.cerrarModal('modal-editar-servicio');
+                    this.ui.cerrarModal('modal-editar-servicio');
                     // Volver al modal de facturas
                     if (this.servicioActual) {
-                        this.abrirModalFacturasServicio(this.servicioActual);
+                        this.factura.abrirModalLista(this.servicioActual);
                     }
                     return;
                 }
@@ -1462,7 +1426,7 @@ export class GestionServicios {
         } else {
             // Crear nuevo servicio
             const nuevoServicio = {
-                id: this.generarId(),
+                id: this.utils.generarId(),
                 nombre: nombre,
                 categoria: categoria,
                 facturas: []
@@ -1471,14 +1435,14 @@ export class GestionServicios {
             this.mostrarToast('Servicio creado', 'success');
         }
 
-        this.guardarDatos();
+        this.storage.guardarDatos();
         this.guardarEstado(`${esEditar ? 'editar' : 'crear'} servicio (${nombre})`);
         this.enModoBusqueda = false;
         this.renderServicios();
-        this.cerrarModal(esEditar ? 'modal-editar-servicio' : 'modal-agregar-servicio');
+        this.ui.cerrarModal(esEditar ? 'modal-editar-servicio' : 'modal-agregar-servicio');
         // Volver al modal de facturas después de guardar
         if (esEditar && this.servicioActual) {
-            this.abrirModalFacturasServicio(this.servicioActual);
+            this.factura.abrirModalLista(this.servicioActual);
         }
     }
 
@@ -1490,7 +1454,7 @@ export class GestionServicios {
         const modal = document.getElementById('modal-facturas-servicio');
         const servicioId = modal.dataset.servicioId;
         if (servicioId) {
-            this.cerrarModal('modal-facturas-servicio');
+            this.ui.cerrarModal('modal-facturas-servicio');
             this.editarServicio(servicioId);
         }
     }
@@ -1508,25 +1472,19 @@ export class GestionServicios {
             const eliminado = this.servicios.find(s => s.id === this.servicioActual);
             this.servicios = this.servicios.filter(s => s.id !== this.servicioActual);
 
-            this.guardarDatos();
+            this.storage.guardarDatos();
             this.guardarEstado(`eliminar servicio${eliminado ? ` (${eliminado.nombre})` : ''}`);
             this.enModoBusqueda = false;
             this.renderServicios();
-            this.cerrarModal('modal-editar-servicio');
+            this.ui.cerrarModal('modal-editar-servicio');
             // No volver al modal de facturas porque eliminamos el servicio
             this.toastConDeshacer('Servicio eliminado');
         }
     }
 
-    borrarFacturasServicio()                     { this.factura.borrarTodas(); }
-
     // ========================================
     // GESTIÓN DE FACTURAS
     // ========================================
-
-    abrirModalFactura(sId, fId, origen)          { this.factura.abrirModal(sId, fId, origen); }
-
-    toggleConCredito(modo)                       { this.factura.toggleConCredito(modo); }
 
     _resetBtnCredito(btn) {
         if (!btn) return;
@@ -1535,10 +1493,6 @@ export class GestionServicios {
         btn.classList.remove('pagada');
         btn.title = 'Contado / crédito';
     }
-
-    toggleEstadoPago(btnId, inputId)             { this.factura.toggleEstadoPago(btnId, inputId); }
-
-    toggleMontoNegativo(inputId)                 { this.factura.toggleMontoNegativo(inputId); }
 
     actualizarEstadoBotonToggle(inputId, btnId) {
         const input = document.getElementById(inputId);
@@ -1559,8 +1513,6 @@ export class GestionServicios {
         }
     }
 
-    guardarFactura(e)                            { this.factura.guardar(e); }
-
     editarFactura(facturaId) {
         const servicio = this.servicios.find(s => s.facturas.some(f => f.id === facturaId));
         if (!servicio) return;
@@ -1576,14 +1528,10 @@ export class GestionServicios {
             this._anoExpandidoFacturas[sid] = ano;
         }
 
-        this.cerrarModal('modal-facturas-servicio');
-        this.abrirModalFactura(servicio.id, facturaId);
+        this.ui.cerrarModal('modal-facturas-servicio');
+        this.factura.abrirModal(servicio.id, facturaId);
         this.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
     }
-
-    establecerFechaHoy(tipo, modo)               { this.factura.establecerFechaHoy(tipo, modo); }
-
-    eliminarFacturaDesdeModal()                  { this.factura.eliminar(); }
 
     obtenerUltimaFactura(servicioId) {
         return EstadoFacturas.ultimaFactura(this.servicios.find(s => s.id === servicioId));
@@ -1607,7 +1555,7 @@ export class GestionServicios {
                     this.ui.mostrarToast('Esa acción ya no se puede deshacer desde acá', 'info');
                     return;
                 }
-                this.deshacer();
+                this.historial_mgr.deshacer();
             }
         });
     }
@@ -1619,11 +1567,6 @@ export class GestionServicios {
         this._animarRender = true;
         queueMicrotask(() => { this._animarRender = false; });
     }
-    inicializarHistorial() { this.historial_mgr.inicializarHistorial(); }
-    deshacer() { this.historial_mgr.deshacer(); }
-    rehacer() { this.historial_mgr.rehacer(); }
-    actualizarBotonesHistorial() { this.historial_mgr.actualizarBotones(); }
-
     // ========================================
     // PERSISTENCIA DE DATOS
     // ========================================
@@ -1633,25 +1576,16 @@ export class GestionServicios {
     // Se conserva por compatibilidad pero NO debe llamarse directamente.
     // TODO: eliminar en la próxima limpieza de código.
 
-    guardarDatos() { this.storage.guardarDatos(); }
-    exportarDatos() { this.storage.exportarDatos(); }
-    importarDatos(modo) { this.storage.importarDatos(modo); }
-
-    _generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto) {
-        return this.storage.generarResumenComparacion(serviciosRemoto, etiqueta, categoriasRemoto);
-    }
-    _mergeServicios(serviciosRemoto) { return this.storage._mergeServicios(serviciosRemoto); }
-
     mostrarOpcionesImportacion() {
-        this._toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
+        this.utils.toggleSubMenuAjustes('opciones-importacion', 'menu-importar');
     }
 
     mostrarOpcionesBorrar() {
-        this._toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
+        this.utils.toggleSubMenuAjustes('opciones-borrar', 'menu-limpiar');
     }
 
     toggleMenuDolar() {
-        this._toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
+        this.utils.toggleSubMenuAjustes('opciones-dolar', 'menu-dolar');
     }
 
     async limpiarDatos(tipo = 'todo') {
@@ -1681,7 +1615,7 @@ export class GestionServicios {
 
         if (tipo === 'todo') {
             this.servicios = [];
-            this._saveCategorias([]);
+            this.categoria.saveCategorias([]);
         } else if (tipo === 'servicios') {
             // Eliminar todos los servicios excepto el de ingresos
             this.servicios = this.servicios.filter(s => s.id === this.SERVICIO_INGRESOS_ID);
@@ -1699,17 +1633,17 @@ export class GestionServicios {
             }
         } else if (tipo === 'categorias') {
             // Limpiar categorías y quitar la categoría asignada a los servicios
-            this._saveCategorias([]);
+            this.categoria.saveCategorias([]);
             this.servicios = this.servicios.map(s => ({ ...s, categoria: '' }));
         }
 
         const etiquetas = { todo: 'todos los datos', servicios: 'servicios', facturas: 'facturas', ingresos: 'ingresos', categorias: 'categorías' };
         this._postGuardado(`borrar ${etiquetas[tipo] || etiquetas.todo}`);
-        this.actualizarBotonesHistorial();
+        this.historial_mgr.actualizarBotones();
         this.toastConDeshacer(toasts[tipo] || toasts.todo);
         document.getElementById('opciones-borrar').classList.remove('open');
         document.getElementById('menu-limpiar').classList.remove('open');
-        this.cerrarMenuAjustes();
+        this.ui.cerrarMenuAjustes();
     }
 
     // ========================================
@@ -1717,15 +1651,6 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a UIManager ────────────────────────────────
-    ingresosHabilitado() { return this.ui.ingresosHabilitado(); }
-    abrirModal(modalId) { this.ui.abrirModal(modalId); }
-    cerrarModal(modalId) { this.ui.cerrarModal(modalId); }
-    cerrarTodosLosModales() { this.ui.cerrarTodosLosModales(); }
-    toggleMenuAjustes() { this.ui.toggleMenuAjustes(); }
-    cerrarMenuAjustes() { this.ui.cerrarMenuAjustes(); }
-    cerrarMenuAgregar() { this.ui.cerrarMenuAgregar(); }
-    async cargarCotizacionDolar() { await this.ui.cargarCotizacionDolar(); }
-
     // Mapa de modales hijo → id del botón "volver" que se debe simular al cerrar con ESC/overlay.
     // Modales que no aparecen aquí no tienen padre → cerrarTodosLosModales normalmente.
     _MODAL_VOLVER_BTN = {
@@ -1777,7 +1702,7 @@ export class GestionServicios {
             return;
         }
 
-        this.cerrarTodosLosModales();
+        this.ui.cerrarTodosLosModales();
     }
 
     // ========================================
@@ -1785,31 +1710,10 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a UtilsService ─────────────────────────────
-    _parseDate(str) { return this.utils.parseDate(str); }
     _postGuardado(descripcion = null) { this.utils.postGuardado(descripcion); }
-    _limpiarBusqueda() { this.utils.limpiarBusqueda(); }
-    _idsFormFactura(esEditar) { return this.utils.idsFormFactura(esEditar); }
-    _toggleSubMenuAjustes(oId, pId) { this.utils.toggleSubMenuAjustes(oId, pId); }
-    generarId() { return this.utils.generarId(); }
-    obtenerFechaLocal() { return this.utils.obtenerFechaLocal(); }
-    formatearMoneda(monto, moneda) { return this.utils.formatearMoneda(monto, moneda); }
-    toggleMoneda(hiddenId, btnId) { this.utils.toggleMoneda(hiddenId, btnId); }
-    setMonedaBtn(hiddenId, btnId, mon) { this.utils.setMonedaBtn(hiddenId, btnId, mon); }
-    formatearFecha(fecha) { return this.utils.formatearFecha(fecha); }
-    escaparHTML(texto) { return this.utils.escaparHTML(texto); }
-    escaparAtributoHTML(texto) { return this.utils.escaparAtributoHTML(texto); }
-
     // ========================================
     // GESTIÓN DE INGRESOS
     // ========================================
-
-    abrirModalIngresosLista(id)                  { this.ingreso.abrirModalLista(id); }
-
-    abrirModalIngreso(id, desdeMenu)             { this.ingreso.abrirModal(id, desdeMenu); }
-
-    guardarIngreso(e)                            { this.ingreso.guardar(e); }
-
-    eliminarIngreso()                            { this.ingreso.eliminar(); }
 
     abrirDebugEstadisticas(tipo) {
         const selectMes = document.getElementById('select-mes-estadisticas');
@@ -1846,7 +1750,7 @@ export class GestionServicios {
             }
 
             servicio.facturas.forEach(factura => {
-                const fechaVenc = this._parseDate(factura.fecha);
+                const fechaVenc = this.utils.parseDate(factura.fecha);
                 fechaVenc.setHours(0, 0, 0, 0);
                 const esDelMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
                 const esServicioIngresos = servicio.id === this.SERVICIO_INGRESOS_ID;
@@ -1875,7 +1779,7 @@ export class GestionServicios {
                     case 'pagadas':
                         // Igual que cantidadPagadas: pagada, fechaPago en el mes seleccionado
                         if (factura.pagada && factura.monto >= 0 && factura.fechaPago && !esServicioIngresos) {
-                            const fp = this._parseDate(factura.fechaPago);
+                            const fp = this.utils.parseDate(factura.fechaPago);
                             incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
                         }
                         break;
@@ -1884,7 +1788,7 @@ export class GestionServicios {
                         // Igual que totalPagadoMesARS/USD: pagada, fechaPago en el mes, no crédito (salvo cat activa)
                         if (factura.pagada && factura.monto > 0 && factura.fechaPago && !esServicioIngresos
                             && (!factura.conCredito || categoriaActiva)) {
-                            const fp = this._parseDate(factura.fechaPago);
+                            const fp = this.utils.parseDate(factura.fechaPago);
                             incluir = fp.getMonth() === mesSeleccionado && fp.getFullYear() === añoSeleccionado;
                         }
                         break;
@@ -1906,21 +1810,21 @@ export class GestionServicios {
             lista.innerHTML = items.map(({ servicio, factura }) => {
                 const moneda = factura.moneda || 'ars';
                 const estadoBadge = factura.pagada
-                    ? `<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.formatearFecha(factura.fechaPago) : ''}</span>`
+                    ? `<span class="debug-badge debug-badge-success">Pagada ${factura.fechaPago ? this.utils.formatearFecha(factura.fechaPago) : ''}</span>`
                     : `<span class="debug-badge debug-badge-warning">Pendiente</span>`;
                 return `
     <div class="debug-card">
-        <div class="debug-card-title">${this.escaparHTML(servicio.nombre)}</div>
+        <div class="debug-card-title">${this.utils.escaparHTML(servicio.nombre)}</div>
         <div class="d-flex justify-content-between align-items-center text-muted text-sm">
-            <span>Vence: ${this.formatearFecha(factura.fecha)}</span>
-            <span>${this.formatearMoneda(factura.monto, moneda)}</span>
+            <span>Vence: ${this.utils.formatearFecha(factura.fecha)}</span>
+            <span>${this.utils.formatearMoneda(factura.monto, moneda)}</span>
         </div>
         <div class="mt-1">${estadoBadge}</div>
     </div>`;
             }).join('');
         }
 
-        this.abrirModal('modal-debug-estadisticas');
+        this.ui.abrirModal('modal-debug-estadisticas');
     }
 
     // ========================================
@@ -1928,12 +1832,7 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a GistService ──────────────────────────────
-    async gistCalcularHash(texto) { return this.gist.calcularHash(texto); }
-    async gistSubir() { await this.gist.subir(); }
-    async _gistDescargar() { return this.gist._descargar(); }
     async gistBajar(esAutomatico = false) { await this.gist.bajar(esAutomatico); }
-    _mergeCategorias(catsNuevas) { return this.gist.mergeCategorias(catsNuevas); }
-    gistMergeAplicar(modo, esAuto) { this.gist.mergeAplicar(modo, esAuto); }
     async gistAutoSyncInit() {
         // Debounce de 3s al arrancar: da tiempo a que la UI cargue antes de verificar novedades
         setTimeout(() => this.gist.autoSyncInit(), 3000);
@@ -1946,12 +1845,5 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a ContextMenuService ──────────────────────
-    _ctxInit() { this.ctx.init(); }
-    _ctxAbrir(e, servicioId) { this.ctx.abrir(e, servicioId); }
-    _ctxCerrar() { this.ctx.cerrar(); }
-    _ctxSeleccionar(servicioId) { this.ctx.seleccionar(servicioId); }
-    _ctxCopiarMonto() { this.ctx.copiarMonto(); }
-    _ctxPagarFactura() { this.ctx.pagarFactura(); }
-
     mostrarToast(mensaje, tipo = 'success') { this.ui.mostrarToast(mensaje, tipo); }
 }

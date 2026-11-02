@@ -95,7 +95,7 @@ export class UIManager {
         const selectServicio = document.getElementById('calculador-servicio');
         if (!nuevoEstado && selectServicio?.value === this.app.SERVICIO_INGRESOS_ID) {
             selectServicio.value = '';
-            this.app.calcularPeriodo();
+            this\.app.calculador.calcularPeriodo();
         }
     }
 
@@ -182,7 +182,7 @@ export class UIManager {
         }
         const primero = [...this.app.servicios]
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))[0];
-        this.app.abrirModalFactura(primero.id, null, 'menu');
+        this\.app.factura.abrirModal(primero.id, null, 'menu');
     }
 
     // ── Cotización dólar ──────────────────────────────────────
