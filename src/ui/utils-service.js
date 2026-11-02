@@ -1,3 +1,5 @@
+import { parseDate, fechaLocalISO } from '../core/fechas.js';
+import { formatearMoneda, formatearFecha } from '../core/formato.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { Anim } from './animaciones.js';
 
@@ -29,7 +31,7 @@ export class UtilsService {
     }
 
     parseDate(str) {
-        return new Date(str + 'T00:00:00');
+        return parseDate(str);
     }
 
     objetosCambiaron(anterior, actual) {
@@ -42,22 +44,11 @@ export class UtilsService {
     }
 
     formatearMoneda(monto, moneda = 'ars') {
-        const decimales = (Number.isInteger(monto) || monto % 1 === 0) ? 0 : 2;
-        if (moneda === 'usd') {
-            return 'u$s ' + new Intl.NumberFormat('es-AR', {
-                minimumFractionDigits: decimales, maximumFractionDigits: decimales
-            }).format(monto);
-        }
-        return new Intl.NumberFormat('es-AR', {
-            style: 'currency', currency: 'ARS',
-            minimumFractionDigits: decimales, maximumFractionDigits: decimales
-        }).format(monto);
+        return formatearMoneda(monto, moneda);
     }
 
     formatearFecha(fecha) {
-        return this.parseDate(fecha).toLocaleDateString('es-AR', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-        });
+        return formatearFecha(fecha);
     }
 
     generarId() {
@@ -65,8 +56,7 @@ export class UtilsService {
     }
 
     obtenerFechaLocal() {
-        const hoy = new Date();
-        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        return fechaLocalISO();
     }
 
     escaparHTML(texto) {

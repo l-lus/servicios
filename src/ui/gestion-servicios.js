@@ -3,6 +3,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { debounce } from '../core/debounce.js';
 import { Motion } from '../core/movimiento.js';
+import { EstadoFacturas, SERVICIO_INGRESOS_ID } from '../services/estado-facturas.js';
 import { Anim } from './animaciones.js';
 import { CalculadorService } from './calculador-service.js';
 import { CategoriaService } from './categoria-service.js';
@@ -99,7 +100,7 @@ export class GestionServicios {
         this.ultimoEstadoCalculador = null;
         this.ultimoEstadoResumen = null;
 
-        this.SERVICIO_INGRESOS_ID = 'servicio-ingresos-especial';
+        this.SERVICIO_INGRESOS_ID = SERVICIO_INGRESOS_ID;
 
         // Tipo de estadística seleccionado
         this.tipoEstadisticaActual = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
@@ -942,28 +943,14 @@ export class GestionServicios {
     }
 
     obtenerEstadoFactura(factura) {
-        let estadoPago = '';
-        let claseMonto = 'factura-monto';
-
-        if (factura.monto < 0) {
-            estadoPago = '<div class="factura-estado-pagado">Saldo a favor</div>';
-            claseMonto = 'factura-monto factura-monto-favor';
-        } else if (factura.pagada) {
-            estadoPago = '<div class="factura-estado-pagado">✓ Pagada</div>';
-        } else {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const vencimiento = this._parseDate(factura.fecha);
-            vencimiento.setHours(0, 0, 0, 0);
-
-            if (vencimiento < hoy) {
-                estadoPago = '<div class="factura-estado-vencido">⚠ Vencida</div>';
-            } else {
-                estadoPago = '<div class="factura-estado-pendiente">⏱ Pendiente</div>';
-            }
-        }
-
-        return { estadoPago, claseMonto };
+        const tipo = EstadoFacturas.clasificarFactura(factura);
+        const vista = {
+            favor: ['<div class="factura-estado-pagado">Saldo a favor</div>', 'factura-monto factura-monto-favor'],
+            pagada: ['<div class="factura-estado-pagado">✓ Pagada</div>', 'factura-monto'],
+            vencida: ['<div class="factura-estado-vencido">⚠ Vencida</div>', 'factura-monto'],
+            pendiente: ['<div class="factura-estado-pendiente">⏱ Pendiente</div>', 'factura-monto'],
+        }[tipo];
+        return { estadoPago: vista[0], claseMonto: vista[1] };
     }
 
     aplicarEstadoServicios(estado) {
@@ -991,97 +978,7 @@ export class GestionServicios {
     // ========================================
 
     calcularEstadoServicio(servicio) {
-        const ultimaFactura = this.obtenerUltimaFactura(servicio.id);
-        let estado = '', claseEstado = '', montoTexto = '-', fechaTexto = '';
-
-        // Lógica especial para el servicio de ingresos
-        if (servicio.id === this.SERVICIO_INGRESOS_ID && ultimaFactura) {
-            const moneda = ultimaFactura.moneda || 'ars';
-            montoTexto = this.formatearMoneda(ultimaFactura.monto, moneda);
-            fechaTexto = this.formatearFecha(ultimaFactura.fecha);
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const fechaCobro = this._parseDate(ultimaFactura.fecha);
-            fechaCobro.setHours(0, 0, 0, 0);
-            if (fechaCobro <= hoy) {
-                estado = 'Cobrado';
-                claseEstado = 'pagado';
-            } else {
-                estado = 'Liquidado';
-                claseEstado = 'lejano';
-            }
-            return { estado, claseEstado, montoTexto, fechaTexto };
-        }
-
-        if (ultimaFactura) {
-            const moneda = ultimaFactura.moneda || 'ars';
-            montoTexto = this.formatearMoneda(ultimaFactura.monto, moneda);
-            fechaTexto = this.formatearFecha(ultimaFactura.fecha);
-
-            if (ultimaFactura.pagada) {
-                const fechaPagoTexto = ultimaFactura.fechaPago
-                    ? this.formatearFecha(ultimaFactura.fechaPago)
-                    : 'Sin fecha';
-                estado = `Pagado ${fechaPagoTexto}`;
-                claseEstado = 'pagado';
-            } else {
-                const hoy = new Date();
-                hoy.setHours(0, 0, 0, 0);
-                const vencimiento = this._parseDate(ultimaFactura.fecha);
-                vencimiento.setHours(0, 0, 0, 0);
-                const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
-
-                if (diasRestantes < 0) {
-                    estado = 'Vencido';
-                    claseEstado = 'vencido';
-                } else if (diasRestantes === 0) {
-                    estado = 'Vence hoy';
-                    claseEstado = 'urgente';
-                } else if (diasRestantes === 1) {
-                    estado = 'Vence mañana';
-                    claseEstado = 'urgente';
-                } else if (diasRestantes <= 2) {
-                    estado = `Vence en ${diasRestantes} días`;
-                    claseEstado = 'urgente';
-                } else if (diasRestantes <= 5) {
-                    estado = `Vence en ${diasRestantes} días`;
-                    claseEstado = 'proximo';
-                } else {
-                    estado = `Vence en ${diasRestantes} días`;
-                    claseEstado = 'lejano';
-                }
-            }
-        } else {
-            // Cuando obtenerUltimaFactura retorna null
-            if (servicio.facturas && servicio.facturas.length > 0) {
-                // Verificar si hay una factura anual pagada que cubra el año actual
-                const hoy = new Date();
-                const facturaAnualVigente = servicio.facturas.find(f => {
-                    if (f.tipo !== 'anual' || !f.pagada) return false;
-                    const fechaVenc = this._parseDate(f.fecha);
-                    return fechaVenc.getFullYear() === hoy.getFullYear();
-                });
-
-                if (facturaAnualVigente) {
-                    const moneda = facturaAnualVigente.moneda || 'ars';
-                    montoTexto = this.formatearMoneda(facturaAnualVigente.monto, moneda);
-                    fechaTexto = this.formatearFecha(facturaAnualVigente.fecha);
-                    const fechaPagoAnual = facturaAnualVigente.fechaPago
-                        ? this.formatearFecha(facturaAnualVigente.fechaPago)
-                        : 'Sin fecha';
-                    estado = `Pagado ${fechaPagoAnual} · Anual`;
-                    claseEstado = 'pagado';
-                } else {
-                    estado = 'Sin facturas de este mes';
-                    claseEstado = 'sin-facturas-mes';
-                }
-            } else {
-                estado = 'Sin facturas';
-                claseEstado = 'sin-facturas';
-            }
-        }
-
-        return { estado, claseEstado, montoTexto, fechaTexto };
+        return EstadoFacturas.estadoServicio(servicio);
     }
 
     renderServicios() {
@@ -1322,100 +1219,11 @@ export class GestionServicios {
     crearServicioIngresos()                      { this.ingreso.crearServicio(); }
 
     aplicarFiltro(servicios) {
-        let resultado = servicios;
-
-        // Filtro por búsqueda de texto
-        if (this.terminoBusqueda) {
-            resultado = resultado.filter(servicio =>
-                servicio.id !== this.SERVICIO_INGRESOS_ID &&
-                servicio.nombre.toLowerCase().includes(this.terminoBusqueda)
-            );
-        }
-        return resultado;
+        return EstadoFacturas.filtrar(servicios, this.terminoBusqueda);
     }
 
     ordenarServicios(servicios) {
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-
-        return [...servicios].sort((a, b) => {
-            switch (this.ordenActual) {
-                case 'nombre':
-                    return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
-
-                case 'vencimiento':
-                    const facturaA = this.obtenerUltimaFactura(a.id);
-                    const facturaB = this.obtenerUltimaFactura(b.id);
-
-                    const tieneFacturasA = a.facturas && a.facturas.length > 0;
-                    const tieneFacturasB = b.facturas && b.facturas.length > 0;
-
-                    // PRIORIDAD 1: Sin facturas nunca → final absoluto
-                    if (!tieneFacturasA && !tieneFacturasB) return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
-                    if (!tieneFacturasA) return 1;
-                    if (!tieneFacturasB) return -1;
-
-                    // Calcular estados para los que sí tienen facturas
-                    const fechaA = facturaA ? this._parseDate(facturaA.fecha) : null;
-                    const fechaB = facturaB ? this._parseDate(facturaB.fecha) : null;
-                    if (fechaA) fechaA.setHours(0, 0, 0, 0);
-                    if (fechaB) fechaB.setHours(0, 0, 0, 0);
-
-                    const vencidaA = facturaA && !facturaA.pagada && fechaA < hoy;
-                    const vencidaB = facturaB && !facturaB.pagada && fechaB < hoy;
-                    const pendienteA = facturaA && !facturaA.pagada && !vencidaA;
-                    const pendienteB = facturaB && !facturaB.pagada && !vencidaB;
-                    const pagadaA = facturaA && facturaA.pagada;
-                    const pagadaB = facturaB && facturaB.pagada;
-                    const sinMesA = !facturaA;
-                    const sinMesB = !facturaB;
-                    const anualVigenteA = sinMesA && a.facturas.some(f => f.tipo === 'anual' && f.pagada && this._parseDate(f.fecha).getFullYear() === hoy.getFullYear());
-                    const anualVigenteB = sinMesB && b.facturas.some(f => f.tipo === 'anual' && f.pagada && this._parseDate(f.fecha).getFullYear() === hoy.getFullYear());
-
-                    // PRIORIDAD 2: VENCIDAS primero
-                    if (vencidaA && !vencidaB) return -1;
-                    if (!vencidaA && vencidaB) return 1;
-                    if (vencidaA && vencidaB) return fechaA - fechaB;
-
-                    // PRIORIDAD 3: PENDIENTES
-                    if (pendienteA && !pendienteB) return -1;
-                    if (!pendienteA && pendienteB) return 1;
-                    if (pendienteA && pendienteB) return fechaA - fechaB;
-
-                    // PRIORIDAD 4: SIN FACTURAS ESTE MES (excluye anuales vigentes que van con pagados)
-                    const sinMesRealA = sinMesA && !anualVigenteA;
-                    const sinMesRealB = sinMesB && !anualVigenteB;
-
-                    if (sinMesRealA && !sinMesRealB) return -1;
-                    if (!sinMesRealA && sinMesRealB) return 1;
-                    if (sinMesRealA && sinMesRealB) {
-                        const ultimaA = [...a.facturas].sort((x, y) => new Date(y.fecha) - new Date(x.fecha))[0];
-                        const ultimaB = [...b.facturas].sort((x, y) => new Date(y.fecha) - new Date(x.fecha))[0];
-                        return new Date(ultimaB.fecha) - new Date(ultimaA.fecha);
-                    }
-
-                    // PRIORIDAD 5: PAGADAS normales
-                    if (pagadaA && !anualVigenteA && (anualVigenteB || !pagadaB)) return -1;
-                    if (pagadaB && !anualVigenteB && (anualVigenteA || !pagadaA)) return 1;
-                    if (pagadaA && pagadaB && fechaA && fechaB) return fechaA - fechaB;
-
-                    // PRIORIDAD 6: PAGADAS ANUALES VIGENTES → al final
-                    return 0;
-
-                case 'monto-desc':
-                    const montoA = this.obtenerUltimaFactura(a.id)?.monto || 0;
-                    const montoB = this.obtenerUltimaFactura(b.id)?.monto || 0;
-                    return montoB - montoA;
-
-                case 'monto-asc':
-                    const montoAsc_A = this.obtenerUltimaFactura(a.id)?.monto || 0;
-                    const montoAsc_B = this.obtenerUltimaFactura(b.id)?.monto || 0;
-                    return montoAsc_A - montoAsc_B;
-
-                default:
-                    return 0;
-            }
-        });
+        return EstadoFacturas.ordenar(servicios, this.ordenActual);
     }
 
     aplicarOrden() {
@@ -1778,41 +1586,7 @@ export class GestionServicios {
     eliminarFacturaDesdeModal()                  { this.factura.eliminar(); }
 
     obtenerUltimaFactura(servicioId) {
-        const servicio = this.servicios.find(s => s.id === servicioId);
-        if (!servicio || !servicio.facturas || servicio.facturas.length === 0) {
-            return null;
-        }
-
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-
-        // Obtener el primer día del mes actual
-        const primerDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-
-        // Obtener el último día del mes actual (no el siguiente)
-        const ultimoDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-
-        // Filtrar facturas que estén entre el primer día y el último día del mes actual
-        const facturasEnRango = servicio.facturas.filter(f => {
-            const fechaVencimiento = this._parseDate(f.fecha);
-            return fechaVencimiento >= primerDiaMesActual && fechaVencimiento <= ultimoDiaMesActual;
-        });
-
-        // Si no hay facturas en el rango, retornar null
-        if (facturasEnRango.length === 0) {
-            return null;
-        }
-
-        // Filtrar facturas no pagadas dentro del rango
-        const facturasNoPagadas = facturasEnRango.filter(f => !f.pagada);
-
-        // Si no hay facturas pendientes en el rango, mostrar la más reciente del rango (incluso si está pagada)
-        if (facturasNoPagadas.length === 0) {
-            return facturasEnRango.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0];
-        }
-
-        // Devolver la factura no pagada con vencimiento más próximo dentro del rango
-        return facturasNoPagadas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
+        return EstadoFacturas.ultimaFactura(this.servicios.find(s => s.id === servicioId));
     }
 
     // ========================================
