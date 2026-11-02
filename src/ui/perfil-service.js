@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -59,31 +59,31 @@ export class PerfilService {
             inputNuevo.disabled = maxAlcanzado;
             inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
         }
-        montar(lista, crudo(perfilesArray.map(perfil => {
+        montar(lista, html`${perfilesArray.map(perfil => {
             const esActivo = perfil.id === this.perfilActivo;
             const esDefault = perfil.id === 'default';
             const cantidadServicios = GestorPerfiles.cantidadServicios(perfil.id);
-            return `
+            return html`
 <div class="perfil-item-card d-flex justify-content-between align-items-center ${esActivo ? 'activo' : ''}"
-     data-action="cambiar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}">
+     data-action="cambiar-perfil" data-perfil-id="${perfil.id}">
     <div class="flex-1">
         <div class="perfil-header d-flex align-items-center gap-2">
-            ${this.app.utils.escaparHTML(perfil.nombre)}
-            ${esActivo ? '<span class="perfil-activo-badge">● Activo</span>' : ''}
+            ${perfil.nombre}
+            ${esActivo ? html`<span class="perfil-activo-badge">● Activo</span>` : ''}
         </div>
         <div class="perfil-stats">${this.app.utils.plural(cantidadServicios, 'servicio', 'servicios')}</div>
     </div>
     <div class="d-flex gap-2" data-action="stop-propagation">
-        ${!esDefault ? `
-            <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}" title="Eliminar perfil">
+        ${!esDefault ? html`
+            <button class="icon-btn text-danger" data-action="eliminar-perfil" data-perfil-id="${perfil.id}" title="Eliminar perfil">
                 <svg class="icon"><use href="#icon-trash" /></svg>
             </button>` : ''}
-        <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${this.app.utils.escaparAtributoHTML(perfil.id)}" title="Editar perfil">
+        <button class="icon-btn" data-action="editar-perfil" data-perfil-id="${perfil.id}" title="Editar perfil">
             <svg class="icon"><use href="#icon-edit" /></svg>
         </button>
     </div>
 </div>`;
-        }).join('')));
+        })}`);
     }
 
     crearInline() {

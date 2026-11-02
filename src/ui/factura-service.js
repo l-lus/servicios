@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { crudo, html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
 
@@ -137,9 +137,9 @@ export class FacturaService {
         const optsServicios = this.servicios
             .filter(s => s.id !== this.app.SERVICIO_INGRESOS_ID)
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-        const optsHTML = optsServicios.map(s =>
-            `<option value="${this.app.utils.escaparAtributoHTML(s.id)}" ${s.id === servicioId ? 'selected' : ''}>${this.app.utils.escaparHTML(s.nombre)}</option>`
-        ).join('');
+        const optsHTML = html`${optsServicios.map(s =>
+            html`<option value="${s.id}" ${s.id === servicioId ? 'selected' : ''}>${s.nombre}</option>`
+        )}`;
 
         if (facturaId) {
             const factura = servicio?.facturas.find(f => f.id === facturaId);
@@ -188,7 +188,7 @@ export class FacturaService {
             }
             // Poblar select de servicios en modal editar
             const selEdit = document.getElementById(ids.servicio);
-            if (selEdit) montar(selEdit, crudo(optsHTML));
+            if (selEdit) montar(selEdit, optsHTML);
             // Refrescar CustomSelects del modal editar-factura
             const csdSvcEdit = document.getElementById('editar-factura-servicio-csd');
             if (csdSvcEdit?._customSelect) csdSvcEdit._customSelect.refresh();
@@ -198,10 +198,10 @@ export class FacturaService {
         } else {
             // Poblar select ANTES de reset para que reset no lo borre
             const selectSvc = document.getElementById('factura-servicio');
-            if (selectSvc) montar(selectSvc, crudo(optsHTML));
+            if (selectSvc) montar(selectSvc, optsHTML);
             document.getElementById('form-factura').reset();
             // Restaurar valores que reset borró
-            if (selectSvc) montar(selectSvc, crudo(optsHTML));
+            if (selectSvc) montar(selectSvc, optsHTML);
             this.app.utils.setMonedaBtn('factura-moneda', 'btn-factura-moneda', 'ars');
             document.getElementById('factura-fecha').value = this.app.utils.obtenerFechaLocal();
             document.getElementById('btn-toggle-pagada').classList.remove('pagada');

@@ -1,4 +1,4 @@
-import { crudo, montar } from '../core/html.js';
+import { crudo, html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -66,13 +66,13 @@ export class CategoriaService {
             montar(lista, crudo(`<span class="sin-categorias-text">Sin categorías definidas</span>`));
             return;
         }
-        montar(lista, crudo(cats.map(c => `
+        montar(lista, html`${cats.map(c => html`
         <span class="categoria-tag">
-            <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${this.app.utils.escaparAtributoHTML(c)}" title="Eliminar">
+            <button class="categoria-tag-del" data-action="eliminar-categoria" data-cat="${c}" title="Eliminar">
                 <svg class="icon"><use href="#icon-cancel" /></svg>
             </button>
-            ${this.app.utils.escaparHTML(c)}
-        </span>`).join('')));
+            ${c}
+        </span>`)}`);
     }
 
     // ── CRUD ──────────────────────────────────────────────────
