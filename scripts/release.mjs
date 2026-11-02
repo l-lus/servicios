@@ -23,7 +23,7 @@ function listar(dir, ext) {
     }).sort();
 }
 
-const recursos = ['index.html', ...listar('src', ['.js']), ...listar('assets', ['.css', '.json', '.svg', '.png'])];
+const recursos = ['index.html', ...listar('src', ['.js']), ...listar('assets', ['.css', '.json', '.svg', '.png', '.woff2'])];
 const lista = ['./', ...recursos.map(r => `./${r}`)].map(r => `  '${r}',`).join('\n');
 
 reemplazar('src/core/constantes.js', /(APP_VERSION\s*=\s*')[^']+(')/, `$1${version}$2`);

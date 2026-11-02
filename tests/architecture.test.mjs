@@ -314,3 +314,20 @@ test('Temas: cada tema tiene su bloque de variables en tokens.css', async () => 
         assert.match(css, new RegExp(`html\\[data-theme="${id}"\\] body`), `falta el tema ${id} en tokens.css`);
     }
 });
+
+test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
+    const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
+    const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
+    const usadas = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(m => m[1]));
+    // Las asigna JS con style.setProperty (la CSP no admite style en línea)
+    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y']);
+    const sinDefinir = [...usadas].filter(v => !definidas.has(v) && !dinamicas.has(v)).sort();
+    assert.deepEqual(sinDefinir, [], 'Variables usadas sin definir');
+});
+
+test('Tokens: la fuente Inter está declarada, existe en disco y se precachea', () => {
+    const tokens = fs.readFileSync('assets/styles/tokens.css', 'utf8');
+    assert.match(tokens, /@font-face[^}]*font-family: 'Inter'/);
+    assert.ok(fs.existsSync('assets/fonts/inter-latin.woff2'));
+    assert.match(fs.readFileSync('sw.js', 'utf8'), /assets\/fonts\/inter-latin\.woff2/);
+});
