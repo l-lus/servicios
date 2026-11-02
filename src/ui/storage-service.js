@@ -1,3 +1,4 @@
+import { preguntarMerge } from './resumen-merge.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -103,15 +104,15 @@ export class StorageService {
     }
 
     // ── Exportar ──────────────────────────────────────────────
-    async exportarDatos() {
+    async exportarDatos({ rango = null } = {}) {
         try {
-            const datos = await this._construirExportacion();
-            this.app.utils.descargarBlob(
-                JSON.stringify(datos, null, 2),
-                `servicios_${this.app.utils.obtenerFechaLocal()}.json`,
-                'application/json'
-            );
-            this.app.ui.mostrarToast('Datos exportados correctamente', 'success');
+            let servicios = this.servicios, categorias = this.app.categoria.getCategorias();
+            if (rango) ({ servicios, categorias } = ImportarExportar.recortarPorRango(servicios, categorias, rango.desde, rango.hasta));
+            const datos = await ImportarExportar.armarRespaldo(servicios, categorias, new Date(), rango);
+            const sufijo = !rango ? this.app.utils.obtenerFechaLocal()
+                : (rango.desde && rango.hasta ? `${rango.desde}_${rango.hasta}` : (rango.desde ? `desde_${rango.desde}` : `hasta_${rango.hasta}`));
+            this.app.utils.descargarBlob(JSON.stringify(datos, null, 2), `servicios_${sufijo}.json`, 'application/json');
+            this.app.ui.mostrarToast(rango ? 'Respaldo parcial exportado' : 'Datos exportados correctamente', 'success');
             this.app.ui.cerrarMenuAjustes();
         } catch (error) {
             console.error('Error al exportar:', error);
@@ -145,17 +146,13 @@ export class StorageService {
                     if (!(await this._verificarArchivo(crudo))) return;
                     const datos = ImportarExportar.normalizarDatos(crudo.servicios, crudo.categorias);
 
-                    if (modo === 'combinar') {
-                        this._aplicarImportacion('combinar', datos);
-                    } else {
-                        const reemplazar = await ModalManager.confirmar(
-                            `Se restaurarán ${ImportarExportar.describirContenido(datos.servicios, datos.categorias)}. ¿Deseas reemplazar todos los datos actuales?`,
-                            'Reemplazar',
-                            '#icon-upload',
-                            { titulo: 'Reemplazar datos' }
-                        );
-                        if (reemplazar) this._aplicarImportacion('reemplazar', datos);
-                    }
+                    const elegido = await preguntarMerge({
+                        origen: file.name,
+                        locales: this.servicios, categoriasLocales: this.app.categoria.getCategorias(),
+                        remotos: datos.servicios, categoriasRemotas: datos.categorias,
+                        modoInicial: modo, rango: crudo.rango && typeof crudo.rango === 'object' ? crudo.rango : null,
+                    });
+                    if (elegido) this._aplicarImportacion(elegido, datos);
                 } catch (error) {
                     console.error('Error al importar:', error);
                     this.app.ui.mostrarToast('Error al importar: ' + error.message, 'error');

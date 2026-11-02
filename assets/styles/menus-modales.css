@@ -498,3 +498,103 @@ mark.ayuda-resaltado--activa {
     background: var(--muestra-texto);
     opacity: 0.7;
 }
+
+/* ============================================================
+           RESUMEN PREVIO AL MERGE Y RESPALDO POR RANGO
+        ============================================================ */
+.merge-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.merge-opcion {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--transition-ui), color var(--transition-ui);
+}
+
+.merge-opcion[aria-pressed="true"] {
+    border-color: var(--c-blue);
+    color: var(--text-main);
+}
+
+.merge-opcion-titulo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-main);
+}
+
+.merge-opcion-texto {
+    font-weight: var(--fw-medium);
+    font-size: var(--text-base);
+    line-height: 1.4;
+}
+
+.merge-opcion-queda {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.merge-alerta,
+.merge-aviso {
+    margin: 0;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 12px;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+}
+
+.merge-alerta {
+    background: color-mix(in srgb, var(--c-red) 15%, transparent);
+    color: var(--text-main);
+}
+
+.merge-aviso {
+    background: color-mix(in srgb, var(--c-gold) 20%, transparent);
+    color: var(--text-main);
+}
+
+.merge-alerta[hidden],
+.merge-aviso[hidden] {
+    display: none;
+}
+
+.respaldo-tipos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+}
+
+.respaldo-tipo {
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    transition: border-color var(--transition-ui), color var(--transition-ui);
+}
+
+.respaldo-tipo[aria-pressed="true"] {
+    border-color: var(--c-blue);
+    color: var(--text-main);
+}
+
+#respaldo-campos-mes[hidden],
+#respaldo-campos-rango[hidden] {
+    display: none;
+}

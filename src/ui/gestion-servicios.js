@@ -1,3 +1,4 @@
+import { RespaldoModal } from './respaldo-modal.js';
 import { normalizarBusqueda } from '../core/busqueda-texto.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ListenersApp } from './listeners-app.js';
@@ -137,6 +138,7 @@ export class GestionServicios {
         this.gist = new GistService(this);
         this.historial_mgr = new HistorialManager(this);
         this.storage = new StorageService(this);
+        this.respaldo = new RespaldoModal(this);
         this.vista = new VistaServicios(this);
         this.listeners = new ListenersApp(this);
         this.servicio = new ServicioService(this);

@@ -1,3 +1,4 @@
+import { preguntarMerge } from './resumen-merge.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
@@ -106,7 +107,7 @@ export class GistService {
             btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
             btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
         } else {
-            btnRespaldar.onclick = () => this.app.storage.exportarDatos();
+            btnRespaldar.onclick = () => this.app.respaldo.abrir();
             btnRestaurar.onclick = () => this.app.storage.mostrarOpcionesImportacion();
             btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
             btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
@@ -232,15 +233,15 @@ export class GistService {
             const diff = ImportarExportar.simularFusion(this.servicios, data.servicios);
             const diffCats = ImportarExportar.categoriasNuevas(this.app.categoria.getCategorias(), data.categorias).length;
 
-            if (!diff.serviciosAgregados && !diff.facturasAgregadas && !diff.facturasActualizadas && !diff.ingresosAgregados && !diffCats) {
+            const perdidas = ImportarExportar.perdidasAlReemplazar(this.servicios, data.servicios);
+            const hayPerdidas = perdidas.servicios + perdidas.facturas + perdidas.ingresos > 0;
+            if (!diff.serviciosAgregados && !diff.facturasAgregadas && !diff.facturasActualizadas && !diff.ingresosAgregados && !diffCats && !hayPerdidas) {
                 this.setPerfil({ gistLastSync: new Date().toISOString() });
                 this.app.mostrarToast('Sin cambios', 'info');
                 return;
             }
 
-            // Aplicar de verdad
-            this.app._gistDatosPendientes = data;
-            this.aplicarNovedades(); // Opcional: mostrar modal confirmación si querés, pero el botón "Bajar" fuerza la descarga
+            await this.confirmarYAplicar(data);
 
         } catch (err) {
             this.app.mostrarToast(`Error al bajar: ${err.message}`, 'error');
@@ -317,20 +318,26 @@ export class GistService {
         return datos;
     }
 
-    aplicarNovedades() {
-        const data = this.app._gistDatosPendientes;
-        if (!data) return;
-
-        const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this.app.storage._mergeServicios(data.servicios);
-        const categoriasAgregadas = this.app.categoria.getCategorias().length;
-        this.mergeCategorias(data.categorias); // Mutación real
-
-        this.app.utils.postGuardado('sincronizar con Gist');
+    // Muestra el resumen previo (Combinar / Reemplazar) y aplica lo que se elija. Devuelve false si se cancela.
+    async confirmarYAplicar(data) {
+        const modo = await preguntarMerge({
+            origen: 'Gist',
+            locales: this.servicios, categoriasLocales: this.app.categoria.getCategorias(),
+            remotos: data.servicios, categoriasRemotas: data.categorias,
+        });
+        if (!modo) return false;
+        this.app.storage._aplicarImportacion(modo, data);
         this.setPerfil({ gistLastSync: new Date().toISOString() });
         this.app._gistDatosPendientes = null;
+        return true;
+    }
 
+    // Botón del aviso de novedades: pasa al resumen previo con los datos ya descargados
+    async aplicarNovedades() {
+        const data = this.app._gistDatosPendientes;
+        if (!data) return;
         this.app.ui.cerrarModal('modal-gist-novedades');
-        this.app.mostrarToast('Datos combinados correctamente', 'success');
+        await this.confirmarYAplicar(data);
     }
 
     mergeCategorias(catsNuevas) {

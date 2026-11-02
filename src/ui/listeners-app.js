@@ -1,3 +1,4 @@
+import { ResumenMerge } from './resumen-merge.js';
 import { GestorTemas } from './gestor-temas.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
@@ -39,7 +40,9 @@ export class ListenersApp {
             if (opcion) GestorTemas.elegirTema(opcion.dataset.tema);
         });
         document.getElementById('modal-temas-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-temas'));
-        document.getElementById('menu-exportar').addEventListener('click', () => this.app.storage.exportarDatos());
+        document.getElementById('menu-exportar').addEventListener('click', () => this.app.respaldo.abrir());
+        this.app.respaldo.bindEventos();
+        ResumenMerge.bindEventos();
         document.getElementById('menu-importar').addEventListener('click', () => this.app.storage.mostrarOpcionesImportacion());
         document.getElementById('menu-importar-reemplazar').addEventListener('click', () => this.app.storage.importarDatos('reemplazar'));
         document.getElementById('menu-importar-combinar').addEventListener('click', () => this.app.storage.importarDatos('combinar'));

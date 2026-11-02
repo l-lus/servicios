@@ -94,14 +94,61 @@ export const ImportarExportar = {
 
     // ── Respaldo ──────────────────────────────────────────────
     /** Archivo de exportación: versión de esquema + hash de integridad. */
-    async armarRespaldo(servicios, categorias, ahora = new Date()) {
+    async armarRespaldo(servicios, categorias, ahora = new Date(), rango = null) {
         const contenido = { servicios, categorias };
         return {
             version: SecurityAndUtils.SECURITY_LIMITS.SCHEMA_VERSION,
             fecha: ahora.toISOString(),
             hash: await SecurityAndUtils.calcularHashSHA256(contenido),
+            // Respaldo parcial: queda fuera del hash (que solo cubre los datos) y sirve para avisar al restaurarlo
+            ...(rango ? { rango: { desde: rango.desde || '', hasta: rango.hasta || '' } } : {}),
             ...contenido
         };
+    },
+
+    /** Primer y último día de un mes 'YYYY-MM' como fechas ISO. */
+    rangoDeMes(mes) {
+        const [anio, m] = mes.split('-').map(Number);
+        const ultimo = new Date(anio, m, 0).getDate();
+        const mm = String(m).padStart(2, '0');
+        return { desde: `${anio}-${mm}-01`, hasta: `${anio}-${mm}-${String(ultimo).padStart(2, '0')}` };
+    },
+
+    /**
+     * Copia de los datos con solo las facturas cuya fecha está en [desde, hasta] (ISO, '' = sin límite).
+     * Los servicios sin facturas en el rango no se incluyen, y las categorías se limitan a las que usan los servicios incluidos.
+     */
+    recortarPorRango(servicios, categorias, desde = '', hasta = '') {
+        const enRango = f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta);
+        const incluidos = servicios
+            .map(s => ({ ...s, facturas: s.facturas.filter(enRango).map(f => ({ ...f })) }))
+            .filter(s => s.facturas.length > 0);
+        const usadas = new Set(incluidos.map(s => (s.categoria || '').toLowerCase()).filter(Boolean));
+        return { servicios: incluidos, categorias: categorias.filter(c => usadas.has(c.toLowerCase())) };
+    },
+
+    /** Cantidades de un conjunto de servicios: { servicios, facturas, ingresos } (los ingresos no cuentan como servicio ni como factura). */
+    contar(servicios) {
+        const normales = sinIngresos(servicios);
+        return {
+            servicios: normales.length,
+            facturas: normales.reduce((a, s) => a + s.facturas.length, 0),
+            ingresos: servicios.find(s => s.id === SERVICIO_INGRESOS_ID)?.facturas.length || 0,
+        };
+    },
+
+    /** Lo que hay en `locales` y no en `remotos`, o sea lo que se pierde al reemplazar: { servicios, facturas, ingresos }. */
+    perdidasAlReemplazar(locales, remotos) {
+        let servicios = 0, facturas = 0, ingresos = 0;
+        locales.forEach(local => {
+            const remoto = remotos.find(r => r.id === local.id);
+            const esIngresos = local.id === SERVICIO_INGRESOS_ID;
+            if (!remoto && !esIngresos) servicios++;
+            const idsRemotos = new Set((remoto?.facturas || []).map(f => f.id));
+            const perdidas = local.facturas.filter(f => !idsRemotos.has(f.id)).length;
+            if (esIngresos) ingresos += perdidas; else facturas += perdidas;
+        });
+        return { servicios, facturas, ingresos };
     },
 
     /** true si el respaldo declara una versión de esquema más nueva que la soportada. */

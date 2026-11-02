@@ -822,40 +822,76 @@
     </div>
 
     <!-- Modal confirmación merge al bajar del Gist -->
-    <div class="modal" id="modal-gist-merge">
+    <div class="modal" id="modal-resumen-merge" role="dialog" aria-modal="true" aria-labelledby="modal-resumen-merge-titulo">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><svg class="icon">
+                <h3 id="modal-resumen-merge-titulo"><svg class="icon">
                         <use href="#icon-cloud-download" />
                     </svg> Resumen de datos</h3>
+                <p class="text-muted" id="merge-origen"></p>
             </div>
             <div class="modal-body d-flex flex-column gap-3">
-                <div id="gist-merge-resumen">
-                </div>
-                <div class="d-flex flex-column gap-2">
-                    <div class="d-grid grid-cols-2 gap-2">
-                        <button type="button" id="btn-gist-merge-combinar">
-                            <svg class="icon">
-                                <use href="#icon-combine" />
-                            </svg> Combinar
-                        </button>
-                        <button type="button" id="btn-gist-merge-reemplazar">
-                            <svg class="icon">
-                                <use href="#icon-replace-swap" />
-                            </svg> Reemplazar
-                        </button>
-                    </div>
-                    <button type="button" class="btn-secondary" id="btn-gist-merge-cancelar">
-                        <svg class="icon">
-                            <use href="#icon-cancel" />
-                        </svg> Cancelar
+                <p class="merge-aviso" id="merge-aviso-parcial" hidden></p>
+                <div class="merge-opciones">
+                    <button type="button" class="merge-opcion" data-modo="combinar" aria-pressed="true">
+                        <span class="merge-opcion-titulo"><svg class="icon"><use href="#icon-combine" /></svg> Combinar</span>
+                        <span class="merge-opcion-texto" id="merge-texto-combinar"></span>
+                        <span class="merge-opcion-queda" id="merge-queda-combinar"></span>
+                    </button>
+                    <button type="button" class="merge-opcion" data-modo="reemplazar" aria-pressed="false">
+                        <span class="merge-opcion-titulo"><svg class="icon"><use href="#icon-replace-swap" /></svg> Reemplazar</span>
+                        <span class="merge-opcion-texto" id="merge-texto-reemplazar"></span>
+                        <span class="merge-opcion-queda" id="merge-queda-reemplazar"></span>
                     </button>
                 </div>
+                <p class="merge-alerta" id="merge-alerta" role="alert" hidden></p>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="btn-resumen-merge-aplicar">Combinar</button>
+                <button type="button" class="btn-secondary" id="btn-resumen-merge-cancelar">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
             </div>
         </div>
     </div>
 
-
+    <div class="modal" id="modal-respaldo" role="dialog" aria-modal="true" aria-labelledby="modal-respaldo-titulo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-respaldo-titulo"><svg class="icon"><use href="#icon-download" /></svg> Respaldar</h3>
+            </div>
+            <div class="modal-body d-flex flex-column gap-3">
+                <div class="respaldo-tipos" role="group" aria-label="Qué respaldar">
+                    <button type="button" class="respaldo-tipo" data-tipo="completo" aria-pressed="true">Todo</button>
+                    <button type="button" class="respaldo-tipo" data-tipo="mes" aria-pressed="false">Un mes</button>
+                    <button type="button" class="respaldo-tipo" data-tipo="rango" aria-pressed="false">Rango</button>
+                </div>
+                <div class="calculador-campo" id="respaldo-campos-mes" hidden>
+                    <label class="calculador-label" for="respaldo-mes">Mes</label>
+                    <input type="month" id="respaldo-mes" class="calculador-input">
+                </div>
+                <div class="d-flex gap-2" id="respaldo-campos-rango" hidden>
+                    <div class="calculador-campo flex-1">
+                        <label class="calculador-label" for="respaldo-desde">Desde</label>
+                        <input type="date" id="respaldo-desde" class="calculador-input">
+                    </div>
+                    <div class="calculador-campo flex-1">
+                        <label class="calculador-label" for="respaldo-hasta">Hasta</label>
+                        <input type="date" id="respaldo-hasta" class="calculador-input">
+                    </div>
+                </div>
+                <p class="text-muted" id="respaldo-contenido" role="status" aria-live="polite"></p>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="btn-respaldo-exportar">
+                    <svg class="icon"><use href="#icon-download" /></svg> Exportar
+                </button>
+                <button type="button" class="btn-secondary" id="btn-respaldo-cancelar">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Agregar Servicio -->
     <div class="modal" id="modal-agregar-servicio">

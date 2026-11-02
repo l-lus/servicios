@@ -23,7 +23,8 @@ export const ModalManager = (function () {
         'modal-info-resumen': () => document.getElementById('btn-cerrar-modal-info-resumen')?.click(),
         'modal-gist': () => document.getElementById('btn-gist-cerrar')?.click(),
         'modal-gist-novedades': () => document.getElementById('gist-novedades-ignorar-btn')?.click(),
-        'modal-gist-merge': () => document.getElementById('btn-gist-merge-cancelar')?.click(),
+        'modal-resumen-merge': () => document.getElementById('btn-resumen-merge-cancelar')?.click(),
+        'modal-respaldo': () => document.getElementById('btn-respaldo-cancelar')?.click(),
         'modal-debug-estadisticas': () => document.getElementById('btn-cerrar-modal-debug')?.click(),
         // 'menu-ajustes' y 'menu-agregar' los registra la app con registrarAccionVolver
     };

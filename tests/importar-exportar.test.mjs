@@ -78,3 +78,36 @@ test('describirContenido y compararRespaldo', () => {
     assert.equal(c.combinar, 'Agrega 1 servicio nuevo, 1 factura nueva, 1 factura nueva en servicios existentes, 1 categoría nueva. Se actualiza 1 factura');
     assert.equal(c.reemplazar, 'Carga 2 servicios, 3 facturas, 1 categoría');
 });
+
+test('rangoDeMes y recortarPorRango: solo las facturas del rango, sin servicios vacíos ni categorías sin uso', () => {
+    assert.deepEqual(IE.rangoDeMes('2026-02'), { desde: '2026-02-01', hasta: '2026-02-28' });
+    assert.deepEqual(IE.rangoDeMes('2028-02'), { desde: '2028-02-01', hasta: '2028-02-29' });
+    assert.deepEqual(IE.rangoDeMes('2026-12'), { desde: '2026-12-01', hasta: '2026-12-31' });
+
+    const servicios = [
+        { ...srv('luz', [fac('a', { fecha: '2026-10-05' }), fac('b', { fecha: '2026-11-05' })]), categoria: 'Casa' },
+        { ...srv('gas', [fac('c', { fecha: '2026-09-01' })]), categoria: 'Hogar' },
+        srv(SERVICIO_INGRESOS_ID, [fac('i', { fecha: '2026-11-01' })]),
+    ];
+    const r = IE.recortarPorRango(servicios, ['Casa', 'Hogar'], '2026-11-01', '2026-11-30');
+    assert.deepEqual(r.servicios.map(s => [s.id, s.facturas.map(f => f.id)]), [['luz', ['b']], [SERVICIO_INGRESOS_ID, ['i']]]);
+    assert.deepEqual(r.categorias, ['Casa']);
+    assert.equal(servicios[0].facturas.length, 2, 'no muta lo original');
+    assert.equal(IE.recortarPorRango(servicios, ['Casa'], '', '').servicios.length, 3, 'sin límites incluye todo con facturas');
+    assert.equal(IE.recortarPorRango(servicios, [], '2026-10-01', '').servicios.length, 2, 'solo desde');
+});
+
+test('armarRespaldo: el rango queda afuera del hash', async () => {
+    const r = await IE.armarRespaldo([], [], new Date(0), { desde: '2026-11-01', hasta: '' });
+    assert.deepEqual(r.rango, { desde: '2026-11-01', hasta: '' });
+    assert.equal(await IE.hashCoincide(r), true);
+    assert.equal((await IE.armarRespaldo([], [], new Date(0))).rango, undefined);
+});
+
+test('contar y perdidasAlReemplazar: lo local que no está en el respaldo', () => {
+    const locales = [srv('luz', [fac('a'), fac('b')]), srv('gas', [fac('c')]), srv(SERVICIO_INGRESOS_ID, [fac('i1'), fac('i2')])];
+    const remotos = [srv('luz', [fac('a')]), srv(SERVICIO_INGRESOS_ID, [fac('i1')])];
+    assert.deepEqual(IE.contar(locales), { servicios: 2, facturas: 3, ingresos: 2 });
+    assert.deepEqual(IE.perdidasAlReemplazar(locales, remotos), { servicios: 1, facturas: 2, ingresos: 1 });
+    assert.deepEqual(IE.perdidasAlReemplazar(remotos, locales), { servicios: 0, facturas: 0, ingresos: 0 });
+});
