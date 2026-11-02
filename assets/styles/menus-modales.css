@@ -5,7 +5,7 @@
     position: fixed;
     top: 0;
     right: -300px;
-    z-index: 120;
+    z-index: var(--z-ajustes);
     display: flex;
     flex-direction: column;
     width: 300px;
@@ -107,7 +107,7 @@
     position: fixed;
     bottom: 7rem;
     right: 2rem;
-    z-index: 110;
+    z-index: var(--z-agregar);
     display: none;
     flex-direction: column;
     gap: var(--space-sm);
@@ -115,7 +115,7 @@
     border-radius: var(--radius-lg);
     background: var(--bg-card);
     box-shadow: var(--shadow-modal);
-    animation: slideUp 0.2s ease;
+    animation: slideUp var(--dur-fast) ease;
 }
 
 .menu-agregar.active,
@@ -322,7 +322,7 @@
 .ayuda-seccion h4 {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: var(--z-sobre);
     margin: 0 0 var(--space-sm);
     padding: var(--space-xs) 0;
     background: var(--bg-card);
@@ -350,7 +350,7 @@
     margin: 0 0 var(--space-sm);
     font-size: var(--text-base);
     color: var(--text-muted);
-    line-height: 1.55;
+    line-height: var(--lh-relaxed);
 }
 
 .ayuda-seccion p:last-child {
@@ -406,7 +406,7 @@ mark.ayuda-resaltado--activa {
 .ayuda-color--green { --ayuda-color: var(--c-green); }
 .ayuda-color--red { --ayuda-color: var(--c-red); }
 .ayuda-color--gold { --ayuda-color: var(--c-gold); }
-.ayuda-color--orange { --ayuda-color: var(--c-orange, var(--c-gold)); }
+.ayuda-color--orange { --ayuda-color: var(--c-orange); }
 .ayuda-color--vacio {
     --ayuda-color: color-mix(in srgb, var(--text-muted) 24%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-muted) 45%, transparent);
@@ -540,7 +540,7 @@ mark.ayuda-resaltado--activa {
 .merge-opcion-texto {
     font-weight: var(--fw-medium);
     font-size: var(--text-base);
-    line-height: 1.4;
+    line-height: var(--lh-normal);
 }
 
 .merge-opcion-queda {
@@ -554,7 +554,7 @@ mark.ayuda-resaltado--activa {
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
-    line-height: 1.4;
+    line-height: var(--lh-normal);
 }
 
 .merge-alerta {
@@ -687,7 +687,7 @@ mark.ayuda-resaltado--activa {
 .card.reordenando {
     opacity: 0.65;
     position: relative;
-    z-index: 10;
+    z-index: var(--z-elevado);
     user-select: none;
     cursor: grabbing;
     box-shadow: var(--shadow-float);
@@ -754,7 +754,7 @@ form.modal-content {
 .modal-scrollable .modal-panel-footer {
     flex-shrink: 0;
     background: var(--bg-card);
-    z-index: 2;
+    z-index: var(--z-sticky);
 }
 
 .modal-scrollable .modal-panel-header {
@@ -1100,7 +1100,7 @@ form.modal-content {
 .modal-content > :is(.modal-header, .modal-panel-header, .modal-facturas-header, .form-actions, .form-actions2, .modal-footer, .modal-facturas-footer, .modal-panel-footer) {
     flex-shrink: 0;
     background: var(--bg-card);
-    z-index: 2;
+    z-index: var(--z-sticky);
 }
 
 .modal-content > :is(.modal-header, .modal-panel-header, .modal-facturas-header) {

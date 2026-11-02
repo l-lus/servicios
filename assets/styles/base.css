@@ -15,7 +15,7 @@ html {
 }
 
 body {
-    font-family: var(--font-main, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif);
+    font-family: var(--font-main);
     background: var(--bg-body);
     color: var(--text-main);
     overflow-anchor: none;
@@ -46,7 +46,7 @@ body.modal-open {
 .header {
     position: sticky;
     top: 0;
-    z-index: 90;
+    z-index: var(--z-header);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -186,7 +186,7 @@ select:disabled {
     background: transparent;
     cursor: not-allowed;
     transform: none;
-    color: #6b7280;
+    color: var(--text-muted);
     opacity: 0.5;
 }
 
@@ -226,7 +226,7 @@ select:disabled {
 .icon-btn.pagada,
 .icon-btn.activo {
     border-color: var(--c-green);
-    background: rgba(96, 172, 148, 0.1);
+    background: var(--c-green-bg);
     color: var(--c-green);
 }
 
@@ -261,7 +261,7 @@ select:disabled {
     position: fixed;
     bottom: 3rem;
     right: 2rem;
-    z-index: 110;
+    z-index: var(--z-agregar);
     width: 60px;
     height: 60px;
     padding: 0;
@@ -361,7 +361,7 @@ input[type="number"] {
     /* posición inyectada desde JS via custom properties */
     left: var(--ctx-x, 0px);
     top: var(--ctx-y, 0px);
-    z-index: 300;
+    z-index: var(--z-menu);
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -371,7 +371,7 @@ input[type="number"] {
     opacity: 0;
     transform: scale(0.92);
     transform-origin: top left;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition: opacity var(--dur-valor) ease, transform var(--dur-valor) ease;
     pointer-events: none;
 }
 
@@ -490,14 +490,14 @@ input[type="number"] {
     pointer-events: none;
     position: fixed;
     inset: 0;
-    z-index: 200;
+    z-index: var(--z-modal);
     align-items: center;
     justify-content: center;
-    padding: var(--space-xs, 0.5rem);
-    background: var(--modal-overlay, rgba(0, 0, 0, 0.5));
+    padding: var(--space-xs);
+    background: var(--modal-overlay);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    transition: opacity var(--transition-ui, 0.3s), visibility var(--transition-ui, 0.3s);
+    transition: opacity var(--transition-ui), visibility var(--transition-ui);
 }
 
 .modal.show,
@@ -532,7 +532,7 @@ input[type="number"] {
 .modal-title-block {
     display: flex;
     align-items: center;
-    gap: var(--space-sm, 0.5rem);
+    gap: var(--space-sm);
 }
 
 .modal-scrollable > .modal-content {
@@ -546,38 +546,38 @@ input[type="number"] {
 .modal-scrollable .modal-panel-footer {
     flex-shrink: 0;
     background: var(--bg-card);
-    z-index: 2;
+    z-index: var(--z-sticky);
 }
 
 .modal-scrollable .modal-panel-header {
     padding-bottom: var(--space-sm);
     border-bottom: 1px solid var(--border);
-    margin-bottom: var(--space-sm, 0.5rem);
+    margin-bottom: var(--space-sm);
 }
 
 .modal-scrollable .modal-panel-body {
     flex: 1;
     overflow-y: auto;
-    padding-right: var(--space-xs, 0.25rem);
+    padding-right: var(--space-xs);
 }
 
 .modal-scrollable .modal-panel-footer {
     border-top: 1px solid var(--border);
-    padding-top: var(--space-sm, 0.5rem);
-    margin-top: var(--space-sm, 0.5rem);
+    padding-top: var(--space-sm);
+    margin-top: var(--space-sm);
 }
 
 #modal-confirmar-texto {
     color: var(--text-muted);
-    font-size: var(--text-base, 1rem);
-    line-height: 1.6;
-    margin: var(--space-sm, 0.5rem) 0;
+    font-size: var(--text-base);
+    line-height: var(--lh-relaxed);
+    margin: var(--space-sm) 0;
     white-space: pre-line;
 }
 
 .btn-group {
     display: flex;
-    gap: var(--space-sm, 0.5rem);
+    gap: var(--space-sm);
     width: 100%;
 }
 
@@ -597,7 +597,7 @@ input[type="number"] {
 }
 
 .btn-cancel {
-    background: var(--c-gray-btn, var(--input-bg)) !important;
+    background: var(--c-gray-btn) !important;
     color: var(--text-main) !important;
 }
 
@@ -625,7 +625,7 @@ input[type="number"] {
 .modal-facturas-header,
 .modal-facturas-footer {
     position: sticky;
-    z-index: 10;
+    z-index: var(--z-elevado);
     background: var(--bg-card);
 }
 
@@ -661,14 +661,10 @@ input[type="number"] {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--overlay-suave);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
-    z-index: 100;
-}
-
-.menu-agregar-overlay {
-    background: rgba(0, 0, 0, 0.3);
+    z-index: var(--z-agregar-overlay);
 }
 
 .menu-overlay.active,

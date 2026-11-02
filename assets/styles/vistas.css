@@ -353,12 +353,12 @@
 .resumen-monto.resumen-blur .resumen-valor-usd {
     filter: blur(8px);
     user-select: none;
-    transition: filter 0.3s ease;
+    transition: filter var(--dur-anim) ease;
 }
 
 .resumen-monto .resumen-valor,
 .resumen-monto .resumen-valor-usd {
-    transition: filter 0.3s ease;
+    transition: filter var(--dur-anim) ease;
 }
 
 .resumen-monto .resumen-valor,
@@ -435,32 +435,32 @@
 }
 
 .badge-pagada-mes {
-    background: rgba(76, 172, 140, 0.2);
+    background: var(--c-green-soft);
     color: var(--c-green);
 }
 
 .badge-pagada-antes {
-    background: rgba(172, 155, 76, 0.2);
+    background: var(--c-gold-soft);
     color: var(--c-gold);
 }
 
 .badge-pagada-credito {
-    background: rgba(76, 114, 172, 0.2);
+    background: var(--c-blue-soft);
     color: var(--c-blue);
 }
 
 .badge-pendiente {
-    background: rgba(172, 90, 76, 0.2);
+    background: var(--c-red-soft);
     color: var(--c-red);
 }
 
 .badge-vencida {
-    background: rgba(80, 80, 80, 0.2);
+    background: var(--c-gray-soft);
     color: var(--text-muted);
 }
 
 .badge-pagada-otro-mes {
-    background: rgba(129, 76, 172, 0.2);
+    background: var(--c-purple-soft);
     color: var(--c-purple);
 }
 
@@ -594,7 +594,7 @@
     top: 100%;             /* posición por defecto: debajo del trigger */
     left: 0;
     right: 0;
-    z-index: 300;
+    z-index: var(--z-menu);
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -610,7 +610,7 @@
     visibility: hidden;
     /* max-height/overflow se aplican DESPUÉS del fade-out (0.15s delay) para
        evitar que el contenido se corte mientras la animación de cierre ocurre */
-    transition: opacity 0.15s ease, transform 0.15s ease,
+    transition: opacity var(--dur-valor) ease, transform var(--dur-valor) ease,
                 visibility 0s linear 0.15s,
                 max-height 0s linear 0.15s,
                 overflow 0s linear 0.15s;
@@ -625,7 +625,7 @@
     pointer-events: auto;
     visibility: visible;
     /* Al abrir: max-height/overflow cambian instantáneamente (sin delay) */
-    transition: opacity 0.15s ease, transform 0.15s ease,
+    transition: opacity var(--dur-valor) ease, transform var(--dur-valor) ease,
                 visibility 0s linear 0s,
                 max-height 0s linear 0s,
                 overflow 0s linear 0s;
@@ -731,7 +731,7 @@
     position: fixed;
     bottom: 2rem;
     left: 50%;
-    z-index: 998;
+    z-index: var(--z-calc);
     display: none;
     align-items: center;
     gap: var(--space-lg);
@@ -742,7 +742,7 @@
     box-shadow: var(--shadow-float);
     backdrop-filter: blur(3px);
     transform: translateX(-50%);
-    animation: slideUp2 0.2s ease-out;
+    animation: slideUp2 var(--dur-fast) ease-out;
 }
 
 .calculadora-total,
@@ -756,7 +756,7 @@
     font-weight: var(--fw-bold);
     text-align: center;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition: opacity var(--dur-valor);
 }
 
 .calculadora-total:active {
@@ -869,18 +869,18 @@
     left: 50%;
     justify-content: center;
     transform: translateX(-50%) translateY(80px);
-    transition: var(--transition-anim, opacity 0.3s ease, transform 0.3s ease);
+    transition: var(--transition-anim);
     background: var(--bg-card);
     color: var(--text-main);
     border: 2px solid transparent;
-    padding: var(--space-lg, 1rem) var(--space-xl, 1.5rem);
+    padding: var(--space-lg) var(--space-xl);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-float, var(--shadow));
+    box-shadow: var(--shadow-float);
     opacity: 0;
-    z-index: 1000;
+    z-index: var(--z-toast);
     display: flex;
     align-items: center;
-    gap: var(--space-md, 0.75rem);
+    gap: var(--space-md);
     white-space: pre-line;
     pointer-events: none;
     width: calc(100% - 4rem);
@@ -1048,7 +1048,7 @@
     background: var(--input-bg);
     opacity: 0.5;
     pointer-events: none;
-    z-index: -1;
+    z-index: var(--z-fondo);
 }
 
 .calendario-dia-nombre {
@@ -1199,7 +1199,7 @@
 }
 
 .calendario-dia.hoy.campo-flash[data-n] {
-    z-index: 2;
+    z-index: var(--z-sticky);
     animation: calendario-hoy-pulso 600ms ease-in-out 2;
 }
 
