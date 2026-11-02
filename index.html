@@ -409,6 +409,12 @@
                 <span>Categorías</span>
             </div>
 
+            <div class="menu-item" id="menu-tarjetas">
+                <svg class="icon">
+                    <use href="#icon-menu" />
+                </svg>
+                <span>Tarjetas y orden</span>
+            </div>
             <div class="menu-item" id="menu-toggle-blur">
                 <svg class="icon">
                     <use href="#icon-eye" />
@@ -453,7 +459,7 @@
         <div class="main-grid">
             <!-- Columna izquierda (sidebar) -->
             <div class="sidebar-left">
-                <div class="card card-fade-in">
+                <div class="card card-fade-in" id="card-resumen">
                     <div id="resumen-mes"></div>
                 </div>
 
@@ -474,7 +480,7 @@
                 </div>
 
                 <!-- Tarjeta de Estadísticas Unificada -->
-                <div class="card card-fade-in delay-1">
+                <div class="card card-fade-in delay-1" id="card-estadisticas">
                     <h2 class="card-header-collapsible" id="estadisticas-header">
                         <span>
                             <svg class="icon">
@@ -617,7 +623,7 @@
             <!-- Columna derecha (contenido principal) -->
             <div class="main-content">
                 <!-- Tarjeta de Servicios -->
-                <div class="card card-fade-in delay-2">
+                <div class="card card-fade-in delay-2" id="card-servicios">
                     <h2 class="card-header-collapsible" id="servicios-header">
                         <span class="d-flex align-items-center gap-2">
                             <svg class="icon">
@@ -907,6 +913,23 @@
                 <button type="button" id="btn-resumen-merge-aplicar">Combinar</button>
                 <button type="button" class="btn-secondary" id="btn-resumen-merge-cancelar">
                     <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-tarjetas" role="dialog" aria-modal="true" aria-labelledby="modal-tarjetas-titulo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-tarjetas-titulo">Tarjetas y orden</h3>
+                <p class="text-muted"><span id="orden-cards-contexto"></span>. Elegí cuáles mostrar y su posición. También podés mantener presionado el título de una tarjeta y arrastrarla (o usar Alt + flechas).</p>
+            </div>
+            <div class="orden-cards-lista" id="lista-orden-cards"></div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="btn-tarjetas-restablecer">Restablecer</button>
+                <button type="button" class="button" id="modal-tarjetas-close">
+                    <svg class="icon"><use href="#icon-cancel" /></svg>
+                    Listo
                 </button>
             </div>
         </div>

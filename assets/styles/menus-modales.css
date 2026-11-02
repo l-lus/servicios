@@ -651,3 +651,61 @@ mark.ayuda-resaltado--activa {
 .bienvenida-cuerpo .temas-lista {
     padding-bottom: 0;
 }
+
+/* ============================================================
+           TARJETAS Y ORDEN
+        ============================================================ */
+.orden-cards-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0 var(--space-lg);
+}
+
+.orden-card-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.orden-card-nombre {
+    flex: 1;
+    font-weight: var(--fw-medium);
+}
+
+.orden-flecha-sube {
+    transform: rotate(180deg);
+}
+
+.orden-card-item .icon-btn:disabled {
+    opacity: var(--opacity-disabled);
+}
+
+.card.reordenando {
+    opacity: 0.65;
+    position: relative;
+    z-index: 10;
+    user-select: none;
+    cursor: grabbing;
+    box-shadow: var(--shadow-float);
+}
+
+body.tarjeta-arrastrando-activa,
+body.tarjeta-arrastrando-activa * {
+    user-select: none !important;
+    cursor: grabbing !important;
+}
+
+/* Descripción debajo del título en los encabezados de modal */
+.modal-header {
+    flex-wrap: wrap;
+}
+
+.modal-header > p {
+    flex: 1 1 100%;
+    margin: var(--space-xs) 0 0;
+    font-size: var(--text-sm);
+}

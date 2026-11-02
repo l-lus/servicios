@@ -305,6 +305,7 @@ export class ListenersApp {
         this.app.calendario.bindEventos();
         this.app.bienvenida.bindEventos();
         this.app.atajos.bindEventos();
+        this.app.tarjetas.bindEventos();
 
         // Modal info-resumen (botón header + botón footer)
         document.getElementById('btn-cerrar-modal-info-resumen').addEventListener('click', () => {

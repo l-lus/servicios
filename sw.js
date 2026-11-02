@@ -2,7 +2,7 @@
 // así que solo se tocan las cachés que empiezan con CACHE_PREFIX
 // (CACHE_NAME tiene que empezar con ese prefijo).
 const CACHE_PREFIX = 'SERVICIOS-';
-const CACHE_NAME = `${CACHE_PREFIX}v261101.2322`;
+const CACHE_NAME = `${CACHE_PREFIX}v261101.2325`;
 
 const urlsToCache = [
   './',
@@ -27,6 +27,7 @@ const urlsToCache = [
   './src/services/estado-facturas.js',
   './src/services/gestor-perfiles.js',
   './src/services/importar-exportar.js',
+  './src/services/orden-cards.js',
   './src/services/pila-historial.js',
   './src/services/reporte-datos.js',
   './src/services/reporte-html.js',
@@ -34,6 +35,7 @@ const urlsToCache = [
   './src/services/resumen-anual.js',
   './src/services/resumen-mes.js',
   './src/ui/animaciones.js',
+  './src/ui/arrastre.js',
   './src/ui/atajos.js',
   './src/ui/aviso-actualizacion.js',
   './src/ui/ayuda-buscador.js',
@@ -54,6 +56,7 @@ const urlsToCache = [
   './src/ui/instalador-pwa.js',
   './src/ui/listeners-app.js',
   './src/ui/menu-contextual.js',
+  './src/ui/orden-tarjetas.js',
   './src/ui/perfil-service.js',
   './src/ui/reporte-modal.js',
   './src/ui/respaldo-modal.js',

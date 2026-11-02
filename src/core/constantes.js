@@ -22,9 +22,18 @@ export const STORAGE_KEYS = Object.freeze({
     CALENDARIO_ABIERTO: 'calendario-abierto',
     BIENVENIDA_VISTA: 'bienvenida-vista',
     ATAJOS: 'atajos',
+    ORDEN_CARDS: 'orden-tarjetas',
+    ORDEN_CARDS_MOVIL: 'orden-tarjetas-movil',
+    CARD_VISIBLE: (cual) => `tarjeta-visible-${cual}`,
     SERVICIOS_COLLAPSE: 'servicios-collapse-state',
     GIST_TOKEN: 'gist_token',
 
     DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
     HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,
 });
+
+/** Tarjetas de la pantalla principal, en su orden por defecto (el id del elemento es `card-<nombre>`). */
+export const CARDS = Object.freeze(['resumen', 'atajos', 'estadisticas', 'calendario', 'servicios']);
+
+/** Nombre para mostrar de cada tarjeta. */
+export const CARDS_ETIQUETAS = Object.freeze({ resumen: 'Resumen', atajos: 'Atajos', estadisticas: 'Estadísticas', calendario: 'Calendario', servicios: 'Servicios' });
