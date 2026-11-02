@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from './core/constantes.js';
+import { APP_NOMBRE, APP_VERSION, STORAGE_KEYS } from './core/constantes.js';
 import { StorageHelper } from './core/almacenamiento.js';
 import { ToastManager } from './ui/toast.js';
 import { GestionServicios } from './ui/gestion-servicios.js';
@@ -46,3 +46,7 @@ InstaladorPWA.registrarServiceWorker();
 })();
 
 new GestionServicios();
+
+// Versión visible en el menú de ajustes (la sube `npm run release`)
+const elVersion = document.getElementById('menu-version');
+if (elVersion) elVersion.textContent = `${APP_NOMBRE} ${APP_VERSION}`;

@@ -1,0 +1,930 @@
+/* ============================================================
+           CHEVRONS (patrón unificado para todos los grupos colapsables)
+        ============================================================ */
+.chevron-icon,
+.facturas-grupo-chevron,
+.servicios-grupo-cat-chevron,
+.menu-item-parent svg.menu-chevron {
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.chevron-icon {
+    transition: transform var(--transition-base) ease;
+}
+
+.chevron-icon.collapsed,
+.facturas-grupo-chevron.collapsed,
+.servicios-grupo-cat-chevron.collapsed {
+    transform: rotate(-90deg);
+}
+
+.chevron-icon.semi-collapsed {
+    transform: rotate(180deg);
+}
+
+.menu-item-parent.open svg.menu-chevron {
+    transform: rotate(180deg);
+}
+
+/* ============================================================
+           COLAPSABLE / ACORDEÓN (patrón de horarios)
+        ============================================================ */
+/*
+ * Se anima grid-template-rows (0fr ↔ 1fr) en lugar de max-height: la
+ * altura real se anima completa en ambos sentidos, sin topes fijos que
+ * retrasan el cierre ni "none" que no se puede animar.
+ *
+ * Estructura: contenedor colapsable con un único hijo .collapsible-inner
+ * (overflow hidden + min-height 0, lo que permite llegar a 0fr).
+ * Cerrado: visibility:hidden (tras la animación) saca el contenido del
+ * orden de Tab y del árbol de accesibilidad.
+ *
+ * Clases de estado: .collapsed (tarjetas y grupos) / .open (submenús).
+ */
+.collapsible-content,
+.facturas-grupo-contenido,
+.servicios-grupo-cat-contenido,
+.menu-submenu {
+    --vis-delay: 0s;
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transition: var(--transition-collapse), visibility 0s linear var(--vis-delay);
+}
+
+.collapsible-content.collapsed,
+.facturas-grupo-contenido.collapsed,
+.servicios-grupo-cat-contenido.collapsed,
+.menu-submenu:not(.open) {
+    --vis-delay: var(--dur-collapse);
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Tarjetas: el contenedor no recorta (dropdowns internos) y el interior
+   deja de recortar recién cuando terminó de abrirse (.asentado, lo pone
+   JS en transitionend); al cerrar vuelve a recortar de inmediato. */
+.collapsible-content {
+    overflow: visible;
+}
+
+.collapsible-content.asentado:not(.collapsed)>.collapsible-inner {
+    overflow: visible;
+}
+
+/* Grupos de facturas y categorías: lista interna */
+.facturas-grupo-contenido>.collapsible-inner,
+.servicios-grupo-cat-contenido>.collapsible-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Submenús del menú de ajustes */
+.menu-submenu {
+    padding-left: 2.5rem;
+}
+
+/* Al traer un grupo a la vista, que no quede bajo el header fijo */
+.servicios-grupo-cat {
+    scroll-margin-top: calc(var(--app-header-h) + 0.5rem);
+}
+
+/* ============================================================
+           GRUPOS (headers de facturas y categorías — patrón unificado)
+        ============================================================ */
+.facturas-grupo-header,
+.servicios-grupo-cat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+}
+
+.facturas-grupo-header {
+    margin: 0.25rem 1rem;
+}
+
+.servicios-grupo-cat-header {
+    margin: 0.5rem 0 0.5rem;
+    padding-left: 1rem;
+}
+
+.facturas-grupo-header:active,
+.servicios-grupo-cat-header:active {
+    opacity: 0.7;
+}
+
+.facturas-grupo-header-info,
+.servicios-grupo-cat-header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Texto del título del grupo */
+.facturas-grupo-ano-texto,
+.servicios-grupo-cat-texto {
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+}
+
+/* Contador del grupo */
+.facturas-grupo-contador,
+.servicios-grupo-cat-contador {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Indicador de alerta en header de categoría */
+.cat-alerta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cat-alerta-icon.vencido,
+.cat-alerta-icon.urgente {
+    color: var(--c-red);
+}
+
+.cat-alerta-icon.proximo {
+    color: var(--c-gold);
+}
+
+.cat-alerta-icon.sin-facturas-mes {
+    color: var(--c-purple);
+}
+
+/* ============================================================
+           SERVICIOS LISTA
+        ============================================================ */
+.servicios-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 700px;
+    margin-top: 1rem;
+    opacity: 1;
+    transition: max-height var(--transition-base), opacity var(--transition-base);
+}
+
+/* Estados colapso de la sección servicios */
+.servicios-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    justify-content: flex-start;
+    max-height: 50px;
+    overflow: hidden;
+    opacity: 1;
+    background: var(--bg-card);
+    transition: max-height var(--transition-base), opacity var(--transition-base), margin var(--transition-base);
+}
+
+
+.servicios-actions.hidden,
+#servicios-content.semi-collapsed .servicios-actions {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+
+/* Item de servicio */
+.servicio-item {
+    position: relative;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    cursor: pointer;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.servicio-item:active,
+.facturas-grupo-header:active {
+    transform: scale(0.99);
+}
+
+.servicio-item.calculando {
+    background: var(--c-blue);
+}
+
+.servicio-nombre {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-main);
+}
+
+.servicio-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.servicio-monto {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.servicio-fecha {
+    font-size: 0.9rem;
+}
+
+/* Badge de estado del servicio */
+.servicio-estado {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.1rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-white);
+}
+
+.servicio-estado.estado-sin-facturas {
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* ============================================================
+           FACTURAS LISTA
+        ============================================================ */
+.facturas-lista {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    margin: 0 -1rem;
+}
+
+.factura-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    transition: opacity var(--transition-fast);
+}
+
+.factura-item.pagada {
+    opacity: 0.6;
+    border-color: var(--c-green);
+}
+
+.factura-info {
+    flex: 1;
+    cursor: pointer;
+}
+
+.factura-monto {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.factura-monto-favor {
+    color: var(--c-green);
+    font-weight: 700;
+}
+
+.factura-fecha {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Badge de estado de factura */
+.factura-estado-pagado,
+.factura-estado-vencido,
+.factura-estado-pendiente {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.mensaje-sin-facturas {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 2rem 0;
+}
+
+/* ============================================================
+           RESUMEN
+        ============================================================ */
+.resumen-monto {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius);
+    cursor: pointer;
+    min-height: 11rem;
+    transition: opacity var(--transition-base);
+}
+
+.resumen-monto.resumen-blur .resumen-valor,
+.resumen-monto.resumen-blur .resumen-valor-usd {
+    filter: blur(8px);
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.resumen-monto .resumen-valor,
+.resumen-monto .resumen-valor-usd {
+    transition: filter 0.3s ease;
+}
+
+.resumen-monto .resumen-valor,
+.resumen-valor-usd {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-main);
+    text-align: left;
+}
+
+.resumen-titulo {
+    font-weight: 500;
+    color: var(--text-main);
+    text-align: left;
+    margin-bottom: 0.5rem
+}
+
+.resumen-label {
+    color: var(--text-muted);
+}
+
+.resumen-monto .resumen-label {
+    text-align: left;
+}
+
+.resumen-footer {
+    margin-top: auto;
+}
+
+.info-resumen-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.info-resumen-grupo-titulo {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.2rem;
+}
+
+.info-resumen-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    padding: 0.3rem 0;
+}
+
+.info-resumen-fila-izq {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.info-resumen-nombre {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.info-resumen-badge {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+}
+
+.badge-pagada-mes {
+    background: rgba(76, 172, 140, 0.2);
+    color: var(--c-green);
+}
+
+.badge-pagada-antes {
+    background: rgba(172, 155, 76, 0.2);
+    color: var(--c-gold);
+}
+
+.badge-pagada-credito {
+    background: rgba(76, 114, 172, 0.2);
+    color: var(--c-blue);
+}
+
+.badge-pendiente {
+    background: rgba(172, 90, 76, 0.2);
+    color: var(--c-red);
+}
+
+.badge-vencida {
+    background: rgba(80, 80, 80, 0.2);
+    color: var(--text-muted);
+}
+
+.badge-pagada-otro-mes {
+    background: rgba(129, 76, 172, 0.2);
+    color: var(--c-purple);
+}
+
+.info-resumen-monto {
+    flex-shrink: 0;
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+
+.resumen-fecha {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    text-align: right;
+}
+
+.resumen-progreso {
+    width: 100%;
+    height: 5px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0.25rem 0;
+}
+
+.resumen-progreso-barra {
+    height: 100%;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    width: var(--barra-w, 0%);
+    transition: width var(--transition-base) ease, background var(--transition-base) ease;
+}
+
+/* Color de la barra según estado y estados en general*/
+.card.borde-vencido .resumen-progreso-barra,
+.card.borde-urgente .resumen-progreso-barra,
+.estado-vencido,
+.estado-urgente,
+.factura-estado-vencido {
+    background: var(--c-red);
+    color: var(--c-white);
+}
+
+.card.borde-proximo .resumen-progreso-barra,
+.estado-proximo,
+.factura-estado-pendiente {
+    background: var(--c-gold);
+    color: var(--c-white);
+}
+
+.card.borde-lejano .resumen-progreso-barra,
+.estado-lejano {
+    background: var(--c-blue);
+    color: var(--c-white);
+}
+
+.card.borde-pagado .resumen-progreso-barra,
+.estado-pagado,
+.factura-estado-pagado {
+    background: var(--c-green);
+    color: var(--c-white);
+}
+
+.estado-sin-facturas-mes {
+    background: var(--c-purple);
+    color: var(--c-white);
+}
+
+/* ============================================================
+           ESTADÍSTICAS
+        ============================================================ */
+.estadisticas-container {
+    animation: slideDownFade var(--transition-base) ease;
+}
+
+.estadisticas-lista {
+    display: flex;
+    flex-direction: column;
+}
+
+.estadisticas-selector {
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+}
+
+/* ============================================================
+           CUSTOM DROPDOWN
+        ============================================================ */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: var(--input-bg);
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.custom-select-trigger .csd-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-select-trigger .csd-arrow {
+    flex-shrink: 0;
+    width: 1.2em;
+    height: 1.2em;
+    fill: currentColor;
+    transition: transform var(--transition-fast);
+}
+
+.custom-select-wrapper.open .csd-arrow {
+    transform: rotate(180deg);
+}
+
+.custom-select-dropdown {
+    position: absolute;
+    top: 100%;             /* posición por defecto: debajo del trigger */
+    left: 0;
+    right: 0;
+    z-index: 300;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-float);
+    max-height: 0;         /* colapsado: no contribuye al scroll-area del modal */
+    overflow: hidden;      /* clip del contenido cuando cerrado */
+    overscroll-behavior: contain;
+    /* Animación idéntica al ctx-menu */
+    opacity: 0;
+    transform: scale(0.92);
+    transform-origin: top center;
+    pointer-events: none;
+    visibility: hidden;
+    /* max-height/overflow se aplican DESPUÉS del fade-out (0.15s delay) para
+       evitar que el contenido se corte mientras la animación de cierre ocurre */
+    transition: opacity 0.15s ease, transform 0.15s ease,
+                visibility 0s linear 0.15s,
+                max-height 0s linear 0.15s,
+                overflow 0s linear 0.15s;
+}
+
+.custom-select-wrapper.open .custom-select-dropdown,
+.custom-select-dropdown.csd-open {
+    max-height: 260px;     /* expandido: muestra opciones */
+    overflow-y: auto;      /* scroll si hay muchas opciones */
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+    visibility: visible;
+    /* Al abrir: max-height/overflow cambian instantáneamente (sin delay) */
+    transition: opacity 0.15s ease, transform 0.15s ease,
+                visibility 0s linear 0s,
+                max-height 0s linear 0s,
+                overflow 0s linear 0s;
+}
+
+.custom-select-option {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: background var(--transition-fast);
+}
+
+.custom-select-option:active {
+    background: var(--input-bg);
+}
+
+.custom-select-option.selected {
+    font-weight: 600;
+}
+
+/* Scrollbar del dropdown (sólo aplica cuando está abierto y tiene overflow-y: auto) */
+.custom-select-dropdown::-webkit-scrollbar { width: 8px; }
+.custom-select-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-body);
+    border-radius: var(--radius);
+}
+.custom-select-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius);
+}
+.custom-select-dropdown::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+.est-cat-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.75rem 0 0.25rem;
+}
+
+.est-cat-tag {
+    display: flex;
+    flex-shrink: 0;
+    width: fit-content;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.est-cat-tag:active {
+    transform: scale(0.95);
+}
+
+.est-cat-tag--activa {
+    background: var(--c-blue);
+    border-color: transparent;
+    color: var(--text-inv);
+}
+
+/* ============================================================
+           CALCULADOR DE PERÍODO
+        ============================================================ */
+.calculador-campo {
+    display: flex;
+    flex-direction: column;
+    padding-top: 1rem;
+}
+
+.calculador-label {
+    color: var(--text-muted);
+}
+
+.calculador-input {
+    cursor: text;
+}
+
+.calculador-resultados {
+    display: flex;
+    flex-direction: column;
+}
+
+.calculador-resultado-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+}
+
+.calculador-resultado-valor {
+    color: var(--text-main);
+}
+
+/* ============================================================
+           CALCULADORA FLOTANTE
+        ============================================================ */
+.calculadora-flotante {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    z-index: 998;
+    display: none;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    background: var(--c-blue);
+    color: var(--text-main);
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(3px);
+    transform: translateX(-50%);
+    animation: slideUp2 0.2s ease-out;
+}
+
+.calculadora-total,
+.calculadora-contador {
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.calculadora-total {
+    min-width: 120px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.calculadora-total:active {
+    opacity: 0.5;
+}
+
+.calculadora-contador {
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+/* ============================================================
+           BÚSQUEDA
+        ============================================================ */
+.search-container {
+    position: relative;
+    max-height: 50px;
+    overflow: visible;
+    opacity: 1;
+    background: var(--bg-card);
+    transition: max-height var(--transition-base), opacity var(--transition-base), padding var(--transition-base);
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    background: var(--input-bg);
+    color: var(--text-main);
+    transition: border-color var(--transition-fast);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--border);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.search-clear {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;             /* oculto por defecto; se muestra con d-flex-force */
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    padding: 0 1rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: color var(--transition-fast);
+}
+
+.search-clear:hover {
+    color: var(--text-main);
+}
+
+.search-clear .icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    pointer-events: none;
+}
+
+/* ============================================================
+           EMPTY STATE
+        ============================================================ */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state svg {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.empty-state p {
+    font-size: 0.95rem;
+}
+
+/* ============================================================
+           TOAST
+        ============================================================ */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    justify-content: center;
+    transform: translateX(-50%) translateY(80px);
+    transition: var(--transition-anim, opacity 0.3s ease, transform 0.3s ease);
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 2px solid transparent;
+    padding: var(--space-lg, 1rem) var(--space-xl, 1.5rem);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-float, var(--shadow));
+    opacity: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md, 0.75rem);
+    white-space: pre-line;
+    pointer-events: none;
+    width: calc(100% - 4rem);
+    max-width: 400px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+    will-change: transform, opacity;
+    cursor: pointer;
+}
+
+.toast.success {
+    border-color: var(--c-green);
+}
+
+.toast.error,
+.toast.warning {
+    border-color: var(--c-red);
+}
+
+.toast.info {
+    border-color: var(--c-blue);
+}
+
+/* Toast con acción ("Deshacer"): texto + botón en línea */
+.toast.toast-con-accion {
+    justify-content: space-between;
+    text-align: left;
+}
+
+.toast-accion {
+    width: auto;
+    flex-shrink: 0;
+    padding: 0.35rem 0.9rem;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--c-blue);
+    color: var(--c-white);
+    font-weight: 600;
+    cursor: pointer;
+}

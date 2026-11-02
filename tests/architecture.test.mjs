@@ -270,3 +270,12 @@ test('CSP: index.html exige Trusted Types con la única política de core/html.j
     assert.match(csp, /trusted-types servicios;/);
     assert.match(fs.readFileSync('src/core/html.js', 'utf8'), /createPolicy\?\.\('servicios'/);
 });
+
+test('Arquitectura CSS: las 5 hojas de assets/styles/ se cargan en orden de cascada en index.html', () => {
+    const esperado = ['tokens', 'base', 'vistas', 'menus-modales', 'utilidades-responsivo'].map(n => `assets/styles/${n}.css`);
+    const enDisco = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => `assets/styles/${f}`).sort();
+    assert.deepEqual(enDisco, [...esperado].sort(), 'assets/styles/ debe tener exactamente las 5 capas');
+    const html = fs.readFileSync('index.html', 'utf8');
+    const links = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="\.\/([^"]+)"/g)].map(m => m[1]);
+    assert.deepEqual(links, esperado, 'orden de cascada de las hojas CSS en index.html');
+});

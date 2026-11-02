@@ -1,0 +1,222 @@
+/* ============================================================
+           MENÚ AJUSTES (panel lateral)
+        ============================================================ */
+.menu-ajustes {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    height: 100dvh;
+    padding: 1rem;
+    background: var(--bg-card);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    overscroll-behavior: contain;
+    transition: right var(--transition-base);
+}
+
+.menu-ajustes.active,
+.menu-ajustes.show {
+    right: 0;
+}
+
+.menu-header {
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.menu-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.menu-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: color var(--transition-fast);
+}
+
+.menu-item:hover,
+.btn-cerrar-menu:hover {
+    color: var(--text-muted);
+}
+
+.menu-item-parent svg.menu-chevron {
+    margin-left: auto;
+}
+
+.btn-cerrar-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.875rem;
+    margin-bottom: 1rem;
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: color var(--transition-fast);
+}
+
+.menu-version {
+    padding: 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+#ingresos-indicator,
+#blur-indicator {
+    margin-left: auto;
+    padding-right: 1rem;
+}
+
+.dolar-widget-valor {
+    font-weight: 600;
+    color: var(--c-green);
+}
+
+.dolar-widget-hora {
+    color: var(--text-muted);
+}
+
+/* ============================================================
+           MENÚ EMERGENTE AGREGAR
+        ============================================================ */
+.menu-agregar {
+    position: fixed;
+    bottom: 7rem;
+    right: 2rem;
+    z-index: 110;
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-modal);
+    animation: slideUp 0.2s ease;
+}
+
+.menu-agregar.active,
+.menu-agregar.show {
+    display: flex;
+}
+
+/* ============================================================
+           BADGES DE MONEDA
+        ============================================================ */
+.moneda-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.moneda-badge.usd {
+    color: var(--c-green);
+}
+
+.moneda-badge.ars {
+    color: var(--c-red);
+}
+
+.moneda-badge.contado {
+    color: var(--c-blue);
+    text-transform: uppercase;
+}
+
+.moneda-badge.credito {
+    color: var(--c-gold);
+    text-transform: uppercase;
+}
+
+/* ============================================================
+           CATEGORÍAS (tags en gestión)
+        ============================================================ */
+.categoria-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--input-bg);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.categoria-tag-del {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.categoria-tag-del:active {
+    color: var(--text-main);
+}
+
+/* ============================================================
+           MODAL DE INFORMACIÓN
+        ============================================================ */
+.info-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.info-section {
+    margin-bottom: 1.5rem;
+}
+
+.info-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.info-item {
+    margin-bottom: 0.75rem;
+    padding-left: 0.5rem;
+}
+
+.info-item strong {
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.info-content em {
+    color: var(--c-blue);
+    font-style: normal;
+}

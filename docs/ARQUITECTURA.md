@@ -12,7 +12,7 @@
 ## Estructura actual
 ```
 index.html  sw.js  package.json  scripts/release.mjs  tests/  docs/
-assets/{manifest.json, icons/, styles/app.css}
+assets/{manifest.json, icons/, styles/{tokens,base,vistas,menus-modales,utilidades-responsivo}.css}
 src/main.js
 src/core/   constantes, eventos (EventosApp), seguridad (SecurityAndUtils), almacenamiento (StorageHelper),
             movimiento (Motion), debounce, tema-inicial (script clásico anti-parpadeo)
@@ -40,7 +40,11 @@ src/services/  estado-facturas (EstadoFacturas: estado, última factura, filtro 
 | 2 | Extraer `core/` y utilidades genéricas de `ui/`; quitar `window.app` | ✅ |
 | 3 | Dominio en `services/` sin DOM + tests: `EstadoFacturas`, `ResumenMes`, `ImportarExportar`, `Calculadora`, `ReportesTexto`, `GestorPerfiles`, `PilaHistorial` y el store `EstadoApp` | ✅ |
 | 4 | `GestionServicios` (2.146 → 493 líneas): 75 pasamanos eliminados; vistas en `VistaServicios`, `ListenersApp`, `ServicioService` | ✅ |
-| 5 | `html```/`montar` + Trusted Types, import/restore único, aviso de actualización, buscador de ayuda, CSS en capas, push opcional | ⏳ |
+| 5 | Hecho: `core/html.js` (`html```, `montar`, Trusted Types en la CSP), import/restore único (`ImportarExportar`), CSS en 5 capas, versión dinámica, e2e en Firefox. Pendiente: migrar las plantillas con `crudo()` restantes a `html```, aviso de actualización con progreso, push de vencimientos (opcional, requiere backend) | 🔶 |
+
+## Verificación
+- `npm test`: arquitectura (capas, ciclos, precache, CSP/Trusted Types, CSS) y dominio sin DOM.
+- `npm run e2e`: Firefox headless por WebDriver BiDi; recorre menús, modales, altas, búsqueda, orden, calculadora y undo/redo y falla si hay errores en consola. Sirve para comparar contra otra versión (`node scripts/e2e/navegador.mjs <carpeta> scripts/e2e/flujos.mjs` y `diff`).
 
 ## Dónde poner código nuevo
 - Función pura sin dominio ni DOM → `src/core/`.

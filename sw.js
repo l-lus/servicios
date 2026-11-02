@@ -2,7 +2,7 @@
 // así que solo se tocan las cachés que empiezan con CACHE_PREFIX
 // (CACHE_NAME tiene que empezar con ese prefijo).
 const CACHE_PREFIX = 'SERVICIOS-';
-const CACHE_NAME = `${CACHE_PREFIX}v261101.2245`;
+const CACHE_NAME = `${CACHE_PREFIX}v261101.2246`;
 
 const urlsToCache = [
   './',
@@ -52,7 +52,11 @@ const urlsToCache = [
   './assets/icons/icon-512x512.png',
   './assets/icons/icon.svg',
   './assets/manifest.json',
-  './assets/styles/app.css',
+  './assets/styles/base.css',
+  './assets/styles/menus-modales.css',
+  './assets/styles/tokens.css',
+  './assets/styles/utilidades-responsivo.css',
+  './assets/styles/vistas.css',
 ];
 
 // Instalación: cache: 'reload' evita que addAll tome versiones viejas de la
