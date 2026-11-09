@@ -262,11 +262,6 @@ export class VistaServicios {
 
         // Agregar servicio de ingresos si está habilitado Y (no hay búsqueda O coincide con la búsqueda)
         if (this.app.ui.ingresosHabilitado() && (!this.app.terminoBusqueda || 'ingresos'.includes(this.app.terminoBusqueda))) {
-            // Línea separadora
-            if (serviciosOrdenados.length > 0) {
-                partes.push(html`<div class="separator-line"></div>`);
-            }
-
             // Crear servicio de ingresos si no existe
             if (!servicioIngresos) {
                 this.app.ingreso.crearServicio();
