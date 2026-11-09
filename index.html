@@ -355,19 +355,6 @@
                     <div id="resumen-mes"></div>
                 </div>
 
-                <!-- Tarjeta de Atajos rápidos -->
-                <div class="card card-fade-in delay-1" id="card-atajos">
-                    <div class="atajos-grid" role="group" aria-label="Atajos rápidos">
-                        <button class="atajo-btn atajo-agregar" id="btn-atajos-editar" type="button"
-                            title="Agregar o quitar atajos" aria-label="Agregar o quitar atajos">
-                            <svg class="icon">
-                                <use href="#icon-plus" />
-                            </svg>
-                        </button>
-                        <div class="atajos-botones" id="atajos-botones"></div>
-                    </div>
-                </div>
-
                 <!-- Tarjeta de Estadísticas Unificada -->
                 <div class="card card-fade-in delay-1" id="card-estadisticas">
                     <h2 class="card-header-collapsible" id="estadisticas-header">
@@ -837,22 +824,6 @@
             <div class="form-actions">
                 <button type="button" class="btn-secondary" id="btn-tarjetas-restablecer">Restablecer</button>
                 <button type="button" class="button" id="modal-tarjetas-close">
-                    <svg class="icon"><use href="#icon-cancel" /></svg>
-                    Listo
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="modal-atajos" role="dialog" aria-modal="true" aria-labelledby="modal-atajos-titulo">
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h3 id="modal-atajos-titulo">Atajos <span class="atajos-contador" id="atajos-contador"></span></h3>
-                <p class="text-muted">Elegí los botones rápidos que se muestran en la tarjeta.</p>
-            </div>
-            <div class="atajos-opciones custom-scroll" id="lista-atajos-opciones"></div>
-            <div class="form-actions">
-                <button type="button" class="button" id="modal-atajos-close">
                     <svg class="icon"><use href="#icon-cancel" /></svg>
                     Listo
                 </button>
@@ -1594,11 +1565,6 @@
                                 <span class="settings-list-text"><span>Tarjetas y orden</span><span class="settings-list-desc">Mostrar, ocultar y mover</span></span>
                                 
                             </button>
-                            <button type="button" id="menu-atajos">
-                                <svg class="icon"><use href="#icon-bolt" /></svg>
-                                <span class="settings-list-text"><span>Atajos</span><span class="settings-list-desc">Botones rápidos</span></span>
-                                
-                            </button>
                             <button type="button" id="menu-toggle-blur">
                                 <svg class="icon"><use href="#icon-eye" /></svg>
                                 <span class="settings-list-text"><span>Privacidad</span><span class="settings-list-desc">Desenfoca los montos del resumen</span></span>
@@ -1778,7 +1744,6 @@
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-facturas">Facturas y pagos</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-resumen">Resumen</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-calendario">Calendario</button>
-                        <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-atajos">Atajos</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-tarjetas">Tarjetas y orden</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-busqueda">Buscar y ordenar</button>
                         <button type="button" class="ayuda-indice-item" data-target="ayuda-sec-categorias">Categorías</button>
@@ -1822,10 +1787,6 @@
                             <h4>Calendario</h4>
                             <p>La tarjeta <strong>Calendario</strong> marca cada día con facturas con el color de la más urgente (los mismos colores de la lista). Un puntito indica que ese día vencen varias. La semana actual (de lunes a viernes) va sobre una banda. Mantené presionado el título de la tarjeta o entrá en Ajustes → <strong>Días del calendario</strong> para cambiar el estilo de marcado con vista previa en vivo.</p>
 <p>Tocá un día para ver sus facturas y, desde ahí, ir a las del servicio; en PC también podés pasar el mouse por encima para ver un resumen flotante. Las flechas, deslizar con el dedo o usar <strong>Alt + rueda del mouse</strong> (o la rueda sola si lo activás en Ajustes) cambian de mes con una animación, <strong>Hoy</strong> vuelve al mes actual y tocar el título muestra los meses que tienen facturas. Abajo se resume cuánto queda pendiente y cuántas están vencidas.</p>
-                        </section>
-                        <section class="ayuda-seccion" id="ayuda-sec-atajos">
-                            <h4>Atajos</h4>
-                            <p>La tarjeta <strong>Atajos</strong> reúne botones rápidos (nueva factura, calculadora, calendario, deshacer, respaldar, tema, fondo del resumen, estilo del calendario…). Con el botón + elegís cuáles mostrar, hasta 12. Algunos se desactivan solos: deshacer sin cambios, o nuevo ingreso si los ingresos están apagados.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-tarjetas">
                             <h4>Tarjetas y orden</h4>

@@ -16,11 +16,11 @@ export default async (b) => {
     console.log('resumen → col 2:', await dist());
     await click('.orden-card-item[data-card="servicios"] [data-columna="0"]'); await click('.orden-card-item[data-card="calendario"] [data-columna="1"]');
     console.log('servicios y calendario → otra columna:', await dist());
-    await click('.orden-card-item[data-card="atajos"] [data-mover="1"]');
-    console.log('atajos baja un lugar:', await dist());
-    await click('.orden-card-item[data-card="atajos"] [data-visible]');
-    console.log('ocultar atajos:', await dist(), '| guardado:', await v(`localStorage.getItem('orden-tarjetas')`));
-    await click('.orden-card-item[data-card="atajos"] [data-visible]');
+    await click('.orden-card-item[data-card="calendario"] [data-mover="-1"]');
+    console.log('calendario sube un lugar:', await dist());
+    await click('.orden-card-item[data-card="calendario"] [data-visible]');
+    console.log('ocultar calendario:', await dist(), '| guardado:', await v(`localStorage.getItem('orden-tarjetas')`));
+    await click('.orden-card-item[data-card="calendario"] [data-visible]');
     // 3 columnas orgánicas: pasar una tarjeta a la columna 3 la abre (y cuando se vacía se cierra)
     await click('.orden-card-item[data-card="estadisticas"] [data-columna="2"]');
     console.log('3 columnas, estadísticas a col 3:', await dist(), '| grilla cols-3:', await v(`document.querySelector('.main-grid').classList.contains('cols-3')`));

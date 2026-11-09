@@ -1,7 +1,7 @@
 // Arrastre de tarjetas con 3 columnas orgánicas: las tarjetas no parpadean (sin animación de entrada tras cargar) y el arrastrado queda a 0.65 de opacidad.
 export default async (b) => {
     const v = async (e) => (await b.eval(e)).value;
-    await b.eval(`localStorage.clear(); localStorage.setItem('bienvenida-vista','true'); localStorage.setItem('orden-tarjetas', JSON.stringify(['resumen','atajos','estadisticas','calendario','servicios'])); localStorage.setItem('columnas-tarjetas', JSON.stringify([2,2,1])); true`);
+    await b.eval(`localStorage.clear(); localStorage.setItem('bienvenida-vista','true'); localStorage.setItem('orden-tarjetas', JSON.stringify(['resumen','estadisticas','calendario','servicios'])); localStorage.setItem('columnas-tarjetas', JSON.stringify([2,1,1])); true`);
     await b.setViewport(1900, 900); await b.ir(b.url); await b.sleep(2200);
     const estado = () => v(`JSON.stringify([...document.querySelectorAll('.card[id^=card-]')].map(c=>c.id.slice(5)+':'+getComputedStyle(c).animationName+'/'+getComputedStyle(c).opacity))`);
     console.log('antes:', await estado());

@@ -1,5 +1,4 @@
 import { OrdenTarjetas } from './orden-tarjetas.js';
-import { AtajosCard } from './atajos.js';
 import { BienvenidaModal } from './bienvenida-modal.js';
 import { CalendarioVista } from './calendario-vista.js';
 import { ReporteModal } from './reporte-modal.js';
@@ -152,7 +151,6 @@ export class GestionServicios {
         this.reporte = new ReporteModal(this);
         this.calendario = new CalendarioVista(this);
         this.bienvenida = new BienvenidaModal(this);
-        this.atajos = new AtajosCard(this);
         this.tarjetas = new OrdenTarjetas(this);
         this.vista = new VistaServicios(this);
         this.listeners = new ListenersApp(this);
@@ -181,7 +179,6 @@ export class GestionServicios {
         RecargaGesto.bindEventos();
         this.tarjetas.init();
         this.calendario.init();
-        this.atajos.render();
         Anim.initColapsables();
         this.ui.cargarTema();
         this.estadisticas.actualizarResumenMes();

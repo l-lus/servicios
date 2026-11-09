@@ -32,7 +32,6 @@ export class ListenersApp {
         document.getElementById('btn-ayuda-config').addEventListener('click', () => this.app.ui.abrirAyuda());
         ['theme-toggle-perfiles', 'theme-toggle-config'].forEach(id =>
             document.getElementById(id).addEventListener('click', () => GestorTemas.alternarClaroOscuro()));
-        document.getElementById('menu-atajos').addEventListener('click', () => this.app.atajos.abrirSelector());
         document.getElementById('btn-cerrar-borrar').addEventListener('click', () => this.app.ui.cerrarModal('modal-borrar'));
 
         // Undo/Redo
@@ -310,7 +309,6 @@ export class ListenersApp {
         this.app.reporte.bindEventos();
         this.app.calendario.bindEventos();
         this.app.bienvenida.bindEventos();
-        this.app.atajos.bindEventos();
         this.app.tarjetas.bindEventos();
 
         // Modal info-resumen (botón header + botón footer)

@@ -26,7 +26,6 @@ export const STORAGE_KEYS = Object.freeze({
     ESTILO_TARJETA: 'estilo-tarjeta',
     FONDO_CARD: 'fondo-card',
     BIENVENIDA_VISTA: 'bienvenida-vista',
-    ATAJOS: 'atajos',
     ORDEN_CARDS: 'orden-tarjetas',
     ORDEN_CARDS_MOVIL: 'orden-tarjetas-movil',
     COLUMNAS_CARDS: 'columnas-tarjetas',
@@ -42,7 +41,7 @@ export const STORAGE_KEYS = Object.freeze({
 export const FONDO_CARD_POR_DEFECTO = 'golden-gate';
 
 /** Tarjetas de la pantalla principal, en su orden por defecto (el id del elemento es `card-<nombre>`). */
-export const CARDS = Object.freeze(['resumen', 'atajos', 'estadisticas', 'calendario', 'servicios']);
+export const CARDS = Object.freeze(['resumen', 'estadisticas', 'calendario', 'servicios']);
 
 /** Nombre para mostrar de cada tarjeta. */
-export const CARDS_ETIQUETAS = Object.freeze({ resumen: 'Resumen', atajos: 'Atajos', estadisticas: 'Estadísticas', calendario: 'Calendario', servicios: 'Servicios' });
+export const CARDS_ETIQUETAS = Object.freeze({ resumen: 'Resumen', estadisticas: 'Estadísticas', calendario: 'Calendario', servicios: 'Servicios' });

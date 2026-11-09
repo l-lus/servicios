@@ -20,14 +20,14 @@ src/core/   dom ($/$$/alClic), temas, estilo-calendario, estilo-tarjeta, prefere
             seguridad (SecurityAndUtils), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
 src/ui/     calendario-vista, vista-previa, tarjeta-fondos, popups, iconos-animados, recarga-gesto,
-            atajos (AtajosCard), orden-tarjetas, arrastre, bienvenida-modal, reporte-modal, respaldo-modal,
+            orden-tarjetas, arrastre, bienvenida-modal, reporte-modal, respaldo-modal,
             resumen-merge, ayuda-buscador, gestor-temas, aviso-actualizacion, animaciones (Anim), gestos,
             toast, gestor-modales (ModalManager/BackNav), custom-select, instalador-pwa,
             gestion-servicios (orquestador), vista-servicios, listeners-app, servicio-service y:
             factura-service, ingreso-service, menu-contextual, categoria-service, estadisticas-service,
             ui-manager, utils-service, perfil-service, calculador-service, gist-service,
             historial-manager, storage-service
-src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-html, atajos, orden-cards (todos puros)
+src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-html, orden-cards (todos puros)
                estado-facturas (EstadoFacturas: estado, última factura, filtro y orden)
                resumen-mes (ResumenMes: resumen, borde, detalle y estadísticas mensuales)
                importar-exportar (ImportarExportar: validación, respaldo con preferencias CONFIG_RESPALDO, hash, fusión y comparación)
@@ -52,7 +52,7 @@ src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-ht
 Aviso de actualización con progreso · ayuda con buscador · búsqueda sin acentos · 8 temas de color · calendario de vencimientos con 7 estilos de días (`data-estilo-calendario`), popup flotante al pasar el mouse y cambio de mes con rueda ·
 vista previa en vivo (`VistaPrevia`) · fondos ilustrados SVG y estructura de estilo para la tarjeta de resumen · header flotante tipo píldora al hacer scroll en PC · pantalla de carga inicial (`html.cargando`) y gesto de recarga con fundido (`RecargaGesto`) ·
 íconos animados (`IconosAnimados`) y llamado de atención de instalación PWA · modal de perfiles con alta colapsable flotante ·
-reportes HTML · respaldo por rango, preferencias (`CONFIG_RESPALDO`) y resumen previo al merge · estadísticas anuales · bienvenida · atajos · disposición orgánica de 2 o 3 columnas en PC y orden independiente en móvil ·
+reportes HTML · respaldo por rango, preferencias (`CONFIG_RESPALDO`) y resumen previo al merge · estadísticas anuales · bienvenida · disposición orgánica de 2 o 3 columnas en PC y orden independiente en móvil ·
 tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: [avisos push](PUSH-VENCIMIENTOS.md).
 
 ## Verificación

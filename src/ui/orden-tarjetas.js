@@ -18,8 +18,8 @@ const consultaAncho = window.matchMedia('(min-width: 1100px)');
 const esEscritorio = () => consultaEscritorio.matches;
 const maxColumnas = () => (!esEscritorio() ? 1 : consultaAncho.matches ? MAX_COLUMNAS : 2);
 
-const SELECTOR_ENCABEZADOS = '#card-resumen .resumen-titulo, #card-atajos, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
-const SELECTOR_CARDS = '#card-resumen, #card-atajos, #card-estadisticas, #card-calendario, #card-servicios';
+const SELECTOR_ENCABEZADOS = '#card-resumen .resumen-titulo, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
+const SELECTOR_CARDS = '#card-resumen, #card-estadisticas, #card-calendario, #card-servicios';
 
 const VENTANA_PERSONALIZAR_MS = 1000;
 const AVISO_PERSONALIZAR_MS = 800;
@@ -190,7 +190,6 @@ export class OrdenTarjetas {
         StorageHelper.setItem(STORAGE_KEYS.CARD_VISIBLE(cual), !this.esVisible(cual));
         this.aplicarVisibilidad();
         this.aplicar();
-        this.app.atajos?.render();
     }
 
     mover(cual, delta) {
@@ -238,7 +237,6 @@ export class OrdenTarjetas {
         CARDS.forEach(c => StorageHelper.removeItem(STORAGE_KEYS.CARD_VISIBLE(c)));
         this.aplicarVisibilidad();
         this.aplicar();
-        this.app.atajos?.render();
     }
 
     // ── Arrastre y teclado sobre las tarjetas ────────────────

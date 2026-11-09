@@ -73,7 +73,6 @@ export class UIManager {
         set('calendario-estilo-indicator', EstiloCalendario.etiqueta());
         set('hover-popup-indicator', Preferencias.HOVER_POPUP.get() ? 'SI' : 'NO');
         set('rueda-calendario-indicator', Preferencias.RUEDA_CALENDARIO.get() ? 'SI' : 'NO');
-        this.app.atajos?.actualizarEstados();
     }
 
     abrirVistaPreviaResumen({ desdeAjustes = false } = {}) {
@@ -140,7 +139,6 @@ export class UIManager {
         const indicator = document.getElementById('ingresos-indicator');
         if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
         this.app.vista.renderServicios();
-        this.app.atajos?.actualizarEstados();
         if (!silencioso) {
             this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
         }

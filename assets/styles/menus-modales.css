@@ -1304,16 +1304,12 @@ body.vista-previa-activa .btn-add {
     border-top: 1px solid var(--border);
 }
 
-.modal-content > :is(.modal-body, .modal-panel-body, .modal-form-body, .facturas-lista, .info-content, .atajos-opciones, .temas-lista) {
+.modal-content > :is(.modal-body, .modal-panel-body, .modal-form-body, .facturas-lista, .info-content, .temas-lista) {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: var(--space-xs);
-}
-
-.modal-content > .atajos-opciones {
-    max-height: none;
 }
 
 .modal-content > .info-content {

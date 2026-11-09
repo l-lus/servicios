@@ -820,13 +820,3 @@
     animation: none;
 }
 
-@media (min-width: 1024px) {
-    .atajos-grid {
-        grid-template-columns: repeat(10, 1fr);
-    }
-
-    .atajo-btn {
-        height: auto;
-        aspect-ratio: 1;
-    }
-}

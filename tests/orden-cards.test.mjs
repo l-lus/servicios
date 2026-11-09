@@ -5,23 +5,23 @@ import {
 } from '../src/services/orden-cards.js';
 import { CARDS } from '../src/core/constantes.js';
 
-const ORDEN = ['resumen', 'atajos', 'estadisticas', 'calendario', 'servicios'];
+const ORDEN = ['resumen', 'estadisticas', 'calendario', 'servicios'];
 
 test('normalizarOrdenCards: sin nada guardado, inválido o en formato anterior devuelve todas las tarjetas', () => {
     assert.deepEqual(normalizarOrdenCards(null), [...CARDS]);
     assert.deepEqual(normalizarOrdenCards('basura'), [...CARDS]);
-    assert.deepEqual(normalizarOrdenCards({ izq: ['servicios', 'resumen'], cen: ['atajos'], der: ['estadisticas', 'calendario'] }),
-        ['servicios', 'resumen', 'atajos', 'estadisticas', 'calendario']);
+    assert.deepEqual(normalizarOrdenCards({ izq: ['servicios', 'resumen'], cen: ['estadisticas'], der: ['calendario'] }),
+        ['servicios', 'resumen', 'estadisticas', 'calendario']);
 });
 
 test('Columnas: sin tamaños guardados se usa el reparto por defecto (todas a la izquierda salvo la última, que va a la derecha)', () => {
-    assert.deepEqual(columnasDesdeOrden(ORDEN), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
-    assert.deepEqual(columnasDesdeOrden(ORDEN, [4, 1]), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
-    assert.deepEqual(columnasDesdeOrden(ORDEN, [2, 2, 1]), [['resumen', 'atajos'], ['estadisticas', 'calendario'], ['servicios']]);
-    assert.deepEqual(columnasDesdeOrden(ORDEN, [0, 5]), [ORDEN]);   // una columna vacía no existe
+    assert.deepEqual(columnasDesdeOrden(ORDEN), [['resumen', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [3, 1]), [['resumen', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [2, 1, 1]), [['resumen', 'estadisticas'], ['calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [0, 4]), [ORDEN]);   // una columna vacía no existe
     // tamaños que no suman el total o inválidos: reparto por defecto
-    assert.deepEqual(columnasDesdeOrden(ORDEN, [4]), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
-    assert.deepEqual(columnasDesdeOrden(ORDEN, 'x'), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [3]), [['resumen', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, 'x'), [['resumen', 'estadisticas', 'calendario'], ['servicios']]);
 });
 
 test('Columnas: validación de tamaños (hasta 3, enteros; la primera puede ser 0 por compatibilidad)', () => {
