@@ -182,7 +182,26 @@ export class GistService {
         }
     }
 
+    _sincronizarCredencialesDesdeModal() {
+        const modal = document.getElementById('modal-gist');
+        if (!modal || (!modal.classList.contains('show') && !modal.classList.contains('active'))) return;
+        const tokenInput = document.getElementById('gist-token');
+        const gistIdInput = document.getElementById('gist-id');
+        const autoToggle = document.getElementById('gist-autosync-toggle');
+
+        const token = tokenInput ? tokenInput.value.trim() : '';
+        const gistId = gistIdInput ? gistIdInput.value.trim() : '';
+        const auto = autoToggle ? autoToggle.classList.contains('on') : false;
+
+        if (token) StorageHelper.setItem(STORAGE_KEYS.GIST_TOKEN, token);
+        else if (tokenInput) StorageHelper.removeItem(STORAGE_KEYS.GIST_TOKEN);
+
+        this.setPerfil({ gistId, gistAuto: auto });
+        this.actualizarBotones();
+    }
+
     subir() {
+        this._sincronizarCredencialesDesdeModal();
         IconosAnimados.animarFlecha(document.getElementById('btn-gist-subir'), 'subir');
         this._ejecutarSubida(false);
     }
@@ -221,6 +240,7 @@ export class GistService {
 
     // ── Descarga y Novedades ──────────────────────────────────
     async bajar() {
+        this._sincronizarCredencialesDesdeModal();
         IconosAnimados.animarFlecha(document.getElementById('btn-gist-bajar'), 'bajar');
         const token = this.getToken();
         const perfil = this.getPerfil();
