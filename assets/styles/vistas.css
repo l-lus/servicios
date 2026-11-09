@@ -99,6 +99,10 @@
     scroll-margin-top: calc(var(--app-header-h) + 0.5rem);
 }
 
+.servicios-grupo-cat:not(:last-child) {
+    margin-bottom: var(--space-md);
+}
+
 /* ============================================================
            GRUPOS (headers de facturas y categorías — patrón unificado)
         ============================================================ */
@@ -226,6 +230,45 @@
 }
 
 .servicio-item.calculando {
+    background: var(--c-blue);
+}
+
+/* ============================================================
+   MOSAICOS AGRUPADOS DE SERVICIOS
+   (como .settings-list de Ajustes o .registro-semana de Horarios)
+   ============================================================ */
+.servicios-mosaico {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+}
+
+.servicios-mosaico > .servicio-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.servicios-mosaico > .servicio-wrapper:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.servicios-mosaico .servicio-item {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    transition: background-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.servicios-mosaico .servicio-item:hover,
+.servicios-mosaico .servicio-item:active {
+    background: var(--surface-row-hover);
+    transform: none;
+}
+
+.servicios-mosaico .servicio-item.calculando {
     background: var(--c-blue);
 }
 

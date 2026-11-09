@@ -172,7 +172,7 @@ export class VistaServicios {
 
         const partes = [];
 
-        // Si solo hay una categoría (o ninguna), no mostrar encabezado de grupo
+        // Renderizar servicios normales agrupados según la opción de vista
         if (this.app._vistaEstados) {
             const grupos = [
                 { key: 'pendiente', label: 'Pendientes', clases: ['vencido', 'urgente', 'proximo', 'lejano'] },
@@ -194,12 +194,21 @@ export class VistaServicios {
             <svg class="icon servicios-grupo-cat-chevron ${collapsed}"><use href="#icon-chevron-down"/></svg>
         </div>
         <div class="servicios-grupo-cat-contenido ${collapsed}">
-            <div class="collapsible-inner">${items.map(generarItemServicio)}</div>
+            <div class="collapsible-inner">
+                <div class="servicios-mosaico">
+                    ${items.map(generarItemServicio)}
+                </div>
+            </div>
         </div>
     </div>`);
             });
         } else if (catKeys.length <= 1 || !this.app._agrupacionActiva) {
-            partes.push(...serviciosOrdenados.map(generarItemServicio));
+            if (serviciosOrdenados.length > 0) {
+                partes.push(html`
+    <div class="servicios-mosaico">
+        ${serviciosOrdenados.map(generarItemServicio)}
+    </div>`);
+            }
         } else {
             catKeys.forEach(cat => {
                 const items = gruposCat[cat];
@@ -240,7 +249,11 @@ export class VistaServicios {
          </div>
         </div>
         <div class="servicios-grupo-cat-contenido ${collapsed}">
-            <div class="collapsible-inner">${itemsHTML}</div>
+            <div class="collapsible-inner">
+                <div class="servicios-mosaico">
+                    ${itemsHTML}
+                </div>
+            </div>
         </div>
     </div>
                     `);
@@ -261,22 +274,11 @@ export class VistaServicios {
 
             const ingresos = servicioIngresos || EstadoApp.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
             if (ingresos) {
-                const { estado, claseEstado, montoTexto, fechaTexto } = this.calcularEstadoServicio(ingresos);
-
-                const claseCalculandoIngresos = this.app.serviciosSeleccionados.has(ingresos.id) ? 'calculando' : '';
-
                 partes.push(html`
-   <div class="servicio-wrapper" data-id="${ingresos.id}">
-  <div class="servicio-item ${claseEstado} ${claseCalculandoIngresos}" data-id="${ingresos.id}">
-                          <div class="servicio-nombre">${ingresos.nombre}</div>
-                           <div class="servicio-info">
-                              <span class="servicio-monto">${montoTexto}</span>
-                               ${fechaTexto ? html`<span class="servicio-fecha">${fechaTexto}</span>` : ''}
-                           </div>
-                        ${estado ? html`<span class="servicio-estado estado-${claseEstado}">${estado}</span>` : ''}
-                       </div>
-                   </div>
-                 `);
+                    <div class="servicios-mosaico">
+                        ${generarItemServicio(ingresos)}
+                    </div>
+                `);
             }
         }
 
