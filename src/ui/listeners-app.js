@@ -40,13 +40,8 @@ export class ListenersApp {
 
         // Menú ajustes
         document.getElementById('menu-tema').addEventListener('click', () => {
-            this.app.ui.abrirModal('modal-temas');
+            this.app.ui.abrirVistaPreviaTema({ desdeAjustes: true });
         });
-        document.getElementById('temas-lista').addEventListener('click', (e) => {
-            const opcion = e.target.closest('.tema-opcion');
-            if (opcion) GestorTemas.elegirTema(opcion.dataset.tema);
-        });
-        document.getElementById('modal-temas-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-temas'));
         const btnExportar = document.getElementById('menu-exportar');
         const btnImportar = document.getElementById('menu-importar');
         IconosAnimados.ponerIconoFlecha(btnExportar, 'bandeja', 'subir');

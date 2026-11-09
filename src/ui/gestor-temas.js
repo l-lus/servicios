@@ -55,8 +55,15 @@ function elegirTema(tema) {
     StorageHelper.setItem(STORAGE_KEYS.TEMA, _actual);
 }
 
+/** Pasa al siguiente tema de la lista y lo guarda. */
+function siguienteTema() {
+    const idx = TEMAS.findIndex(t => t.id === _actual);
+    const sig = TEMAS[(idx + 1) % TEMAS.length].id;
+    elegirTema(sig);
+}
+
 /** Dibuja las muestras del selector (una por tema). */
-function renderSelector(idLista = 'temas-lista') {
+function renderSelector(idLista = 'bienvenida-temas') {
     const lista = document.getElementById(idLista);
     if (!lista) return;
     montar(lista, html`${TEMAS.map(t => html`
@@ -79,8 +86,10 @@ export const GestorTemas = {
     temaGuardado,
     aplicarTema,
     elegirTema,
+    siguienteTema,
     alternarClaroOscuro,
     renderSelector,
     actual: () => _actual,
-    cargar() { renderSelector(); renderSelector('bienvenida-temas'); aplicarTema(temaGuardado()); },
+    etiqueta: () => etiquetaTema(_actual),
+    cargar() { renderSelector('bienvenida-temas'); aplicarTema(temaGuardado()); },
 };

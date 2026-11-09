@@ -124,6 +124,27 @@ export class UIManager {
         });
     }
 
+    abrirVistaPreviaTema({ desdeAjustes = false } = {}) {
+        VistaPrevia.abrir({
+            id: 'tema',
+            titulo: 'Tema de color',
+            idObjetivo: 'card-resumen',
+            antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
+            alCerrar: desdeAjustes
+                ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
+                : () => this.actualizarIndicadoresConfig(),
+            filas: [
+                {
+                    etiqueta: 'Tema',
+                    descripcion: 'Claro, oscuro y colores suaves',
+                    icono: '#icon-sun',
+                    valor: () => GestorTemas.etiqueta(),
+                    alTocar: () => { GestorTemas.siguienteTema(); this.actualizarIndicadoresConfig(); }
+                }
+            ]
+        });
+    }
+
     // ── Ingresos ──────────────────────────────────────────────
     ingresosHabilitado() {
         return StorageHelper.getItem(STORAGE_KEYS.INGRESOS_HABILITADO) === 'true';

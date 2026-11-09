@@ -23,14 +23,16 @@ const MAPA_COLOR_FONDO = {
 export class EstadisticasService {
     constructor(app) {
         this.app = app;
-        VistaPrevia.registrarPreparador('resumen', () => {
+        const prepararResumen = () => {
             const card = document.getElementById('card-resumen');
             const estabaOculta = card?.classList.contains('card-oculta');
             if (estabaOculta) card.classList.remove('card-oculta');
             return () => {
                 if (estabaOculta) card?.classList.add('card-oculta');
             };
-        });
+        };
+        VistaPrevia.registrarPreparador('resumen', prepararResumen);
+        VistaPrevia.registrarPreparador('tema', prepararResumen);
     }
 
     // ── Getters ───────────────────────────────────────────────

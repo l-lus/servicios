@@ -13,8 +13,8 @@ export default async (b) => {
     console.log('indicadores:', await v(`['tema-indicator','resumen-estilo-indicator','calendario-estilo-indicator','blur-indicator','animaciones-indicator','hover-popup-indicator','rueda-calendario-indicator','ingresos-indicator','dolar-hora'].map(i=>i+'='+document.getElementById(i).textContent).join(' ')`));
     await click('#menu-toggle-blur'); console.log('privacidad (sigue abierto):', await abiertos(), await v(`document.getElementById('blur-indicator').textContent`));
     await click('#menu-toggle-ingresos'); console.log('ingresos:', await v(`document.getElementById('ingresos-indicator').textContent`), '|', await abiertos());
-    await click('#menu-tema'); console.log('tema (hijo de ajustes):', await abiertos());
-    await click('.tema-opcion[data-tema="green"]'); await click('#modal-temas-close'); console.log('volver de tema →', await abiertos());
+    await click('#menu-tema'); console.log('tema (vista previa):', await v(`document.getElementById('vista-previa-panel').classList.contains('show')`));
+    await click('#vista-previa-filas button'); await click('#vista-previa-listo'); console.log('volver de tema →', await abiertos());
     await click('#menu-limpiar'); console.log('borrar:', await abiertos());
     await click('#menu-borrar-categorias'); await b.sleep(300); console.log('confirmar borrar categorías:', await abiertos());
     await click('#modal-confirmar-cancel'); console.log('cancelar confirmación →', await abiertos());

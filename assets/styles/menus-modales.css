@@ -1173,26 +1173,22 @@ body.vista-previa-activa .btn-add {
     position: fixed;
     inset: 0;
     z-index: var(--z-vista-previa-velo);
-    background: var(--overlay-suave);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: var(--modal-overlay);
     opacity: 0;
-    transition: opacity var(--dur-anim) var(--ease-anim);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity var(--transition-ui), visibility var(--transition-ui);
 }
 
-.vista-previa-velo.visible {
+.vista-previa-velo.show {
     opacity: 1;
-}
-
-.vista-previa-velo[hidden],
-.vista-previa-panel[hidden] {
-    display: none;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .vista-previa-objetivo {
-    position: relative !important;
-    z-index: var(--z-vista-previa-objetivo) !important;
-    box-shadow: var(--shadow-modal) !important;
+    position: relative;
+    z-index: var(--z-vista-previa-objetivo);
 }
 
 .vista-previa-panel {
@@ -1201,89 +1197,80 @@ body.vista-previa-activa .btn-add {
     right: 0;
     bottom: 0;
     z-index: var(--z-vista-previa-panel);
-    max-width: var(--modal-w-lg);
+    box-sizing: border-box;
+    width: min(100%, var(--modal-w-lg));
     margin: 0 auto;
-    padding: var(--space-md) var(--space-lg) var(--space-lg);
-    border-top: 1px solid var(--border);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-md) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom, 0));
     background: var(--bg-card);
     color: var(--text-main);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     box-shadow: var(--shadow-vista-previa);
-    transform: translateY(100%);
-    opacity: 0;
-    transition: var(--transition-pop-in);
+    transform: translateY(105%);
+    visibility: hidden;
+    transition: transform var(--dur-collapse) ease-out, visibility var(--dur-collapse);
 }
 
-.vista-previa-panel.visible {
-    transform: none;
-    opacity: 1;
+.vista-previa-panel.show {
+    transform: translateY(0);
+    visibility: visible;
 }
 
-.vista-previa-barra {
+.vista-previa-cabecera {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-md);
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
 }
 
 .vista-previa-titulo {
-    font-size: var(--text-base);
-    font-weight: var(--fw-bold);
-    color: var(--text-main);
-}
-
-.vista-previa-listo {
-    width: auto;
-    padding: var(--space-xs) var(--space-lg);
-    border-radius: var(--radius-full);
-    background: var(--c-active);
-    color: var(--c-white);
-    font-size: var(--text-sm);
     font-weight: var(--fw-semibold);
 }
 
-.vista-previa-filas {
+.vista-previa-panel .settings-list-text {
+    min-width: 0;
+    text-align: left;
+}
+
+.vista-previa-panel .settings-list-text > span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vista-previa-panel .settings-list > .collapsible > .collapsible-inner > button > span:last-child {
+    flex: none;
+    white-space: nowrap;
     display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
+    justify-content: flex-end;
+    overflow: hidden;
 }
 
-.vista-previa-fila {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
+.vista-previa-panel .valor-roll {
+    flex: none;
+    justify-items: end;
 }
 
-.vista-previa-etiqueta {
-    font-size: var(--text-xs);
-    font-weight: var(--fw-bold);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted);
+.vista-previa-panel .valor-roll-item {
+    text-align: right;
 }
 
-.vista-previa-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
+.vista-previa-panel .settings-list > .collapsible:last-child > .collapsible-inner > button {
+    border-bottom: none;
 }
 
-.vista-previa-chip {
+.vista-previa-cabecera .btn-edit {
+    flex: none;
     width: auto;
-    padding: var(--space-xs) var(--space-md);
-    border: 2px solid transparent;
-    border-radius: var(--radius-full);
-    background: var(--input-bg);
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--fw-medium);
+    padding-inline: var(--space-lg);
 }
 
-.vista-previa-chip.activo {
-    border-color: var(--c-active);
-    color: var(--text-main);
-    font-weight: var(--fw-semibold);
+body.vista-previa-activa {
+    padding-bottom: var(--vp-panel-h);
+}
+
+body.vista-previa-activa .mutacion-saliente {
+    z-index: var(--z-vista-previa-objetivo) !important;
 }
 
 /* ============================================================

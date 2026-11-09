@@ -20,7 +20,6 @@ export const ModalManager = (function () {
         'modal-config': () => document.getElementById('btn-cerrar-config')?.click(),
         'modal-borrar': () => document.getElementById('btn-cerrar-borrar')?.click(),
         'modal-editar-perfil': () => document.getElementById('btn-cancelar-editar-perfil')?.click(),
-        'modal-temas': () => document.getElementById('modal-temas-close')?.click(),
         'modal-ayuda': () => document.getElementById('modal-ayuda-close')?.click(),
         'modal-info-resumen': () => document.getElementById('btn-cerrar-modal-info-resumen')?.click(),
         'modal-gist': () => document.getElementById('btn-gist-cerrar')?.click(),
