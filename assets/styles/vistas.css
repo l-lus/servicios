@@ -1070,6 +1070,10 @@
     text-align: left;
 }
 
+.toast.toast-accionable {
+    cursor: pointer;
+}
+
 .toast-accion {
     width: auto;
     flex-shrink: 0;

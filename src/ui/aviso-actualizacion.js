@@ -33,12 +33,12 @@ function progreso(porcentaje) {
     ToastManager.actualizarProgreso(p);
 }
 
-/** La versión nueva quedó descargada e instalada: se aplica al recargar (el botón del aviso recarga). */
+/** La versión nueva quedó descargada e instalada: se aplica al recargar (tocar el toast recarga). */
 function listo() {
     _descargando = false;
     ToastManager.finalizarProgreso();
-    ToastManager.mostrarToast('Actualización lista', 'success', DURACION_LISTO_MS, null,
-        { label: 'Recargar', fn: () => Recarga.solicitar() });
+    ToastManager.mostrarToast('Actualización lista. Tocá para recargar', 'success', DURACION_LISTO_MS, null,
+        () => Recarga.solicitar());
 }
 
 /** La descarga falló: se conserva la versión actual y se vuelve a intentar en la próxima apertura. */

@@ -9,6 +9,7 @@ export const ToastManager = (function () {
     let _toastRunning = false;
     let _toastTimeout = null;
     let _mensajeActual = null;
+    let _toastAccionActual = null;
     const MAX_TOAST_QUEUE = 5;
     const ESPERA_ANIM_MS = 350;
 
@@ -21,8 +22,9 @@ export const ToastManager = (function () {
     let _progreso = null;
     let _progresoVisible = false;
 
-    // accion (opcional): { label, fn } muestra un botón dentro del toast
-    // (p. ej. "Deshacer"). Tocar el resto del toast solo lo cierra.
+    // accion (opcional): { label, fn } muestra un botón dentro del toast (p. ej. "Deshacer").
+    // Si accion es una función, al tocar el toast se ejecuta esa acción.
+    // Tocar el resto del toast cuando hay un botón solo lo cierra.
     function mostrarToast(mensaje, tipo = 'info', duracion = 3000, detalle = null, accion = null) {
         const texto = detalle ? `${mensaje}, ${detalle}` : mensaje;
         const textoLimpio = SecurityAndUtils.sanitizeString(texto, 200);
@@ -40,6 +42,7 @@ export const ToastManager = (function () {
         if (_toastQueue.length === 0) {
             _toastRunning = false;
             _mensajeActual = null;
+            _toastAccionActual = null;
             if (_progreso) _mostrarProgreso();
             return;
         }
@@ -55,7 +58,10 @@ export const ToastManager = (function () {
         texto.className = 'toast-texto';
         texto.textContent = actual.mensaje;
         toast.replaceChildren(texto);
-        if (actual.accion) {
+
+        const tieneBoton = actual.accion && typeof actual.accion === 'object' && actual.accion.label;
+        if (tieneBoton) {
+            _toastAccionActual = null;
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'toast-accion';
@@ -63,11 +69,17 @@ export const ToastManager = (function () {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 _cerrarToastActual();
-                actual.accion.fn();
+                actual.accion.fn?.();
             }, { once: true });
             toast.appendChild(btn);
+        } else if (typeof actual.accion === 'function') {
+            _toastAccionActual = actual.accion;
+        } else {
+            _toastAccionActual = null;
         }
-        toast.className = `toast ${actual.tipo}${actual.accion ? ' toast-con-accion' : ''}`;
+
+        const esAccionable = !!_toastAccionActual;
+        toast.className = `toast ${actual.tipo}${tieneBoton ? ' toast-con-accion' : ''}${esAccionable ? ' toast-accionable' : ''}`;
         let duracionFinal = actual.duracionBase || 3000;
         // Con cola se acorta, salvo si tiene acción (hay que darle tiempo)
         if (_toastQueue.length >= 1 && !actual.accion) {
@@ -80,6 +92,7 @@ export const ToastManager = (function () {
             _toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
                 _toastTimeout = null;
+                _toastAccionActual = null;
                 setTimeout(() => _procesarToastQueue(), 350);
             }, duracionFinal);
         }, 10);
@@ -100,6 +113,7 @@ export const ToastManager = (function () {
         if (!toast || !_progreso) return;
         _toastRunning = true;
         _progresoVisible = true;
+        _toastAccionActual = null;
         _habilitarCierreToast();
         toast.className = 'toast info toast-con-progreso';
         const texto = document.createElement('span');
@@ -153,6 +167,7 @@ export const ToastManager = (function () {
         // el toast de progreso no se cierra al tocarlo ni al deslizarlo: se retira solo al terminar
         if (_progresoVisible) return;
         if (_toastTimeout) { clearTimeout(_toastTimeout); _toastTimeout = null; }
+        _toastAccionActual = null;
         const toast = document.getElementById('toast');
         if (!toast || !toast.classList.contains('show')) return;
         toast.classList.remove('show');
@@ -163,7 +178,13 @@ export const ToastManager = (function () {
         const toast = document.getElementById('toast');
         if (!toast || toast.dataset.cierreInit) return;
         toast.dataset.cierreInit = '1';
-        toast.addEventListener('click', () => _cerrarToastActual());
+        toast.addEventListener('click', () => {
+            const accion = _toastAccionActual;
+            _cerrarToastActual();
+            if (typeof accion === 'function') {
+                accion();
+            }
+        });
         registrarSwipe(toast, () => _cerrarToastActual(), { minX: 40 });
     }
 
