@@ -359,6 +359,11 @@
     border-radius: inherit;
     color: var(--c-active);
     z-index: var(--z-fondo);
+    transition: transform calc(var(--dur-anim)*5) ease;
+}
+
+.stats-card-bg--zoom {
+    transform: scale(1.1);
 }
 
 #card-resumen.borde-vencido .stats-card-bg,
@@ -382,10 +387,10 @@
     position: absolute;
     inset: 0;
     opacity: 0;
-    transition: opacity var(--dur-slow) var(--ease-anim);
+    transition: opacity calc(var(--dur-anim)*2) ease;
 }
 
-.stats-card-bg__layer.is-active {
+.stats-card-bg__layer.visible {
     opacity: 1;
 }
 

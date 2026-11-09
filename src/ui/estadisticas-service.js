@@ -106,8 +106,8 @@ export class EstadisticasService {
 <div class="resumen-monto" id="resumen-toggle">
 <div class="d-flex justify-content-between align-items-center">
     <div class="resumen-titulo"><svg class="icon"><use href="${icono}" /></svg> ${titulo}</div>
-    <button class="icon-btn transparent btn-sm" id="btn-info-resumen">
-        <svg viewBox="0 0 24 24" class="icon-md" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
+    <button class="icon-btn transparent btn-sm" id="btn-info-resumen" title="Detalle del resumen" aria-label="Detalle del resumen">
+        <svg class="icon"><use href="#icon-info" /></svg>
     </button>
 </div>
 ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMostrar}</div>`}
