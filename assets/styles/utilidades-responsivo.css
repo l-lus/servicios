@@ -564,7 +564,7 @@
     flex-shrink: 0;
     width: 44px;
     height: 26px;
-    background: var(--border);
+    background: var(--toggle-track-off);
     border-radius: var(--radius-lg);
     position: relative;
     transition: background var(--transition-base);
@@ -580,7 +580,7 @@
     left: 3px;
     width: 20px;
     height: 20px;
-    background: white;
+    background: var(--c-white);
     border-radius: 50%;
     transition: transform var(--dur-fast) var(--ease-pop);
     box-shadow: var(--shadow-chip);
@@ -613,6 +613,10 @@
            MEDIA QUERIES
         ============================================================ */
 @media (max-width: 767px) {
+    .config-solo-pc {
+        display: none !important;
+    }
+
     .servicios-lista {
         min-height: 400px;
         max-height: 5000px;
@@ -637,15 +641,16 @@
 }
 
 @media (min-width: 768px) {
-    /* Columnas del mismo ancho (2, o 3 cuando se eligen y hay lugar): cada tarjeta tiene el mismo ancho en cualquier columna */
+    /* Columnas del mismo ancho (2 o 3 según lo que contenga tarjetas visibles) */
     .main-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        --columnas: 2;
+        grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
         gap: var(--space-xl);
         align-items: start;
     }
 
-    .main-grid.cols-3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    .container[data-columnas="3"] {
+        max-width: 1900px;
     }
 
     .sidebar-left,
@@ -661,10 +666,6 @@
     .main-content .card,
     .columna-centro .card {
         margin-bottom: 0;
-    }
-
-    .main-grid.cols-3 .columna-centro {
-        display: flex;
     }
 
     .servicios-lista,
@@ -721,6 +722,41 @@
         opacity: 1;
         transform: scale(1);
     }
+}
+
+/* Giro puntual de íconos (deshacer/rehacer, tema) y destello de elementos (Anim.flash / Anim.flashColor) */
+.icono-spin {
+    animation: spin var(--dur-anim) var(--ease-anim);
+    transform-origin: center;
+}
+
+.campo-flash:not(.calendario-dia) {
+    animation: campo-flash-anim var(--dur-flash) ease-out;
+}
+
+.campo-flash-color {
+    animation: campo-flash-color-anim var(--dur-flash) ease-out;
+}
+
+@keyframes campo-flash-anim {
+    0%, 100% { filter: brightness(1); }
+    40% { filter: brightness(1.25); }
+}
+
+@keyframes campo-flash-color-anim {
+    0%, 100% { box-shadow: none; }
+    35% { box-shadow: 0 0 0 3px var(--flash-color); }
+}
+
+@keyframes instalar-pulso {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c-active) 35%, transparent); }
+}
+
+@keyframes llamarAtencion {
+    0%, 100% { transform: translateY(0) scale(1); }
+    35% { transform: translateY(-3px) scale(1.12); }
+    65% { transform: translateY(1px) scale(0.96); }
 }
 
 /* Cambio de valor con desplazamiento vertical (ver Anim.valor) */
@@ -782,11 +818,6 @@
 /* Reducir animaciones: la barra indeterminada del toast de progreso queda quieta */
 :root[data-motion="reduce"] .toast-progreso:indeterminate {
     animation: none;
-}
-
-/* La columna del centro solo existe con 3 columnas en PC */
-.columna-centro {
-    display: none;
 }
 
 @media (min-width: 1024px) {

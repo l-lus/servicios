@@ -10,7 +10,7 @@ export default async (b) => {
     await b.shot('/tmp/aj_perfiles.png');
     await click('#btn-perfiles-ajustes'); console.log('ajustes:', await abiertos());
     await b.shot('/tmp/aj_config_pc.png');
-    console.log('indicadores:', await v(`['tema-indicator','blur-indicator','animaciones-indicator','ingresos-indicator','dolar-hora'].map(i=>i+'='+document.getElementById(i).textContent).join(' ')`));
+    console.log('indicadores:', await v(`['tema-indicator','resumen-estilo-indicator','calendario-estilo-indicator','blur-indicator','animaciones-indicator','hover-popup-indicator','rueda-calendario-indicator','ingresos-indicator','dolar-hora'].map(i=>i+'='+document.getElementById(i).textContent).join(' ')`));
     await click('#menu-toggle-blur'); console.log('privacidad (sigue abierto):', await abiertos(), await v(`document.getElementById('blur-indicator').textContent`));
     await click('#menu-toggle-ingresos'); console.log('ingresos:', await v(`document.getElementById('ingresos-indicator').textContent`), '|', await abiertos());
     await click('#menu-tema'); console.log('tema (hijo de ajustes):', await abiertos());
@@ -27,7 +27,8 @@ export default async (b) => {
     await click('#menu-exportar'); console.log('respaldar:', await abiertos()); await click('#btn-respaldo-cancelar'); console.log('cancelar →', await abiertos());
     await click('#theme-toggle-config'); console.log('toggle tema → data-theme:', await v(`document.documentElement.getAttribute('data-theme')||'-'`), 'dark:', await v(`document.documentElement.classList.contains('dark-mode')`));
     await click('#btn-cerrar-config'); console.log('cerrar ajustes → vuelve a:', await abiertos());
-    // perfiles: crear, editar, eliminar
+    // perfiles: desplegar panel con botón flotante, crear, editar, eliminar
+    await click('#btn-toggle-agregar-perfil');
     await b.eval(`(()=>{const i=document.getElementById('perfil-nuevo-nombre'); i.value='Negocio'; return true})()`); await click('#btn-crear-perfil-inline');
     console.log('crear perfil → items:', await v(`document.querySelectorAll('.btn-perfil-select').length`));
     await click('.btn-perfil-select:not(.activo) [data-action="editar-perfil"]'); console.log('editar:', await abiertos(), '| eliminar visible:', await v(`!document.getElementById('btn-eliminar-perfil-editor').hidden`));

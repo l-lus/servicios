@@ -3,7 +3,9 @@ import { GestorTemas } from './gestor-temas.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { EventosApp } from '../core/eventos.js';
 import { ModalManager } from './gestor-modales.js';
+import { IconosAnimados } from './iconos-animados.js';
 // ============================================================
 // LISTENERSAPP
 // ============================================================
@@ -46,10 +48,14 @@ export class ListenersApp {
             if (opcion) GestorTemas.elegirTema(opcion.dataset.tema);
         });
         document.getElementById('modal-temas-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-temas'));
-        document.getElementById('menu-exportar').addEventListener('click', () => this.app.respaldo.abrir());
+        const btnExportar = document.getElementById('menu-exportar');
+        const btnImportar = document.getElementById('menu-importar');
+        IconosAnimados.ponerIconoFlecha(btnExportar, 'bandeja', 'subir');
+        IconosAnimados.ponerIconoFlecha(btnImportar, 'bandeja', 'bajar');
+        btnExportar.addEventListener('click', () => { IconosAnimados.animarFlecha(btnExportar, 'subir'); this.app.respaldo.abrir(); });
         this.app.respaldo.bindEventos();
         ResumenMerge.bindEventos();
-        document.getElementById('menu-importar').addEventListener('click', () => this.app.storage.importarDatos('combinar'));
+        btnImportar.addEventListener('click', () => { IconosAnimados.animarFlecha(btnImportar, 'bajar'); this.app.storage.importarDatos('combinar'); });
         document.getElementById('menu-limpiar').addEventListener('click', () => this.app.ui.abrirModal('modal-borrar'));
         document.getElementById('menu-dolar').addEventListener('click', () => this.app.ui.cargarCotizacionDolar());
         document.getElementById('menu-borrar-todo').addEventListener('click', () => this.app.storage.limpiarDatos('todo'));
@@ -60,6 +66,14 @@ export class ListenersApp {
         document.getElementById('menu-toggle-ingresos').addEventListener('click', () => this.app.ui.toggleIngresos());
         document.getElementById('menu-toggle-blur').addEventListener('click', () => this.app.ui.toggleBlur());
         document.getElementById('menu-toggle-animaciones').addEventListener('click', () => this.app.ui.toggleAnimaciones());
+        document.getElementById('menu-personalizar-resumen')?.addEventListener('click', () => this.app.ui.abrirVistaPreviaResumen({ desdeAjustes: true }));
+        document.getElementById('menu-personalizar-calendario')?.addEventListener('click', () => this.app.ui.abrirVistaPreviaCalendario({ desdeAjustes: true }));
+        document.getElementById('menu-toggle-hover-popup')?.addEventListener('click', () => this.app.ui.toggleHoverPopup());
+        document.getElementById('menu-toggle-rueda-calendario')?.addEventListener('click', () => this.app.ui.toggleRuedaCalendario());
+        EventosApp.on('tarjeta:personalizar', ({ tarjeta }) => {
+            if (tarjeta === 'resumen') this.app.ui.abrirVistaPreviaResumen({ desdeAjustes: false });
+            else if (tarjeta === 'calendario') this.app.ui.abrirVistaPreviaCalendario({ desdeAjustes: false });
+        });
 
         // Menú agregar
         document.getElementById('menu-agregar-overlay').addEventListener('click', () => this.app.ui.cerrarMenuAgregar());
@@ -317,11 +331,15 @@ export class ListenersApp {
         });
 
         //gist
+        const btnGistSubir = document.getElementById('btn-gist-subir');
+        const btnGistBajar = document.getElementById('btn-gist-bajar');
+        IconosAnimados.ponerIconoFlecha(btnGistSubir, 'nube', 'subir');
+        IconosAnimados.ponerIconoFlecha(btnGistBajar, 'nube', 'bajar');
         document.getElementById('btn-gist-ir')?.addEventListener('click', () => this.app.gist.irAlGist());
         document.getElementById('gist-token-eye')?.addEventListener('click', () => this.app.gist.toggleToken());
         document.getElementById('gist-autosync-toggle')?.addEventListener('click', () => this.app.gist.toggleAuto());
-        document.getElementById('btn-gist-subir')?.addEventListener('click', () => this.app.gist.subir());
-        document.getElementById('btn-gist-bajar')?.addEventListener('click', () => this.app.gist.bajar());
+        btnGistSubir?.addEventListener('click', () => this.app.gist.subir());
+        btnGistBajar?.addEventListener('click', () => this.app.gist.bajar());
         document.getElementById('btn-gist-guardar')?.addEventListener('click', () => this.app.gist.guardarConfig());
         document.getElementById('btn-gist-cerrar')?.addEventListener('click', () => {
             this.app.ui.cerrarModal('modal-gist');
@@ -409,7 +427,10 @@ export class ListenersApp {
             this.app.utils.toggleMoneda('editar-ingreso-moneda', 'btn-editar-ingreso-moneda');
         });
 
-        // Modal perfiles: input Enter + botón agregar + cerrar
+        // Modal perfiles: input Enter + botón agregar + toggle panel + cerrar
+        document.getElementById('btn-toggle-agregar-perfil')?.addEventListener('click', () => {
+            this.app.perfil.togglePanelAgregar();
+        });
         document.getElementById('perfil-nuevo-nombre').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();

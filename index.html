@@ -283,6 +283,49 @@
             <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
             <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
         </symbol>
+        <symbol id="icon-sparkle" viewBox="0 0 24 24">
+            <path d="M12 3l1.9 5.3L19 10l-5.1 1.7L12 17l-1.9-5.3L5 10l5.1-1.7L12 3z" />
+            <path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z" />
+        </symbol>
+        <symbol id="icon-nube" viewBox="0 0 24 24">
+            <path d="M8 19H5a4 4 0 0 1-.9-7.9A5.5 5.5 0 0 1 15 9a4.5 4.5 0 0 1 2.5 8.2" />
+        </symbol>
+        <symbol id="icon-flecha-nube-subir" viewBox="0 0 24 24">
+            <polyline points="16 16 12 12 8 16" />
+            <line x1="12" y1="12" x2="12" y2="21" />
+        </symbol>
+        <symbol id="icon-flecha-nube-bajar" viewBox="0 0 24 24">
+            <polyline points="8 17 12 21 16 17" />
+            <line x1="12" y1="12" x2="12" y2="21" />
+        </symbol>
+        <symbol id="icon-bandeja" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        </symbol>
+        <symbol id="icon-flecha-bandeja-bajar" viewBox="0 0 24 24">
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+        </symbol>
+        <symbol id="icon-flecha-bandeja-subir" viewBox="0 0 24 24">
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+        </symbol>
+        <symbol id="icon-pantalla" viewBox="0 0 24 24">
+            <path d="M16 4h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <line x1="8" y1="21" x2="16" y2="21" />
+            <line x1="12" y1="17" x2="12" y2="21" />
+        </symbol>
+        <symbol id="icon-flecha-pantalla-bajar" viewBox="0 0 24 24">
+            <polyline points="8.5 9.5 12 13 15.5 9.5" />
+            <line x1="12" y1="3" x2="12" y2="13" />
+        </symbol>
+        <symbol id="icon-briefcase-plus" viewBox="0 0 24 24">
+            <path d="M12 20H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3" />
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+            <g class="icon-plus-giro">
+                <line x1="19" y1="16" x2="19" y2="22" />
+                <line x1="16" y1="19" x2="22" y2="19" />
+            </g>
+        </symbol>
     </svg>
 
     <!-- Header -->
@@ -290,6 +333,9 @@
         <h1> <span>Servicios</span>
         </h1>
         <div class="header-actions">
+            <button type="button" class="icon-btn" id="btn-install" title="Instalar aplicación" aria-label="Instalar aplicación">
+                <svg class="icon"><use href="#icon-pantalla" /><use class="icon-flecha" href="#icon-flecha-pantalla-bajar" /></svg>
+            </button>
             <button type="button" class="header-profile-btn" id="header-profile-btn" aria-label="Perfiles y ajustes">
                 <span id="nombre-perfil-header">…</span>
                 <svg class="icon" id="header-profile-icon">
@@ -305,6 +351,7 @@
             <!-- Columna izquierda (sidebar) -->
             <div class="sidebar-left">
                 <div class="card card-fade-in" id="card-resumen">
+                    <div id="resumen-card-bg" class="stats-card-bg" aria-hidden="true"></div>
                     <div id="resumen-mes"></div>
                 </div>
 
@@ -468,10 +515,7 @@
                 </div>
             </div>
 
-            <!-- Columna del centro (solo con 3 columnas en PC) -->
-            <div class="columna-centro" id="columna-centro"></div>
-
-            <!-- Columna derecha (contenido principal) -->
+            <!-- Columna central / derecha (contenido principal) -->
             <div class="main-content">
                 <!-- Tarjeta de Servicios -->
                 <div class="card card-fade-in delay-2" id="card-servicios">
@@ -496,12 +540,14 @@
                                 </button>
                                 <button class="icon-btn transparent" id="btn-hist-restaurar" title="Restaurar">
                                     <svg class="icon">
-                                        <use href="#icon-upload" />
+                                        <use href="#icon-bandeja" />
+                                        <use class="icon-flecha" href="#icon-flecha-bandeja-subir" />
                                     </svg>
                                 </button>
                                 <button class="icon-btn transparent" id="btn-hist-respaldar" title="Respaldar">
                                     <svg class="icon">
-                                        <use href="#icon-download" />
+                                        <use href="#icon-bandeja" />
+                                        <use class="icon-flecha" href="#icon-flecha-bandeja-bajar" />
                                     </svg>
                                 </button>
                                 <div class="ml-auto d-flex gap-2">
@@ -535,6 +581,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tercera columna (solo con 3 columnas en PC) -->
+            <div class="columna-centro columna-vacia" id="columna-centro"></div>
         </div>
     </div>
 
@@ -669,12 +718,14 @@
                 <div class="gist-actions-row">
                     <button class="btn-gist-action" id="btn-gist-subir">
                         <svg class="icon">
-                            <use href="#icon-cloud-upload" />
+                            <use href="#icon-nube" />
+                            <use class="icon-flecha" href="#icon-flecha-nube-subir" />
                         </svg> Subir
                     </button>
                     <button class="btn-gist-action" id="btn-gist-bajar">
                         <svg class="icon">
-                            <use href="#icon-cloud-download" />
+                            <use href="#icon-nube" />
+                            <use class="icon-flecha" href="#icon-flecha-nube-bajar" />
                         </svg> Bajar
                     </button>
                 </div>
@@ -779,10 +830,6 @@
             <div class="respaldo-tipos reporte-formatos" role="group" aria-label="Diseño a editar">
                 <button type="button" class="respaldo-tipo tarjetas-modo" data-modo="pc" aria-pressed="true">PC</button>
                 <button type="button" class="respaldo-tipo tarjetas-modo" data-modo="movil" aria-pressed="false">Celular</button>
-            </div>
-            <div class="respaldo-tipos reporte-formatos" id="tarjetas-columnas" role="group" aria-label="Columnas en PC">
-                <button type="button" class="respaldo-tipo tarjetas-cols" data-n="2" aria-pressed="true">2 columnas</button>
-                <button type="button" class="respaldo-tipo tarjetas-cols" data-n="3" aria-pressed="false">3 columnas</button>
             </div>
             <p class="text-muted orden-contexto" id="orden-cards-contexto"></p>
             <div class="orden-cards-lista" id="lista-orden-cards"></div>
@@ -920,7 +967,7 @@
             </div>
             <div class="form-actions">
                 <button type="button" id="btn-respaldo-exportar">
-                    <svg class="icon"><use href="#icon-download" /></svg> Exportar
+                    <svg class="icon"><use href="#icon-bandeja" /><use class="icon-flecha" href="#icon-flecha-bandeja-bajar" /></svg> Exportar
                 </button>
                 <button type="button" class="btn-secondary" id="btn-respaldo-cancelar">
                     <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
@@ -1451,17 +1498,23 @@
             </div>
             <div class="modal-panel-body custom-scroll">
                 <div id="perfiles-lista" class="perfil-list-container"></div>
-                <div class="form-group form-group-border-top">
-                    <label for="perfil-nuevo-nombre">Agregar perfil</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="perfil-nuevo-nombre" placeholder="Nombre del perfil, lugar..." maxlength="30" autocomplete="off">
-                        <button type="button" class="time-btn" id="btn-crear-perfil-inline" title="Crear perfil" aria-label="Crear perfil">
-                            <svg class="icon"><use href="#icon-plus" /></svg>
-                        </button>
+                <div class="collapsible" id="perfil-agregar-panel">
+                    <div class="collapsible-inner">
+                        <div class="form-group perfil-agregar">
+                            <div class="input-with-btn">
+                                <input type="text" id="perfil-nuevo-nombre" placeholder="Nombre del perfil, lugar..." aria-label="Nombre del nuevo perfil" maxlength="30" autocomplete="off">
+                                <button type="button" class="time-btn" id="btn-crear-perfil-inline" title="Crear perfil" aria-label="Crear perfil">
+                                    <svg class="icon"><use href="#icon-plus" /></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-panel-footer">
+                <button type="button" class="perfil-agregar-toggle" id="btn-toggle-agregar-perfil" title="Agregar perfil" aria-label="Agregar perfil" aria-expanded="false" aria-controls="perfil-agregar-panel">
+                    <svg class="icon"><use href="#icon-briefcase-plus" /></svg>
+                </button>
                 <div class="btn-group">
                     <button type="button" class="btn-settings flex-1" id="btn-perfiles-ajustes">
                         <svg class="icon"><use href="#icon-settings" /></svg> Ajustes
@@ -1526,6 +1579,16 @@
                                 <span class="settings-list-text"><span>Tema</span><span class="settings-list-desc">Colores de la app</span></span>
                                 <span class="settings-valor" id="tema-indicator"></span>
                             </button>
+                            <button type="button" id="menu-personalizar-resumen">
+                                <svg class="icon"><use href="#icon-sparkle" /></svg>
+                                <span class="settings-list-text"><span>Tarjeta de resumen</span><span class="settings-list-desc">Estilo y fondo con vista previa</span></span>
+                                <span class="settings-valor" id="resumen-estilo-indicator"></span>
+                            </button>
+                            <button type="button" id="menu-personalizar-calendario">
+                                <svg class="icon"><use href="#icon-calendar" /></svg>
+                                <span class="settings-list-text"><span>Días del calendario</span><span class="settings-list-desc">Cómo se marcan en la grilla</span></span>
+                                <span class="settings-valor" id="calendario-estilo-indicator"></span>
+                            </button>
                             <button type="button" id="menu-tarjetas">
                                 <svg class="icon"><use href="#icon-menu" /></svg>
                                 <span class="settings-list-text"><span>Tarjetas y orden</span><span class="settings-list-desc">Mostrar, ocultar y mover</span></span>
@@ -1545,6 +1608,16 @@
                                 <svg class="icon"><use href="#icon-clock" /></svg>
                                 <span class="settings-list-text"><span>Reducir animaciones</span><span class="settings-list-desc">Auto, sí o no</span></span>
                                 <span class="settings-valor" id="animaciones-indicator"></span>
+                            </button>
+                            <button type="button" id="menu-toggle-hover-popup" class="config-solo-pc">
+                                <svg class="icon"><use href="#icon-info" /></svg>
+                                <span class="settings-list-text"><span>Detalle al pasar el mouse</span><span class="settings-list-desc">En días del calendario</span></span>
+                                <span class="settings-valor" id="hover-popup-indicator"></span>
+                            </button>
+                            <button type="button" id="menu-toggle-rueda-calendario" class="config-solo-pc">
+                                <svg class="icon"><use href="#icon-calendar" /></svg>
+                                <span class="settings-list-text"><span>Cambiar mes con la rueda</span><span class="settings-list-desc">Al girar sobre el calendario</span></span>
+                                <span class="settings-valor" id="rueda-calendario-indicator"></span>
                             </button>
                             </div>
                         </div>
@@ -1582,12 +1655,12 @@
                                 
                             </button>
                             <button type="button" id="menu-exportar">
-                                <svg class="icon"><use href="#icon-download" /></svg>
+                                <svg class="icon"><use href="#icon-bandeja" /><use class="icon-flecha" href="#icon-flecha-bandeja-bajar" /></svg>
                                 <span class="settings-list-text"><span>Respaldar</span><span class="settings-list-desc">Todo, un mes o un rango de fechas</span></span>
                                 
                             </button>
                             <button type="button" id="menu-importar">
-                                <svg class="icon"><use href="#icon-upload" /></svg>
+                                <svg class="icon"><use href="#icon-bandeja" /><use class="icon-flecha" href="#icon-flecha-bandeja-subir" /></svg>
                                 <span class="settings-list-text"><span>Restaurar</span><span class="settings-list-desc">Desde un archivo, con resumen previo</span></span>
                                 
                             </button>
@@ -1743,19 +1816,20 @@
                             <h4>Resumen</h4>
                             <p>La tarjeta de arriba muestra lo <strong>pendiente</strong> del mes. Tocala para ver lo <strong>pagado</strong>; la barra indica qué parte del total del mes ya se pagó. El color del borde es el de la factura más urgente.</p>
 <p>El botón <strong>i</strong> detalla qué facturas vencen este mes y cuáles se pagaron este mes aunque vencieran en otro.</p>
+<p>Mantené presionada la tarjeta (sin moverla) o entrá en Ajustes → <strong>Tarjeta de resumen</strong> para elegir un fondo ilustrado con vista previa en vivo.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-calendario">
                             <h4>Calendario</h4>
-                            <p>La tarjeta <strong>Calendario</strong> muestra el mes con un círculo en cada día con facturas, del color de la más urgente (los mismos colores de la lista). Un puntito indica que ese día vencen varias. La semana actual (de lunes a viernes) va sobre una banda.</p>
-<p>Tocá un día para ver sus facturas y, desde ahí, ir a las del servicio. Las flechas (o deslizar con el dedo) cambian de mes con una animación, <strong>Hoy</strong> vuelve al mes actual y tocar el título muestra los meses que tienen facturas. Abajo se resume cuánto queda pendiente y cuántas están vencidas.</p>
+                            <p>La tarjeta <strong>Calendario</strong> marca cada día con facturas con el color de la más urgente (los mismos colores de la lista). Un puntito indica que ese día vencen varias. La semana actual (de lunes a viernes) va sobre una banda. Mantené presionado el título de la tarjeta o entrá en Ajustes → <strong>Días del calendario</strong> para cambiar el estilo de marcado con vista previa en vivo.</p>
+<p>Tocá un día para ver sus facturas y, desde ahí, ir a las del servicio; en PC también podés pasar el mouse por encima para ver un resumen flotante. Las flechas, deslizar con el dedo o usar <strong>Alt + rueda del mouse</strong> (o la rueda sola si lo activás en Ajustes) cambian de mes con una animación, <strong>Hoy</strong> vuelve al mes actual y tocar el título muestra los meses que tienen facturas. Abajo se resume cuánto queda pendiente y cuántas están vencidas.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-atajos">
                             <h4>Atajos</h4>
-                            <p>La tarjeta <strong>Atajos</strong> reúne botones rápidos (nueva factura, calculadora, calendario, deshacer, respaldar, tema…). Con el lápiz elegís cuáles mostrar, hasta 12. Algunos se desactivan solos: deshacer sin cambios, o nuevo ingreso si los ingresos están apagados.</p>
+                            <p>La tarjeta <strong>Atajos</strong> reúne botones rápidos (nueva factura, calculadora, calendario, deshacer, respaldar, tema, fondo del resumen, estilo del calendario…). Con el botón + elegís cuáles mostrar, hasta 12. Algunos se desactivan solos: deshacer sin cambios, o nuevo ingreso si los ingresos están apagados.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-tarjetas">
                             <h4>Tarjetas y orden</h4>
-                            <p>Desde Ajustes → <strong>Tarjetas y orden</strong> mostrás u ocultás cada tarjeta, la subís o bajás y, en PC, elegís cuántas columnas usar (<strong>2 o 3</strong>, todas del mismo ancho; la tercera aparece en pantallas anchas) y en cuál va cada una. También podés mantener presionado el título de una tarjeta y arrastrarla (incluso a la otra columna), o usar <strong>Alt + flechas</strong> con el teclado.</p>
+                            <p>Desde Ajustes → <strong>Tarjetas y orden</strong> mostrás u ocultás cada tarjeta, la subís o bajás y, en PC, elegís en qué columna va cada una. También podés mantener presionado el título de una tarjeta y arrastrarla: en pantallas anchas, llevarla al borde derecho abre una <strong>tercera columna</strong> (y se cierra sola cuando queda vacía), o usar <strong>Alt + flechas</strong> con el teclado.</p>
 <p>El diseño del <strong>celular</strong> (una sola columna) es independiente del de PC: parte del de PC hasta que lo cambies y podés editarlo desde cualquiera de los dos con el selector PC / Celular.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-busqueda">
@@ -1789,7 +1863,7 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-perfiles">
                             <h4>Perfiles</h4>
-                            <p>Hasta 4 perfiles con datos separados (por ejemplo, casa y negocio). Tocá el nombre del perfil, arriba a la derecha, para cambiar de perfil, crear uno nuevo o editar y eliminar los existentes. Desde ahí también se abren los <strong>Ajustes</strong>, y cada ventana que abras desde ellos vuelve al paso anterior al cerrarla.</p>
+                            <p>Hasta 4 perfiles con datos separados (por ejemplo, casa y negocio). Tocá el nombre del perfil, arriba a la derecha, para cambiar de perfil, crear uno nuevo con el botón flotante o editar y eliminar los existentes. Desde ahí también se abren los <strong>Ajustes</strong>, y cada ventana que abras desde ellos vuelve al paso anterior al cerrarla.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-respaldo">
                             <h4>Respaldo y sincronización</h4>
@@ -1888,6 +1962,16 @@
             <svg class="icon icon-line"><use href="#icon-gift"/></svg>
             Pagar factura del mes
         </button>
+    </div>
+
+    <!-- Vista previa en vivo para personalizar tarjetas -->
+    <div class="vista-previa-velo" id="vista-previa-velo" hidden></div>
+    <div class="vista-previa-panel" id="vista-previa-panel" role="dialog" aria-labelledby="vista-previa-titulo" hidden>
+        <div class="vista-previa-barra">
+            <span class="vista-previa-titulo" id="vista-previa-titulo"></span>
+            <button type="button" class="vista-previa-listo" id="vista-previa-listo">Listo</button>
+        </div>
+        <div class="vista-previa-filas" id="vista-previa-filas"></div>
     </div>
 
 </body>

@@ -39,7 +39,7 @@ function buildDependencyGraph() {
     return { graph, rawImports };
 }
 
-test('Arquitectura: Todos los imports relativos tienen extensión .js explícita y apuntan a archivos existentes', () => {
+test('Arquitectura: Todos los imports relativos tienen extensión .js explícita y apuntan a archivos y exports existentes', () => {
     const { graph, rawImports } = buildDependencyGraph();
     for (const file of srcFiles) {
         for (const spec of rawImports[file]) {
@@ -49,12 +49,26 @@ test('Arquitectura: Todos los imports relativos tienen extensión .js explícita
         for (const target of graph[file]) {
             assert.ok(fs.existsSync(target), `${file}: el archivo importado "${target}" no existe`);
         }
+        const content = fs.readFileSync(file, 'utf8');
+        for (const m of content.matchAll(/import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g)) {
+            const names = m[1].split(',').map(s => s.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+            const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), m[2]));
+            const tSrc = fs.readFileSync(target, 'utf8');
+            const exports = new Set([
+                ...[...tSrc.matchAll(/export\s+(?:const|let|var|function|class|async\s+function)\s+([A-Za-z0-9_$]+)/g)].map(x => x[1]),
+                ...[...tSrc.matchAll(/export\s+\{([^}]+)\}/g)].flatMap(x => x[1].split(',').map(s => s.trim().split(/\s+as\s+/).pop().trim())),
+            ]);
+            for (const n of names) {
+                assert.ok(exports.has(n), `${file}: "${n}" no está exportado por ${target}`);
+            }
+        }
     }
 });
 
-test('Arquitectura: Cero violaciones de capas (core <= services <= ui <= main.js)', () => {
+test('Arquitectura: Cero violaciones de capas (data <= core <= services <= ui <= main.js)', () => {
     const { graph } = buildDependencyGraph();
     const layerRank = {
+        data: 0,
         core: 1,
         services: 2,
         ui: 3,
@@ -247,7 +261,7 @@ test('Capas: nadie usa window.app (el acoplamiento va por EventosApp / registrar
 
 test('Capas: src/core no toca el DOM de la app (document.getElementById / querySelector)', () => {
     const re = /document\.(getElementById|querySelector|querySelectorAll)\b/;
-    const permitidos = new Set(['src/core/movimiento.js']);
+    const permitidos = new Set(['src/core/dom.js', 'src/core/movimiento.js']);
     const violaciones = srcFiles.filter(f => f.startsWith('src/core/') && !permitidos.has(f) && re.test(fs.readFileSync(f, 'utf8')));
     assert.deepEqual(violaciones, []);
 });
@@ -284,6 +298,7 @@ test('HTML seguro: ninguna plantilla usa crudo() con datos; solo constantes del 
     // crudo() marca HTML como confiable sin escapar: solo para constantes fijas. Cada uso nuevo debe revisarse y agregarse acá.
     const permitidos = {
         'src/ui/vista-servicios.js': 1,       // ícono SVG de alerta de categoría (path fijo)
+        'src/ui/tarjeta-fondos.js': 2,        // fondos SVG sanitizados de data/fondos.js
         'src/services/reporte-html.js': 1,    // hoja de estilos constante del reporte
     };
     const usos = Object.fromEntries(srcFiles
@@ -300,11 +315,14 @@ test('HTML seguro: no quedan escapes manuales (escaparHTML / escapeHtml) fuera d
     assert.deepEqual(violaciones, [], 'Usá html`...`: escapa cada interpolación');
 });
 
-test('tema-inicial.js: su lista de temas coincide con core/temas.js', async () => {
+test('tema-inicial.js: sus listas coinciden con core/temas.js y core/estilo-calendario.js', async () => {
     const codigo = fs.readFileSync('src/core/tema-inicial.js', 'utf8');
-    const lista = JSON.parse(/var TEMAS_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
+    const listaTemas = JSON.parse(/var TEMAS_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
+    const listaCal = JSON.parse(/var ESTILOS_CALENDARIO_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
     const { TEMAS } = await import('../src/core/temas.js');
-    assert.deepEqual(lista, TEMAS.map(t => t.id));
+    const { ESTILOS_CALENDARIO } = await import('../src/core/estilo-calendario.js');
+    assert.deepEqual(listaTemas, TEMAS.map(t => t.id));
+    assert.deepEqual(listaCal, ESTILOS_CALENDARIO.map(e => e.id));
 });
 
 test('Temas: cada tema tiene su bloque de variables en tokens.css', async () => {
@@ -320,7 +338,7 @@ test('Tokens: toda variable CSS usada está definida (en tokens.css o en la prop
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
     const usadas = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(m => m[1]));
     // Las asigna JS con style.setProperty (la CSP no admite style en línea)
-    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i']);
+    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i', '--recarga-progreso', '--vp-panel-h', '--columnas', '--giro-plus', '--flash-color']);
     const sinDefinir = [...usadas].filter(v => !definidas.has(v) && !dinamicas.has(v)).sort();
     assert.deepEqual(sinDefinir, [], 'Variables usadas sin definir');
 });
@@ -384,7 +402,7 @@ test('Tokens: espaciado (gap/padding/margin) con la escala --space-*; solo queda
 });
 
 test('Tokens: el tamaño de los íconos (svg / .icon*) sale de --icon-*; solo se admiten la caja del botón, el ícono grande del estado vacío y el punto de color de la ayuda', () => {
-    const permitido = /^\.icon-btn \{|^\.btn-add|^\.empty-state svg|^\.ayuda-color/;
+    const permitido = /^\.icon-btn \{|^\.btn-add|^\.empty-state svg|^\.ayuda-color|^\.stats-card-bg__layer svg/;
     const v = cssSinTokens().flatMap(({ f, lineas }) => {
         let sel = '';
         return lineas.flatMap((l, i) => {
@@ -405,4 +423,25 @@ test('Tokens: el ancho máximo de los modales sale de --modal-w-*', () => {
         });
     });
     assert.deepEqual(v, [], 'usar var(--modal-w-sm|md|lg|xl)');
+});
+
+test('Ids: todo id que el código busca existe en index.html o lo crea el propio código', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const fuentes = srcFiles.map(f => [f, fs.readFileSync(f, 'utf8')]);
+    const codigo = fuentes.map(([, t]) => t).join('\n');
+
+    const conocidos = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+    // Los que crea el código: id="..." en plantillas html`...`, el.id = '...' y { id: '...' } en createElement
+    for (const m of codigo.matchAll(/\bid="([\w-]+)"|\.id\s*=\s*'([\w-]+)'|\bid:\s*'([\w-]+)'/g)) conocidos.add(m[1] ?? m[2] ?? m[3]);
+
+    const buscados = [];
+    for (const [archivo, texto] of fuentes) {
+        const anotar = (id) => buscados.push({ id, archivo });
+        for (const m of texto.matchAll(/(?:\$|getElementById)\('([\w-]+)'\)/g)) anotar(m[1]);
+        for (const m of texto.matchAll(/querySelector(?:All)?\('([^']+)'\)/g)) for (const s of m[1].matchAll(/#([a-zA-Z][\w-]*)/g)) anotar(s[1]);
+        for (const m of texto.matchAll(/(?<!classList\.\w+\()'(modal-[a-z][a-z-]*)'/g)) anotar(m[1]);   // 'modal-open' y similares son clases, no ids
+    }
+    assert.ok(buscados.length > 100, `Se detectaron pocos ids (${buscados.length}): ¿cambió la forma de buscarlos?`);
+    const faltantes = [...new Set(buscados.filter(b => !conocidos.has(b.id)).map(b => `${b.archivo}: ${b.id}`))];
+    assert.deepEqual(faltantes, [], `Ids que no existen:\n${faltantes.join('\n')}`);
 });

@@ -21,11 +21,56 @@ export const Anim = (function () {
         return (Motion.reducido() || (el && !el.offsetParent)) ? 0 : getCSSdur(varName);
     }
     const DUR_ANIM = () => getCSSdur('--dur-anim');
+    const DUR_RECARGA = () => getCSSdur('--dur-recarga');
 
     function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
     function esperarAnim(extra = 50) { return esperar(DUR_ANIM() + extra); }
 
     function estaColapsado(el) { return !!el.closest('.collapsed'); }
+
+    const _CLASES_FLASH = ['campo-flash', 'campo-flash-color'];
+
+    /** @param {any} [colorVar] */
+    function flashElemento(el, clase, colorVar = null) {
+        if (!el) return;
+        clearTimeout(el._flashTimeout);
+        el.classList.remove(clase);
+        if (colorVar) el.style.setProperty('--flash-color', colorVar);
+        void el.offsetWidth;
+        el.classList.add(clase);
+
+        const cs = getComputedStyle(el);
+        const duracionMs = (parseFloat(cs.animationDuration) || 0.5) * 1000;
+        const iteraciones = parseFloat(cs.animationIterationCount) || 1;
+        el._flashTimeout = setTimeout(() => el.classList.remove(clase), duracionMs * iteraciones);
+    }
+
+    /**
+     * Aplica un cambio que modifica el alto de `el` (`mutarFn`) y lo anima con `--dur-collapse`.
+     * @param {HTMLElement | null} el @param {() => void} mutarFn
+     */
+    function alturaCambio(el, mutarFn) {
+        const dur = el ? durSiAnima('--dur-collapse', el) : 0;
+        if (!el || !(dur > 1) || !el.getClientRects().length) { mutarFn(); return; }
+        const antes = el.offsetHeight;
+        el.style.height = '';
+        mutarFn();
+        const despues = el.offsetHeight;
+        if (Math.abs(despues - antes) < 2) return;
+        el.style.overflow = 'hidden';
+        el.style.transition = 'none';
+        el.style.height = `${antes}px`;
+        void el.offsetHeight;
+        el.style.transition = `height ${dur}ms ease-out`;
+        el.style.height = `${despues}px`;
+        const terminar = () => { el.style.height = ''; el.style.transition = ''; el.style.overflow = ''; };
+        el.addEventListener('transitionend', function alTerminar(e) {
+            if (e.target !== el || e.propertyName !== 'height') return;
+            el.removeEventListener('transitionend', alTerminar);
+            terminar();
+        });
+        setTimeout(terminar, dur + 100);
+    }
 
     // Clona el elemento como "fantasma" fijo sobre su posición actual para
     // que pueda animar su salida mientras el original se re-renderiza.
@@ -34,6 +79,7 @@ export const Anim = (function () {
         clon.removeAttribute('id');
         clon.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
         clon.classList.add('mutacion-saliente');
+        clon.classList.remove(..._CLASES_FLASH);
         clon.setAttribute('aria-hidden', 'true');
 
         Object.assign(clon.style, {
@@ -390,8 +436,17 @@ export const Anim = (function () {
 
     return {
         slide,
+        DUR_ANIM, DUR_RECARGA,
         aArray, getCSSdur, durSiAnima, esperar, esperarAnim, estaColapsado,
         mutacion, fantasmaSiVisible, marcarNuevo, valor, diffLista, morph,
+        alturaCambio, flashElemento,
+        _durSiAnima: durSiAnima,
+        _animarValor: valor,
+        _animarAlturaCambio: alturaCambio,
+        _flashElemento: flashElemento,
         initColapsables, scrollAlExpandir
     };
 })();
+
+export const Animaciones = Anim;
+

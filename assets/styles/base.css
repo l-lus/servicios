@@ -12,6 +12,7 @@
 
 html {
     scrollbar-gutter: stable;
+    overscroll-behavior-y: contain;
 }
 
 body {
@@ -22,6 +23,46 @@ body {
     overflow-y: auto;
     touch-action: pan-y;
     transition: background var(--transition-ui), color var(--transition-ui);
+}
+
+/* Pantalla de carga inicial: oculta el body y muestra un aro girando hasta
+   que los datos terminan de cargarse y el primer render está listo. */
+html.cargando body {
+    opacity: 0;
+    pointer-events: none;
+}
+
+html.cargando::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: 4px solid var(--border);
+    border-top-color: var(--c-active);
+    border-radius: 50%;
+    animation: spin var(--dur-giro) linear infinite;
+    z-index: var(--z-toast);
+}
+
+/* Gesto de recarga: atenúa durante el arrastre y funde a 0 al confirmar */
+html.recarga-animando body,
+html.recargando body {
+    opacity: calc(1 - var(--recarga-progreso) * 0.65);
+}
+
+html.recarga-animando body {
+    transition: opacity var(--dur-recarga) ease-out;
+}
+
+html.recargando body {
+    opacity: 0;
+    pointer-events: none;
+}
+
+html.entrada-pagina body {
+    animation: fadeIn var(--dur-entrada) ease-out;
 }
 
 body.modal-open {
@@ -50,10 +91,72 @@ body.modal-open {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
+    margin: 0 auto;
     background: var(--bg-header);
     padding: var(--space-smd);
+    border: 2px solid transparent;
     border-bottom: 3px solid transparent;
     box-shadow: var(--shadow);
+    transition: width var(--transition-ui), top var(--transition-ui),
+        padding var(--transition-ui), border-radius var(--transition-ui),
+        border-color var(--transition-ui), box-shadow var(--transition-ui),
+        background var(--transition-ui);
+}
+
+.header.progress-red {
+    border-bottom-color: var(--c-red);
+}
+
+.header.progress-gold {
+    border-bottom-color: var(--c-gold);
+}
+
+.header.progress-blue {
+    border-bottom-color: var(--c-blue);
+}
+
+.header.progress-green {
+    border-bottom-color: var(--c-green);
+}
+
+@media (min-width: 768px) {
+    .header.scrolled {
+        top: var(--space-md);
+        width: 30%;
+        padding: var(--space-xs) var(--space-md);
+        border-radius: var(--radius-full);
+        border-width: 2px;
+        border-color: var(--border);
+        box-shadow: var(--shadow-header-flotante);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .header.scrolled {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+    }
+
+    .header.scrolled.progress-red {
+        border-color: var(--c-red);
+    }
+
+    .header.scrolled.progress-gold {
+        border-color: var(--c-gold);
+    }
+
+    .header.scrolled.progress-blue {
+        border-color: var(--c-blue);
+    }
+
+    .header.scrolled.progress-green {
+        border-color: var(--c-green);
+    }
+
+    .header.scrolled h1 {
+        margin-left: var(--space-xs);
+    }
 }
 
 .header h1 {
@@ -65,6 +168,7 @@ body.modal-open {
     margin-left: var(--space-lg);
     font-size: var(--text-lg);
     color: var(--text-main);
+    transition: margin-left var(--transition-ui);
 }
 
 .header-actions {
@@ -137,6 +241,26 @@ body.modal-open {
 
 .card-header-collapsible+.collapsible-content:not(.collapsed) {
     padding-top: var(--space-lg);
+}
+
+.collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    --vis-delay: var(--dur-collapse);
+    transition: var(--transition-collapse), visibility 0s linear var(--vis-delay);
+}
+
+.collapsible.expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    --vis-delay: 0s;
+}
+
+.collapsible.sin-transicion {
+    transition: none;
 }
 
 /* ============================================================
@@ -245,9 +369,24 @@ select:disabled {
 #btn-undo,
 #btn-redo,
 #btn-sort,
-#btn-ajustes {
+#btn-ajustes,
+#btn-install {
     border: none;
     background: none;
+}
+
+/* Oculto hasta que beforeinstallprompt lo habilita (instalador-pwa.js) */
+#btn-install {
+    display: none;
+}
+
+#btn-install.llamando {
+    color: var(--c-active);
+    animation: instalar-pulso var(--dur-pulso) ease-in-out 2;
+}
+
+#btn-install.llamando .icon {
+    animation: llamarAtencion var(--dur-pulso) ease-in-out 2;
 }
 
 /* ── Spinner en botón ajustes (Gist sync) ── */

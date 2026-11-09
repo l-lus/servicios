@@ -1,11 +1,16 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { EstiloCalendario } from '../core/estilo-calendario.js';
+import { EstiloTarjeta } from '../core/estilo-tarjeta.js';
+import { Preferencias } from '../core/preferencias.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { GestorTemas } from './gestor-temas.js';
 import { Motion } from '../core/movimiento.js';
 import { ModalManager } from './gestor-modales.js';
+import { TarjetaFondos } from './tarjeta-fondos.js';
 import { ToastManager } from './toast.js';
+import { VistaPrevia } from './vista-previa.js';
 
 // ============================================================
 // UI MANAGER — modales, menús, tema, blur, toast, dólar
@@ -42,6 +47,82 @@ export class UIManager {
         if (indicator) indicator.textContent = Motion.etiqueta();
         const msg = { auto: 'Animaciones según el sistema', on: 'Animaciones reducidas', off: 'Animaciones completas' };
         this.mostrarToast(msg[Motion.modo()], 'success');
+    }
+
+    // ── Preferencias del calendario y personalización en vivo ──
+    toggleHoverPopup() {
+        const nuevo = !Preferencias.HOVER_POPUP.get();
+        Preferencias.HOVER_POPUP.set(nuevo);
+        this.actualizarIndicadoresConfig();
+        this.mostrarToast(`Detalle al pasar el puntero ${nuevo ? 'habilitado' : 'deshabilitado'}`, 'success');
+    }
+
+    toggleRuedaCalendario() {
+        const nuevo = !Preferencias.RUEDA_CALENDARIO.get();
+        Preferencias.RUEDA_CALENDARIO.set(nuevo);
+        this.actualizarIndicadoresConfig();
+        this.mostrarToast(`Cambiar mes con rueda ${nuevo ? 'sin Alt' : 'con Alt + rueda'}`, 'success');
+    }
+
+    actualizarIndicadoresConfig() {
+        const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+        set('ingresos-indicator', this.ingresosHabilitado() ? 'SI' : 'NO');
+        set('blur-indicator', this.app.blurHabilitado ? 'SI' : 'NO');
+        set('animaciones-indicator', Motion.etiqueta());
+        set('resumen-estilo-indicator', TarjetaFondos._getLabelFondo(TarjetaFondos.getFondoCard()));
+        set('calendario-estilo-indicator', EstiloCalendario.etiqueta());
+        set('hover-popup-indicator', Preferencias.HOVER_POPUP.get() ? 'SI' : 'NO');
+        set('rueda-calendario-indicator', Preferencias.RUEDA_CALENDARIO.get() ? 'SI' : 'NO');
+        this.app.atajos?.actualizarEstados();
+    }
+
+    abrirVistaPreviaResumen({ desdeAjustes = false } = {}) {
+        VistaPrevia.abrir({
+            id: 'resumen',
+            titulo: 'Tarjeta de resumen',
+            idObjetivo: 'card-resumen',
+            antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
+            alCerrar: desdeAjustes
+                ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
+                : () => this.actualizarIndicadoresConfig(),
+            filas: [
+                {
+                    etiqueta: 'Fondo ilustrado',
+                    descripcion: 'Ilustración decorativa de la tarjeta',
+                    icono: '#icon-sparkle',
+                    valor: () => TarjetaFondos._getLabelFondo(TarjetaFondos.getFondoCard()),
+                    alTocar: () => { TarjetaFondos.toggleFondoCard(); this.actualizarIndicadoresConfig(); }
+                },
+                {
+                    etiqueta: 'Estilo de tarjeta',
+                    descripcion: 'Diseño de la tarjeta principal',
+                    icono: '#icon-eye',
+                    valor: () => EstiloTarjeta.etiqueta(),
+                    alTocar: () => { EstiloTarjeta.siguiente(); this.actualizarIndicadoresConfig(); }
+                }
+            ]
+        });
+    }
+
+    abrirVistaPreviaCalendario({ desdeAjustes = false } = {}) {
+        VistaPrevia.abrir({
+            id: 'calendario',
+            titulo: 'Calendario',
+            idObjetivo: 'card-calendario',
+            antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
+            alCerrar: desdeAjustes
+                ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
+                : () => this.actualizarIndicadoresConfig(),
+            filas: [
+                {
+                    etiqueta: 'Estilo de los días',
+                    descripcion: 'Cómo se marcan los vencimientos en el calendario',
+                    icono: '#icon-calendar',
+                    valor: () => EstiloCalendario.etiqueta(),
+                    alTocar: () => { EstiloCalendario.siguiente(); this.actualizarIndicadoresConfig(); }
+                }
+            ]
+        });
     }
 
     // ── Ingresos ──────────────────────────────────────────────
@@ -92,6 +173,7 @@ export class UIManager {
 
     /** Ajustes: si Perfiles está abierto se pasa de uno a otro (y Cerrar vuelve); si no, se abre directo. */
     abrirAjustes() {
+        this.actualizarIndicadoresConfig();
         ModalManager.abrirConPadre('modal-config', 'modal-selector-perfiles');
     }
 
@@ -178,6 +260,10 @@ export class UIManager {
         ToastManager.mostrarToast(mensaje, tipo, duracion, detalle, accion);
     }
 
+    cerrarToastActual() {
+        ToastManager.cerrarActual();
+    }
+
     volverDesdeModalActivo() {
         // 1. Context menu abierto tiene prioridad máxima
         const ctxMenu = document.getElementById('ctx-menu-servicio');
@@ -204,3 +290,4 @@ export class UIManager {
         this.cerrarTodosLosModales();
     }
 }
+
