@@ -653,9 +653,13 @@ button:disabled .toggle-switch {
 }
 
 @media (min-width: 768px) {
+    .container {
+        --columnas: 2;
+        padding: var(--space-xl);
+    }
+
     /* Columnas del mismo ancho (2 o 3 según lo que contenga tarjetas visibles) */
     .main-grid {
-        --columnas: 2;
         grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
         gap: var(--space-xl);
         align-items: start;
@@ -687,10 +691,6 @@ button:disabled .toggle-switch {
 
     .card {
         padding: var(--space-xl) var(--space-lg);
-    }
-
-    .container {
-        padding: var(--space-xl);
     }
 
 }
