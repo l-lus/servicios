@@ -27,9 +27,6 @@ const COLOR_PULSO_HOY = {
     pagado: 'var(--accent-green)',
     favor: 'var(--accent-purple)'
 };
-// Entrada inicial: pop escalonado de los días con facturas (una sola vez al abrir)
-const ENTRADA_PASO_MS = 25;
-const ENTRADA_TOTAL_MAX_MS = 350;
 const CIERRE_SELECTOR_INACTIVO_MS = 15000;
 
 const importes = par => [par.ars !== 0 ? formatearMoneda(par.ars, 'ars') : '', par.usd !== 0 ? formatearMoneda(par.usd, 'usd') : ''].filter(Boolean).join(' · ') || '—';
@@ -55,7 +52,6 @@ export class CalendarioVista {
         $('calendario-content').classList.toggle('collapsed', !this.abierto);
         $('calendario-chevron').classList.toggle('collapsed', !this.abierto);
         this.render();
-        if (this.abierto) setTimeout(() => this.animarEntrada(), 350);
 
         VistaPrevia.registrarPreparador('calendario', () => {
             const card = $('card-calendario');
@@ -99,8 +95,6 @@ export class CalendarioVista {
         if (this.abierto) {
             this.render();
             Anim.scrollAlExpandir($('calendario-content').closest('.card'));
-            // Mientras la tarjeta termina de desplegarse el pop de los días ya se ve
-            setTimeout(() => this.animarEntrada(), 150);
         }
     }
 
@@ -256,24 +250,8 @@ export class CalendarioVista {
             : html`<span><strong>${r.facturas}</strong> ${r.facturas === 1 ? 'factura' : 'facturas'} · pendiente <strong>${importes(r.pendiente)}</strong>${r.vencidas > 0 ? html` · <span class="cal-alerta">${r.vencidas} ${r.vencidas === 1 ? 'vencida' : 'vencidas'}</span>` : ''}</span>`);
     }
 
-    /** Pop escalonado de los días con facturas (solo transform y opacidad). Se llama una vez al abrir la tarjeta. */
-    animarEntrada() {
-        const grilla = $('calendario-grilla');
-        if (!grilla || Motion.reducido() || !grilla.offsetParent || this._selectorAbierto) return;
-        const dias = [...grilla.querySelectorAll('.calendario-dia[data-n]')];
-        if (!dias.length) return;
-        const paso = Math.min(ENTRADA_PASO_MS, Math.floor(ENTRADA_TOTAL_MAX_MS / dias.length));
-        grilla.style.setProperty('--cal-n', String(dias.length));
-        grilla.style.setProperty('--cal-paso', `${paso}ms`);
-        dias.forEach((d, i) => { d.style.setProperty('--i', String(i)); d.classList.add('cal-entrada'); });
-        grilla.querySelector('.calendario-dia.hoy:not([data-n])')?.classList.add('cal-entrada-remate');
-        const total = Anim.getCSSdur('--dur-cal-espera') + dias.length * paso + Anim.getCSSdur('--dur-cal-entrada') + Anim.getCSSdur('--dur-anim') + 100;
-        setTimeout(() => {
-            grilla.style.removeProperty('--cal-n');
-            grilla.style.removeProperty('--cal-paso');
-            grilla.querySelectorAll('.cal-entrada, .cal-entrada-remate').forEach(c => c.classList.remove('cal-entrada', 'cal-entrada-remate'));
-        }, total);
-    }
+    /** Pop escalonado de los días con facturas (conservado por compatibilidad). */
+    animarEntrada() {}
 
     /** Abre el detalle de un día. */
     abrirDia(fecha) {
