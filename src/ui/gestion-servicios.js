@@ -11,8 +11,10 @@ import { ServicioService } from './servicio-service.js';
 import { VistaServicios } from './vista-servicios.js';
 import { EventosApp } from '../core/eventos.js';
 import { StorageHelper } from '../core/almacenamiento.js';
-import { STORAGE_KEYS } from '../core/constantes.js';
+import { STORAGE_KEYS, FONDO_CARD_POR_DEFECTO } from '../core/constantes.js';
 import { debounce } from '../core/debounce.js';
+import { EstiloCalendario } from '../core/estilo-calendario.js';
+import { EstiloTarjeta } from '../core/estilo-tarjeta.js';
 import { Motion } from '../core/movimiento.js';
 import { EstadoFacturas, SERVICIO_INGRESOS_ID } from '../services/estado-facturas.js';
 import { Anim } from './animaciones.js';
@@ -25,11 +27,15 @@ import { ModalManager } from './gestor-modales.js';
 import { GistService } from './gist-service.js';
 import { HistorialManager } from './historial-manager.js';
 import { IngresoService } from './ingreso-service.js';
+import { InstaladorPWA } from './instalador-pwa.js';
 import { ContextMenuService } from './menu-contextual.js';
 import { PerfilService } from './perfil-service.js';
+import { RecargaGesto } from './recarga-gesto.js';
 import { StorageService } from './storage-service.js';
+import { TarjetaFondos } from './tarjeta-fondos.js';
 import { UIManager } from './ui-manager.js';
 import { UtilsService } from './utils-service.js';
+import { VistaPrevia } from './vista-previa.js';
 
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
@@ -166,6 +172,13 @@ export class GestionServicios {
 
     init() {
         Motion.init();
+        EstiloCalendario.init();
+        EstiloTarjeta.init();
+        TarjetaFondos.setFondoCard(StorageHelper.getItem(STORAGE_KEYS.FONDO_CARD, FONDO_CARD_POR_DEFECTO, true));
+        InstaladorPWA.init();
+        InstaladorPWA.bindEventos();
+        VistaPrevia.bindEventos();
+        RecargaGesto.bindEventos();
         this.tarjetas.init();
         this.calendario.init();
         this.atajos.render();
@@ -177,19 +190,29 @@ export class GestionServicios {
         this.historial_mgr.actualizarBotones();
         this.ui.cargarCotizacionDolar();
 
-        // Inicializar indicador de ingresos
+        const header = document.querySelector('.header');
+        if (header) {
+            const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 10);
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        }
+
+        // Inicializar indicador de ingresos y demás opciones de Ajustes
         if (StorageHelper.getItem(STORAGE_KEYS.INGRESOS_HABILITADO) === null) {
             StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, 'false');
         }
-        const ingresosHabilitado = this.ui.ingresosHabilitado();
-        const indicator = document.getElementById('ingresos-indicator');
-        if (indicator) {
-            indicator.textContent = ingresosHabilitado ? 'SI' : 'NO';
-        }
-        const blurIndicator = document.getElementById('blur-indicator');
-        if (blurIndicator) blurIndicator.textContent = this.blurHabilitado ? 'SI' : 'NO';
-        const animIndicator = document.getElementById('animaciones-indicator');
-        if (animIndicator) animIndicator.textContent = Motion.etiqueta();
+        this.ui.actualizarIndicadoresConfig();
+        EventosApp.on('config:blur', () => {
+            this.blurHabilitado = StorageHelper.getItem(STORAGE_KEYS.BLUR_MONTOS) === 'true';
+            this.ui.actualizarIndicadoresConfig();
+            this.estadisticas.actualizarResumenMes();
+        });
+        EventosApp.on('config:ingresos', () => {
+            this.ui.actualizarIndicadoresConfig();
+            this.vista.renderServicios();
+        });
+        EventosApp.on('config:hover-popup', () => this.ui.actualizarIndicadoresConfig());
+        EventosApp.on('config:rueda-calendario', () => this.ui.actualizarIndicadoresConfig());
 
         // Restaurar estado de estadísticas colapsadas
         const estadisticasColapsadas = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) === 'true';

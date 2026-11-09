@@ -1,3 +1,4 @@
+import { Recarga } from '../core/recarga.js';
 import { ToastManager } from './toast.js';
 
 // ====================================================================
@@ -37,7 +38,7 @@ function listo() {
     _descargando = false;
     ToastManager.finalizarProgreso();
     ToastManager.mostrarToast('Actualización lista', 'success', DURACION_LISTO_MS, null,
-        { label: 'Recargar', fn: () => location.reload() });
+        { label: 'Recargar', fn: () => Recarga.solicitar() });
 }
 
 /** La descarga falló: se conserva la versión actual y se vuelve a intentar en la próxima apertura. */

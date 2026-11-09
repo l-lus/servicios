@@ -6,6 +6,16 @@ import { ResumenAnual } from '../services/resumen-anual.js';
 import { ResumenMes } from '../services/resumen-mes.js';
 import { Anim } from './animaciones.js';
 import { CustomSelect } from './custom-select.js';
+import { TarjetaFondos } from './tarjeta-fondos.js';
+import { VistaPrevia } from './vista-previa.js';
+
+const MAPA_COLOR_FONDO = {
+    'borde-vencido': 'red',
+    'borde-urgente': 'orange',
+    'borde-proximo': 'gold',
+    'borde-lejano': 'blue',
+    'borde-pagado': 'green'
+};
 
 // ============================================================
 // ESTADISTICAS SERVICE — resumen, estadísticas, calculador
@@ -13,6 +23,14 @@ import { CustomSelect } from './custom-select.js';
 export class EstadisticasService {
     constructor(app) {
         this.app = app;
+        VistaPrevia.registrarPreparador('resumen', () => {
+            const card = document.getElementById('card-resumen');
+            const estabaOculta = card?.classList.contains('card-oculta');
+            if (estabaOculta) card.classList.remove('card-oculta');
+            return () => {
+                if (estabaOculta) card?.classList.add('card-oculta');
+            };
+        });
     }
 
     // ── Getters ───────────────────────────────────────────────
@@ -39,6 +57,8 @@ export class EstadisticasService {
             card.classList.remove('borde-vencido', 'borde-urgente', 'borde-proximo', 'borde-lejano', 'borde-pagado');
             if (colorBorde) card.classList.add(colorBorde);
         }
+        const colorFondo = MAPA_COLOR_FONDO[colorBorde] || 'green';
+        TarjetaFondos.actualizarFondoCard(colorFondo);
     }
 
     _buildValorResumen(montoARS, montoUSD, textoVacio) {

@@ -1,10 +1,12 @@
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
+import { EstiloCalendario } from '../core/estilo-calendario.js';
 import { EventosApp } from '../core/eventos.js';
 import { Motion } from '../core/movimiento.js';
 import { html, icono, montar } from '../core/html.js';
 import { MAX_ATAJOS, normalizarAtajos, alternarAtajo } from '../services/atajos.js';
 import { GestorTemas } from './gestor-temas.js';
+import { TarjetaFondos } from './tarjeta-fondos.js';
 
 // ============================================================
 // ATAJOS — tarjeta de botones rápidos que la persona elige (hasta MAX_ATAJOS)
@@ -39,6 +41,12 @@ export class AtajosCard {
             { id: 'calendario', nombre: 'Calendario', descripcion: 'Abre o cierra el calendario de vencimientos',
                 estado: () => ({ icono: '#icon-calendar', titulo: 'Calendario de vencimientos' }),
                 accion: () => { this.app.calendario.toggle(); if (this.app.calendario.abierto) $('card-calendario')?.scrollIntoView({ block: 'start' }); } },
+            { id: 'estilo-calendario', nombre: 'Estilo del calendario', descripcion: 'Cambia el aspecto de los días del calendario',
+                estado: () => ({ icono: '#icon-calendar', titulo: `Calendario: ${EstiloCalendario.etiqueta()}` }),
+                accion: () => { EstiloCalendario.siguiente(); this.app.ui.actualizarIndicadoresConfig?.(); } },
+            { id: 'fondo-resumen', nombre: 'Fondo del resumen', descripcion: 'Cambia la ilustración de fondo del resumen',
+                estado: () => ({ icono: '#icon-sparkle', titulo: `Fondo: ${TarjetaFondos._getLabelFondo(TarjetaFondos.getFondoCard())}` }),
+                accion: () => { TarjetaFondos.toggleFondoCard(); this.app.ui.actualizarIndicadoresConfig?.(); } },
             { id: 'deshacer', nombre: 'Deshacer', descripcion: 'Deshace el último cambio',
                 estado: () => ({ icono: '#icon-undo', titulo: 'Deshacer (Ctrl+Z)', desactivado: !!$('btn-undo')?.disabled }), accion: click('btn-undo') },
             { id: 'rehacer', nombre: 'Rehacer', descripcion: 'Vuelve a aplicar el cambio deshecho',
@@ -155,7 +163,10 @@ export class AtajosCard {
             this.render();
         });
         $('modal-atajos-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-atajos'));
-        // Lo que cambia el aspecto de un atajo (tema, ingresos, historial) vuelve a pintarlos
+        // Lo que cambia el aspecto de un atajo (tema, ingresos, historial, estilos) vuelve a pintarlos
         EventosApp.on('tema:cambio', () => this.actualizarEstados());
+        EventosApp.on('config:estilo-calendario', () => this.actualizarEstados());
+        EventosApp.on('config:fondo-card', () => this.actualizarEstados());
     }
 }
+

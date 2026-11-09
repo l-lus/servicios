@@ -5,6 +5,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
+import { IconosAnimados } from './iconos-animados.js';
 
 // ============================================================
 // GIST SERVICE — sincronización con GitHub Gist (Adaptado)
@@ -101,16 +102,15 @@ export class GistService {
         const tieneGist = this.esIdValido(this.getPerfil().gistId);
 
         if (!btnRespaldar || !btnRestaurar) return;
+        const base = tieneGist ? 'nube' : 'bandeja';
+        IconosAnimados.ponerIconoFlecha(btnRespaldar, base, 'subir');
+        IconosAnimados.ponerIconoFlecha(btnRestaurar, base, 'bajar');
         if (tieneGist) {
-            btnRespaldar.onclick = () => this.subir();
-            btnRestaurar.onclick = () => this.bajar();
-            btnRespaldar.querySelector('use').setAttribute('href', '#icon-cloud-upload');
-            btnRestaurar.querySelector('use').setAttribute('href', '#icon-cloud-download');
+            btnRespaldar.onclick = () => { IconosAnimados.animarFlecha(btnRespaldar, 'subir'); this.subir(); };
+            btnRestaurar.onclick = () => { IconosAnimados.animarFlecha(btnRestaurar, 'bajar'); this.bajar(); };
         } else {
-            btnRespaldar.onclick = () => this.app.respaldo.abrir();
-            btnRestaurar.onclick = () => this.app.storage.importarDatos('combinar');
-            btnRespaldar.querySelector('use').setAttribute('href', '#icon-download');
-            btnRestaurar.querySelector('use').setAttribute('href', '#icon-upload');
+            btnRespaldar.onclick = () => { IconosAnimados.animarFlecha(btnRespaldar, 'subir'); this.app.respaldo.abrir(); };
+            btnRestaurar.onclick = () => { IconosAnimados.animarFlecha(btnRestaurar, 'bajar'); this.app.storage.importarDatos('combinar'); };
         }
     }
 
@@ -182,7 +182,10 @@ export class GistService {
         }
     }
 
-    subir() { this._ejecutarSubida(false); }
+    subir() {
+        IconosAnimados.animarFlecha(document.getElementById('btn-gist-subir'), 'subir');
+        this._ejecutarSubida(false);
+    }
 
     subirAuto() {
         const perfil = this.getPerfil();
@@ -218,6 +221,7 @@ export class GistService {
 
     // ── Descarga y Novedades ──────────────────────────────────
     async bajar() {
+        IconosAnimados.animarFlecha(document.getElementById('btn-gist-bajar'), 'bajar');
         const token = this.getToken();
         const perfil = this.getPerfil();
         if (!this.esIdValido(perfil.gistId)) { this.app.mostrarToast('Gist ID inválido', 'error'); return; }
@@ -315,7 +319,7 @@ export class GistService {
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato inválido');
         const datos = ImportarExportar.normalizarDatos(parsed.servicios, parsed.categorias);
         await this.app.storage.advertirIntegridad(parsed, 'El archivo del Gist');
-        return datos;
+        return { ...datos, crudo: parsed };
     }
 
     // Muestra el resumen previo (Combinar / Reemplazar) y aplica lo que se elija. Devuelve false si se cancela.
@@ -326,7 +330,7 @@ export class GistService {
             remotos: data.servicios, categoriasRemotas: data.categorias,
         });
         if (!modo) return false;
-        this.app.storage._aplicarImportacion(modo, data);
+        this.app.storage._aplicarImportacion(modo, data, data.crudo);
         this.setPerfil({ gistLastSync: new Date().toISOString() });
         this.app._gistDatosPendientes = null;
         return true;

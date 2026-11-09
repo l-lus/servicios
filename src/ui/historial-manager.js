@@ -1,6 +1,7 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { PilaHistorial, clonar } from '../services/pila-historial.js';
+import { IconosAnimados } from './iconos-animados.js';
 
 // ============================================================
 // HISTORIAL MANAGER — undo/redo: une la pila (services) con la app y los botones
@@ -31,6 +32,7 @@ export class HistorialManager {
     deshacer() {
         const paso = this._pila.deshacer();
         if (!paso) return;
+        IconosAnimados.girarIcono(document.getElementById('btn-undo'), -1);
         this._aplicarEstado(paso.estado);
         this.app.ui.mostrarToast('Deshecho', 'info', undefined, paso.descripcion);
     }
@@ -38,6 +40,7 @@ export class HistorialManager {
     rehacer() {
         const paso = this._pila.rehacer();
         if (!paso) return;
+        IconosAnimados.girarIcono(document.getElementById('btn-redo'), 1);
         this._aplicarEstado(paso.estado);
         this.app.ui.mostrarToast('Rehecho', 'info', undefined, paso.descripcion);
     }

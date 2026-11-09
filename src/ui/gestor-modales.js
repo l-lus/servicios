@@ -331,7 +331,7 @@ export const ModalManager = (function () {
             else if (dd.parentElement === document.body) dd.remove();
         });
 
-        document.querySelectorAll('.modal, #menu-ajustes, #menu-agregar, #ctx-menu-servicio').forEach(modal => {
+        document.querySelectorAll('.modal, #menu-agregar, #ctx-menu-servicio').forEach(modal => {
             _restaurarOrigen(modal);
             modal.classList.remove('show', 'active');
             _limpiarOrigenDiferido(modal.id);
@@ -339,7 +339,7 @@ export const ModalManager = (function () {
             modal.removeEventListener('mousedown', _handleOverlayMousedown);
             modal.removeEventListener('click', handleOutsideClick);
         });
-        document.querySelectorAll('#menu-overlay, #menu-agregar-overlay').forEach(el => el.classList.remove('active', 'show'));
+        document.querySelectorAll('#menu-agregar-overlay').forEach(el => el.classList.remove('active', 'show'));
         Object.keys(_padres).forEach(k => delete _padres[k]);
         document.body.classList.remove('modal-open');
 
