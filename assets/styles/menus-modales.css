@@ -871,34 +871,45 @@ form.modal-content {
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translate(-50%, -50%);
+    z-index: var(--z-elevado);
     width: var(--control-sm);
+    min-width: var(--control-sm);
     height: var(--control-sm);
     padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
+    transform: translate(-50%, -50%);
+    background: var(--input-bg);
     color: var(--text-muted);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 var(--space-xsm) var(--bg-card);
 }
 
-.perfil-agregar-toggle:hover {
-    background: var(--surface-row-hover);
-    color: var(--text-main);
+.perfil-agregar-toggle::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
 }
 
-.perfil-agregar-toggle[aria-expanded="true"] {
-    color: var(--c-active);
-    border-color: var(--c-active);
+.perfil-agregar-toggle .icon {
+    width: var(--icon-lg);
+    height: var(--icon-lg);
 }
 
 .icon-plus-giro {
     transform: rotate(var(--giro-plus, 0deg));
-    transform-origin: 19px 19px;
-    transition: transform var(--transition-ui);
+    transform-origin: 13.5px 13.5px;
+    transition: transform var(--dur-anim) var(--ease-pop);
+}
+
+.perfil-agregar-toggle:active {
+    transform: translate(-50%, -50%) scale(0.92);
 }
 
 .perfil-agregar-toggle[aria-expanded="true"] {
     --giro-plus: 45deg;
+    background: var(--c-active);
+    color: var(--c-white);
+    border-color: transparent;
 }
 
 /* Lista de perfiles */
