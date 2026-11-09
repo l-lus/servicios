@@ -1156,6 +1156,10 @@ body.vista-previa-activa .btn-add {
     pointer-events: auto;
 }
 
+body.vista-previa-sin-objetivo .vista-previa-velo {
+    background: transparent;
+}
+
 .vista-previa-objetivo {
     position: relative;
     z-index: var(--z-vista-previa-objetivo);

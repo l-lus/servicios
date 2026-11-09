@@ -7,7 +7,7 @@ import { Animaciones } from './animaciones.js';
 // ====================================================================
 
 /** @typedef {{ etiqueta: string, descripcion?: string, icono?: string, valor: () => string, alTocar: () => void, visible?: () => boolean }} FilaVistaPrevia */
-/** @typedef {{ id: string, titulo: string, idObjetivo: string, filas: FilaVistaPrevia[], antes?: () => void, alCerrar?: () => void }} ConfigVistaPrevia */
+/** @typedef {{ id: string, titulo: string, idObjetivo?: string | null, filas: FilaVistaPrevia[], antes?: () => void, alCerrar?: () => void }} ConfigVistaPrevia */
 
 const NS_SVG = 'http://www.w3.org/2000/svg';
 const DEMORA_APERTURA_MS = 160;
@@ -18,7 +18,7 @@ const TOLERANCIA_ALINEAR_PX = 40;
 /** @type {Record<string, () => (() => void) | void>} */
 const _preparadores = {};
 
-/** @type {{ cfg: ConfigVistaPrevia, objetivo: HTMLElement, restaurar: (() => void) | null, filas: { def: FilaVistaPrevia, envoltorio: HTMLElement, btn: HTMLElement, valor: HTMLElement }[], observer: ResizeObserver | null, timer: any } | null} */
+/** @type {{ cfg: ConfigVistaPrevia, objetivo: HTMLElement | null, restaurar: (() => void) | null, filas: { def: FilaVistaPrevia, envoltorio: HTMLElement, btn: HTMLElement, valor: HTMLElement }[], observer: ResizeObserver | null, timer: any } | null} */
 let _activa = null;
 let _iniciada = false;
 let _cerrando = false;
@@ -121,7 +121,7 @@ function _refrescar(animar = true) {
 }
 
 function _llevarAVista() {
-    if (!_activa) return;
+    if (!_activa || !_activa.objetivo) return;
     const encabezado = document.querySelector('.header');
     const bordeEncabezado = encabezado ? encabezado.getBoundingClientRect().bottom : 0;
     const libreSup = bordeEncabezado + MARGEN_PX;
@@ -165,8 +165,14 @@ function _mostrar() {
     _activa.filas = _construirFilas(cfg.filas);
     _refrescar(false);
 
-    objetivo.classList.add('vista-previa-objetivo');
+    if (objetivo) {
+        objetivo.classList.add('vista-previa-objetivo');
+        _activa.timer = setTimeout(_llevarAVista, 60);
+    }
     document.body.classList.add('vista-previa-activa');
+    if (!objetivo) {
+        document.body.classList.add('vista-previa-sin-objetivo');
+    }
     velo.classList.add('show');
     panel.classList.add('show');
     panel.inert = false;
@@ -175,15 +181,14 @@ function _mostrar() {
     _medirPanel();
     _activa.observer = new ResizeObserver(() => { _medirPanel(); });
     _activa.observer.observe(panel);
-    _activa.timer = setTimeout(_llevarAVista, 60);
     _activa.filas.find(f => !f.def.visible)?.btn.focus({ preventScroll: true });
 }
 
 /** @param {ConfigVistaPrevia} cfg */
 function abrir(cfg) {
     if (_activa) return;
-    const objetivo = $(cfg.idObjetivo);
-    if (!objetivo) return;
+    const objetivo = cfg.idObjetivo ? $(cfg.idObjetivo) : null;
+    if (cfg.idObjetivo && !objetivo) return;
     _activa = { cfg, objetivo, restaurar: null, filas: [], observer: null, timer: null };
     _cerrando = false;
     cfg.antes?.();
@@ -205,8 +210,8 @@ function _finalizar() {
     _cerrando = false;
     clearTimeout(activa.timer);
     activa.observer?.disconnect();
-    activa.objetivo.classList.remove('vista-previa-objetivo');
-    document.body.classList.remove('vista-previa-activa');
+    if (activa.objetivo) activa.objetivo.classList.remove('vista-previa-objetivo');
+    document.body.classList.remove('vista-previa-activa', 'vista-previa-sin-objetivo');
     document.body.style.removeProperty('--vp-panel-h');
     $('vista-previa-velo')?.classList.remove('show');
     const panel = $('vista-previa-panel');

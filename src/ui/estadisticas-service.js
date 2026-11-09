@@ -32,7 +32,6 @@ export class EstadisticasService {
             };
         };
         VistaPrevia.registrarPreparador('resumen', prepararResumen);
-        VistaPrevia.registrarPreparador('tema', prepararResumen);
     }
 
     // ── Getters ───────────────────────────────────────────────

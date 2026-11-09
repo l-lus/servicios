@@ -133,7 +133,6 @@ export class UIManager {
         VistaPrevia.abrir({
             id: 'tema',
             titulo: 'Tema de color',
-            idObjetivo: 'card-resumen',
             antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
             alCerrar: desdeAjustes
                 ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
