@@ -114,32 +114,55 @@ test('contar y perdidasAlReemplazar: lo local que no está en el respaldo', () =
 
 test('config exportable en respaldos: valida, exporta y detecta cambios de preferencias', async () => {
     const exportable = IE.obtenerConfigExportable();
+    assert.equal(typeof exportable['gestion_servicios_theme'], 'string');
     assert.equal(typeof exportable['estilo-calendario'], 'string');
     assert.equal(typeof exportable['estilo-tarjeta'], 'string');
     assert.equal(typeof exportable['fondo-card'], 'string');
     assert.equal(typeof exportable['hover-popup-calendario'], 'boolean');
     assert.equal(typeof exportable['rueda-calendario'], 'boolean');
+    assert.equal(typeof exportable['calendario-abierto'], 'boolean');
+    assert.equal(typeof exportable['gestion_servicios_orden'], 'string');
+    assert.equal(typeof exportable['cat-agrupacion'], 'string');
+    assert.equal(typeof exportable['vista-estados'], 'string');
+    assert.equal(typeof exportable['servicios-collapse-state'], 'string');
+    assert.equal(typeof exportable['estadisticas-tipo'], 'string');
+    assert.equal(typeof exportable['estadisticas-collapsed'], 'string');
+    assert.equal(typeof exportable['resumen-mostrar-pagado'], 'string');
     assert.equal(Array.isArray(exportable['orden-tarjetas']), true);
     assert.equal(Array.isArray(exportable['columnas-tarjetas']), true);
 
     assert.equal(IE.validarCamposConfigImport({
+        'gestion_servicios_theme': 'crema',
         'estilo-calendario': 'cuadrado-aro',
         'estilo-tarjeta': 'clasica',
         'fondo-card': 'obelisco',
         'hover-popup-calendario': false,
         'rueda-calendario': true,
+        'calendario-abierto': true,
         'orden-tarjetas': ['servicios', 'resumen'],
         'columnas-tarjetas': [2, 3],
+        'gestion_servicios_orden': 'vencimiento',
+        'cat-agrupacion': 'on',
+        'vista-estados': 'true',
+        'servicios-collapse-state': 'expanded',
+        'estadisticas-tipo': 'anual',
+        'estadisticas-collapsed': 'false',
+        'resumen-mostrar-pagado': 'true',
     }), true);
 
+    assert.equal(IE.validarCamposConfigImport({ 'gestion_servicios_theme': 'inexistente' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'estilo-calendario': 'inexistente' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'columnas-tarjetas': [0, 0] }), false);
+    assert.equal(IE.validarCamposConfigImport({ 'gestion_servicios_orden': 'inexistente' }), false);
+    assert.equal(IE.validarCamposConfigImport({ 'servicios-collapse-state': 'inexistente' }), false);
 
     const cambios = IE.calcularCambiosConfigImport({
         'estilo-calendario': 'punto',
         'hover-popup-calendario': true,
+        'gestion_servicios_orden': 'monto-desc',
     });
     assert.equal(cambios.includes('estilo del calendario'), true);
     assert.equal(cambios.includes('popup del calendario (PC)'), true);
+    assert.equal(cambios.includes('orden de servicios'), true);
 });
 

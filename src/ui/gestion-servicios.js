@@ -210,6 +210,38 @@ export class GestionServicios {
         });
         EventosApp.on('config:hover-popup', () => this.ui.actualizarIndicadoresConfig());
         EventosApp.on('config:rueda-calendario', () => this.ui.actualizarIndicadoresConfig());
+        EventosApp.on('config:vista-servicios', () => {
+            this._agrupacionActiva = StorageHelper.getItem(STORAGE_KEYS.CAT_AGRUPACION) === 'on';
+            this._vistaEstados = StorageHelper.getItem(STORAGE_KEYS.VISTA_ESTADOS) === 'true';
+            this.ordenActual = StorageHelper.getItem(STORAGE_KEYS.ORDEN) || 'nombre';
+            this.serviciosCollapseState = StorageHelper.getItem(STORAGE_KEYS.SERVICIOS_COLLAPSE) || 'semi-collapsed';
+            const selectOrden = document.getElementById('select-orden');
+            if (selectOrden) selectOrden.value = this.ordenActual;
+            const selectVista = document.getElementById('select-vista');
+            if (selectVista) {
+                if (this._vistaEstados) selectVista.value = 'estados';
+                else if (this._agrupacionActiva) selectVista.value = 'categorias';
+                else selectVista.value = 'todo';
+            }
+            document.getElementById('select-orden-csd')?._customSelect?.refresh();
+            document.getElementById('select-vista-csd')?._customSelect?.refresh();
+            this.vista.aplicarEstadoServicios(this.serviciosCollapseState);
+            this.vista.renderServicios();
+        });
+        EventosApp.on('config:estadisticas', () => {
+            this.tipoEstadisticaActual = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
+            const selEstTipo = document.getElementById('estadisticas-tipo');
+            if (selEstTipo) selEstTipo.value = this.tipoEstadisticaActual;
+            document.getElementById('estadisticas-tipo-csd')?._customSelect?.refresh();
+            const colapsadas = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) === 'true';
+            document.getElementById('estadisticas-content')?.classList.toggle('collapsed', colapsadas);
+            document.getElementById('estadisticas-chevron')?.classList.toggle('collapsed', colapsadas);
+            this.estadisticas.cambiarTipoEstadistica();
+        });
+        EventosApp.on('config:resumen', () => {
+            this.mostrandoPagadoMes = StorageHelper.getItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO) === 'true';
+            this.estadisticas.actualizarResumenMes();
+        });
 
         // Restaurar estado de estadísticas colapsadas
         const estadisticasColapsadas = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) === 'true';

@@ -82,6 +82,8 @@ function renderSelector(idLista = 'bienvenida-temas') {
     });
 }
 
+EventosApp.on('config:tema', (tema) => aplicarTema(tema));
+
 export const GestorTemas = {
     temaGuardado,
     aplicarTema,
@@ -93,3 +95,4 @@ export const GestorTemas = {
     etiqueta: () => etiquetaTema(_actual),
     cargar() { renderSelector('bienvenida-temas'); aplicarTema(temaGuardado()); },
 };
+

@@ -8,6 +8,7 @@ import { EstiloCalendario, ESTILOS_CALENDARIO } from '../core/estilo-calendario.
 import { EstiloTarjeta, ESTILOS_TARJETA } from '../core/estilo-tarjeta.js';
 import { FONDOS_SVG } from '../data/fondos.js';
 import { EventosApp } from '../core/eventos.js';
+import { TEMAS } from '../core/temas.js';
 import { normalizarOrdenCards, columnasDesdeOrden, tamanosDeColumnas, esTamanosColumnasValidos } from './orden-cards.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
 
@@ -77,10 +78,18 @@ export const CONFIG_RESPALDO = [
         actual: EstiloCalendario.actual,
         aplicar: (v) => EstiloCalendario.setEstilo(v),
     },
-    _opcion(Preferencias.HOVER_POPUP, 'popup del calendario (PC)'),
+    {
+        clave: STORAGE_KEYS.TEMA,
+        etiqueta: 'tema',
+        esValido: (v) => TEMAS.some(t => t.id === v),
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.TEMA, null) || 'dark',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.TEMA, v); EventosApp.emit('config:tema', v); },
+    },
+    _opcion(Preferencias.HOVER_POPUP, 'popup del calendario (PC)', () => EventosApp.emit('config:hover-popup')),
     _opcion(Preferencias.RUEDA_CALENDARIO, 'rueda del calendario (PC)', () => EventosApp.emit('config:rueda-calendario')),
-    _opcion(Preferencias.BLUR_MONTOS, 'privacidad de montos'),
-    _opcion(Preferencias.INGRESOS_HABILITADO, 'registrar ingresos'),
+    _opcion(Preferencias.BLUR_MONTOS, 'privacidad de montos', () => EventosApp.emit('config:blur')),
+    _opcion(Preferencias.INGRESOS_HABILITADO, 'registrar ingresos', () => EventosApp.emit('config:ingresos')),
+    _opcion(Preferencias.CALENDARIO_ABIERTO, 'calendario desplegado', () => EventosApp.emit('config:calendario-abierto')),
     {
         clave: STORAGE_KEYS.FONDO_CARD,
         etiqueta: 'fondo de la tarjeta de resumen',
@@ -114,6 +123,55 @@ export const CONFIG_RESPALDO = [
         aplicar: (v) => CARDS.forEach(c => {
             if (typeof v[c] === 'boolean') StorageHelper.setItem(STORAGE_KEYS.CARD_VISIBLE(c), v[c]);
         }),
+    },
+    {
+        clave: STORAGE_KEYS.ORDEN,
+        etiqueta: 'orden de servicios',
+        esValido: (v) => ['nombre', 'vencimiento', 'monto-desc', 'monto-asc'].includes(v),
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.ORDEN) || 'nombre',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.ORDEN, v); EventosApp.emit('config:vista-servicios'); },
+    },
+    {
+        clave: STORAGE_KEYS.CAT_AGRUPACION,
+        etiqueta: 'agrupación por categorías',
+        esValido: (v) => v === 'on' || v === 'off' || typeof v === 'boolean',
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.CAT_AGRUPACION) || 'off',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, typeof v === 'boolean' ? (v ? 'on' : 'off') : v); EventosApp.emit('config:vista-servicios'); },
+    },
+    {
+        clave: STORAGE_KEYS.VISTA_ESTADOS,
+        etiqueta: 'vista por estados',
+        esValido: (v) => v === 'true' || v === 'false' || typeof v === 'boolean',
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.VISTA_ESTADOS) || 'false',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.VISTA_ESTADOS, String(v)); EventosApp.emit('config:vista-servicios'); },
+    },
+    {
+        clave: STORAGE_KEYS.SERVICIOS_COLLAPSE,
+        etiqueta: 'estado de la tarjeta de servicios',
+        esValido: (v) => ['expanded', 'semi-collapsed', 'collapsed'].includes(v),
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.SERVICIOS_COLLAPSE) || 'semi-collapsed',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.SERVICIOS_COLLAPSE, v); EventosApp.emit('config:vista-servicios'); },
+    },
+    {
+        clave: STORAGE_KEYS.ESTADISTICAS_TIPO,
+        etiqueta: 'tipo de estadística',
+        esValido: (v) => ['mensual', 'individual', 'anual'].includes(v),
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, v); EventosApp.emit('config:estadisticas'); },
+    },
+    {
+        clave: STORAGE_KEYS.ESTADISTICAS_COLAPSADAS,
+        etiqueta: 'estadísticas colapsadas',
+        esValido: (v) => v === 'true' || v === 'false' || typeof v === 'boolean',
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) || 'false',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS, String(v)); EventosApp.emit('config:estadisticas'); },
+    },
+    {
+        clave: STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO,
+        etiqueta: 'resumen mostrar pagado',
+        esValido: (v) => v === 'true' || v === 'false' || typeof v === 'boolean',
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO) || 'false',
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO, String(v)); EventosApp.emit('config:resumen'); },
     },
 ];
 

@@ -417,6 +417,7 @@ export class OrdenTarjetas {
         EventosApp.on('config:tarjetas', () => {
             this.aplicarVisibilidad();
             this.aplicar();
+            this.renderLista();
         });
     }
 
