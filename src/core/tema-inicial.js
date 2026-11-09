@@ -1,13 +1,15 @@
 // Anti-clickjacking: GitHub Pages no permite enviar el header
 // frame-ancestors / X-Frame-Options, y como <meta> los navegadores los ignoran.
 if (window.top !== window.self) {
-    try { window.top.location = window.self.location.href; }
-    catch (e) { document.documentElement.style.display = 'none'; }
+    document.documentElement.style.display = 'none';
+    try { /** @type {Window} */ (window.top).location = window.self.location.href; } catch (e) { /* sin acceso al almacenamiento o a window.top: se usan los valores por defecto */ }
 }
 
-// Lista válida de temas (copia de TEMAS en core/temas.js: este script clásico no puede importar módulos; tests/architecture.test.mjs
-// verifica que coincidan). Un valor guardado que no esté en la lista se trata como el tema por defecto ('dark').
+// Listas válidas (copias de TEMAS en core/temas.js y de ESTILOS_CALENDARIO en core/estilo-calendario.js: este
+// script clásico no puede importar módulos; tests/architecture.test.mjs verifica que coincidan). Un valor guardado
+// que no esté en la lista se trata como el valor por defecto, igual que hacen esos módulos.
 var TEMAS_VALIDOS = ['light', 'dark', 'medianoche', 'pink', 'green', 'blue', 'lilac', 'crema'];
+var ESTILOS_CALENDARIO_VALIDOS = ['legacy', 'relleno-aro', 'cuadrado-aro', 'aro-grueso', 'contorno-brillo', 'subrayado', 'punto'];
 
 (function () {
     var html = document.documentElement;
@@ -18,13 +20,21 @@ var TEMAS_VALIDOS = ['light', 'dark', 'medianoche', 'pink', 'green', 'blue', 'li
         if (TEMAS_VALIDOS.indexOf(tema) === -1) tema = 'dark';
         if (tema === 'dark') html.classList.add('dark-mode');
         else if (tema !== 'light') html.setAttribute('data-theme', tema);
-    } catch (e) { }
+    } catch (e) { /* sin acceso al almacenamiento: se usan los valores por defecto */ }
     // Restaurar transiciones después del primer frame pintado
     requestAnimationFrame(function () {
         requestAnimationFrame(function () {
             html.classList.remove('no-transition');
         });
     });
+}());
+
+// Estilo de los días del calendario (ver EstiloCalendario): el CSS solo mira <html data-estilo-calendario>; sin valor guardado queda el original ('legacy').
+(function () {
+    try {
+        var e = localStorage.getItem('estilo-calendario') || 'legacy';
+        document.documentElement.setAttribute('data-estilo-calendario', ESTILOS_CALENDARIO_VALIDOS.indexOf(e) === -1 ? 'legacy' : e);
+    } catch (err) { /* sin acceso al almacenamiento: se usan los valores por defecto */ }
 }());
 
 // Reducir animaciones: 'on' | 'off' | 'auto' (sin valor = auto, sigue al sistema).
@@ -34,7 +44,13 @@ var TEMAS_VALIDOS = ['light', 'dark', 'medianoche', 'pink', 'green', 'blue', 'li
         var m = localStorage.getItem('gestion_servicios_reducir_animaciones');
         var reducir = m === 'on' || (m !== 'off' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
         document.documentElement.setAttribute('data-motion', reducir ? 'reduce' : 'full');
-    } catch (e) { }
+    } catch (e) { /* sin acceso al almacenamiento: se usan los valores por defecto */ }
 }());
 
-// Parche anti parpadeo blanco en modo oscuro
+// Pantalla de carga: oculta el HTML estático (CSS: html.cargando) hasta que main.js lo quita al terminar de iniciar la UI.
+// Red de seguridad: si el módulo falla o tarda demasiado, se muestra la página igual.
+(function () {
+    var html = document.documentElement;
+    html.classList.add('cargando');
+    setTimeout(function () { html.classList.remove('cargando'); }, 8000);
+}());
