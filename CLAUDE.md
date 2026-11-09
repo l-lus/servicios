@@ -10,7 +10,7 @@ La fuente de verdad de la arquitectura es `docs/ARQUITECTURA.md`: si el cambio a
 2. `npm test` — debe quedar en verde. Si se toca el flujo de la UI, correr también `npm run e2e` (Firefox headless; falla ante errores de consola).
 3. Si se agrega `npm run typecheck` al proyecto (hoy no existe; en *horarios* sí, con `tsc` + JSDoc y también en CI), correrlo igual: el CI de horarios cazó errores de tipos que `npm test` no detecta.
 
-Cada cambio termina con su commit local, con `release` y tests en verde. Nunca `push`: el usuario copia los archivos a mano.
+**Regla de commits: un commit local por cada cambio / punto tocado** (nunca agrupar varios cambios o puntos independientes en un solo commit). Cada cambio termina con su propio commit local, con `release` y tests en verde. Nunca `push`: el usuario copia los archivos a mano.
 
 ## Capas (dependencias solo hacia abajo, sin ciclos)
 ```

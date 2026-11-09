@@ -65,6 +65,7 @@ tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: 
 - Regla de negocio, cálculo, API externa → `src/services/` (sin `document`).
 - DOM, modales, eventos → `src/ui/`.
 - Todo `.js` nuevo: import con extensión `.js` y `npm run release`.
+- **Un commit local por cada cambio / punto tocado**: cada ajuste, funcionalidad o corrección lleva su propio commit individual (sin `git push`) tras correr `npm run release` y `npm test`.
 
 ## Navegación de ajustes
 Header (perfil) → modal Perfiles → modal Ajustes → cada opción. `ModalManager.abrirConPadre/cerrarConRetorno` (y `alternar`) recuerdan el modal padre: cerrar un hijo vuelve al anterior, como en Horarios. `UIManager.abrirModal/cerrarModal` aplican esa regla cuando Ajustes está abierto.
