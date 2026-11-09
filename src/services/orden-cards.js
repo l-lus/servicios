@@ -1,104 +1,110 @@
 import { CARDS } from '../core/constantes.js';
 
 // ====================================================================
-// DISPOSICIÓN DE LAS TARJETAS (sin DOM)
+// ORDEN Y COLUMNAS DE LAS TARJETAS (sin DOM)
 // ====================================================================
-// En escritorio hay 2 o 3 columnas (izquierda, centro y derecha) y cada tarjeta se asigna a la que se quiera: { izq, cen, der }.
-// Con 2 columnas el centro queda vacío. En el celular todo va en una sola columna: una lista con el orden.
-// Las dos disposiciones son independientes.
-
-/** Disposición de escritorio por defecto. */
-export const DISPOSICION_POR_DEFECTO = Object.freeze({
-    izq: Object.freeze(['resumen', 'atajos', 'estadisticas', 'calendario']),
-    cen: Object.freeze([]),
-    der: Object.freeze(['servicios']),
-});
-
-/** Columnas de escritorio, de izquierda a derecha. */
-export const COLUMNAS = Object.freeze(['izq', 'cen', 'der']);
-
-/** Columnas en uso según la cantidad (2: izquierda y derecha; 3: las tres), de izquierda a derecha. */
-export const columnasActivas = (cantidad) => (cantidad === 3 ? ['izq', 'cen', 'der'] : ['izq', 'der']);
-const sinRepetir = (lista, cards) => [...new Set(lista.filter(c => cards.includes(c)))];
+// El orden es una lista con todas las tarjetas, ocultas incluidas. En escritorio esa lista se corta en columnas según los tamaños guardados
+// (ej. [4, 1] = 4 tarjetas en la primera columna y 1 en la segunda); en móvil se muestra apilada.
+export const CARDS_EN_DERECHA = 1;   // reparto por defecto: solo la última (Servicios) va a la segunda columna
+export const MAX_COLUMNAS = 3;
 
 /**
- * Lo guardado → disposición válida de escritorio. Acepta el formato anterior (una lista donde la última tarjeta va a la derecha).
- * Descarta lo desconocido y repetido; una tarjeta que no estaba al guardar entra al final de su columna por defecto.
- * Con 2 columnas (`columnas` = 2) lo que hubiera en el centro pasa al final de la derecha.
+ * Orden guardado → orden válido. Descarta lo desconocido y repetido; una tarjeta que no estaba cuando se guardó (agregada en una versión posterior)
+ * entra en el lugar que le toca por defecto, sin tocar el orden que ya había elegido el usuario.
+ * Acepta también el formato anterior por columnas `{ izq, cen, der }`.
  * @param {unknown} guardado
  * @param {readonly string[]} [cards]
- * @param {number} [columnas]
- * @returns {{ izq: string[], cen: string[], der: string[] }}
  */
-export function normalizarDisposicion(guardado, cards = CARDS, columnas = 3) {
-    let izq = [], cen = [], der = [];
-    if (Array.isArray(guardado)) {
-        const lista = sinRepetir(guardado, cards);
-        der = lista.slice(-1);
-        izq = lista.slice(0, -1);
-    } else if (guardado && typeof guardado === 'object') {
+export function normalizarOrdenCards(guardado, cards = CARDS) {
+    let base = guardado;
+    if (guardado && typeof guardado === 'object' && !Array.isArray(guardado)) {
         const g = /** @type {any} */ (guardado);
-        const limpiar = (v, ya) => (Array.isArray(v) ? sinRepetir(v, cards).filter(c => !ya.includes(c)) : []);
-        izq = limpiar(g.izq, []);
-        cen = limpiar(g.cen, izq);
-        der = limpiar(g.der, [...izq, ...cen]);
+        base = [...(Array.isArray(g.izq) ? g.izq : []), ...(Array.isArray(g.cen) ? g.cen : []), ...(Array.isArray(g.der) ? g.der : [])];
     }
-    const puestas = new Set([...izq, ...cen, ...der]);
-    cards.filter(c => !puestas.has(c)).forEach(c => {
-        (DISPOSICION_POR_DEFECTO.der.includes(c) ? der : izq).push(c);
+    const orden = Array.isArray(base) ? [...new Set(base.filter(c => cards.includes(c)))] : [];
+    cards.forEach((c, i) => {
+        if (!orden.includes(c)) orden.splice(Math.min(i, orden.length), 0, c);
     });
-    if (columnas !== 3) { der = [...der, ...cen]; cen = []; }
-    return { izq, cen, der };
+    return orden;
 }
 
 /**
- * Lo guardado → orden válido del celular. Sin orden propio se parte del de escritorio (izquierda y luego derecha).
- * @param {unknown} guardado
- * @param {{ izq: readonly string[], cen: readonly string[], der: readonly string[] }} [base]
- * @param {readonly string[]} [cards]
+ * ¿Son tamaños de columna válidos? Hasta MAX_COLUMNAS números enteros: la primera puede ser 0 (formato de la versión anterior), las demás al menos 1.
+ * @param {unknown} tamanos
+ * @param {number} [total] si se indica, además deben sumar ese total
  */
-export function normalizarOrdenMovil(guardado, base = DISPOSICION_POR_DEFECTO, cards = CARDS) {
-    const lista = Array.isArray(guardado) ? sinRepetir(guardado, cards) : [...base.izq, ...base.cen, ...base.der].filter(c => cards.includes(c));
-    cards.filter(c => !lista.includes(c)).forEach(c => lista.push(c));
-    return lista;
+export function esTamanosColumnasValidos(tamanos, total) {
+    if (!Array.isArray(tamanos) || tamanos.length < 1 || tamanos.length > MAX_COLUMNAS) return false;
+    if (!tamanos.every((n, i) => Number.isInteger(n) && n >= (i === 0 ? 0 : 1))) return false;
+    return total === undefined || tamanos.reduce((a, b) => a + b, 0) === total;
 }
 
-/** Columna ('izq' | 'cen' | 'der') en que está la tarjeta. */
-export function columnaDe(disposicion, cual) {
-    return disposicion.izq.includes(cual) ? 'izq' : (disposicion.cen.includes(cual) ? 'cen' : 'der');
+/**
+ * Corta el orden en columnas. Sin tamaños válidos (nunca se movieron, o ya no coinciden con las tarjetas) usa el reparto por defecto.
+ * @param {readonly string[]} orden
+ * @param {unknown} [tamanos]
+ * @returns {string[][]}
+ */
+export function columnasDesdeOrden(orden, tamanos = null) {
+    const total = orden.length;
+    const t = esTamanosColumnasValidos(tamanos, total)
+        ? /** @type {number[]} */ (tamanos)
+        : (total > CARDS_EN_DERECHA ? [total - CARDS_EN_DERECHA, CARDS_EN_DERECHA] : [total]);
+    let desde = 0;
+    return t.map(n => { const col = orden.slice(desde, desde + n); desde += n; return col; }).filter(col => col.length > 0);
 }
 
-/** Saca `cual` de la lista y lo inserta antes de `antesDe` (o al final si es null o no está). */
-export function colocarEnLista(lista, cual, antesDe = null) {
-    const sin = lista.filter(c => c !== cual);
-    const idx = antesDe ? sin.indexOf(antesDe) : -1;
-    if (idx === -1) sin.push(cual); else sin.splice(idx, 0, cual);
-    return sin;
+/** @param {readonly (readonly string[])[]} columnas */
+export const tamanosDeColumnas = (columnas) => columnas.map(c => c.length);
+
+/**
+ * Columnas tal como se dibujan: una columna sin tarjetas visibles se funde con la anterior (la primera, con la siguiente),
+ * y si hay más que `max` las sobrantes pasan a la última. No toca lo guardado: al mostrar de nuevo una tarjeta oculta, vuelve a su columna.
+ * @param {readonly (readonly string[])[]} columnas
+ * @param {number} [max]
+ * @param {ReadonlySet<string> | null} [visibles] tarjetas visibles (null = todas)
+ * @returns {string[][]}
+ */
+export function prepararColumnas(columnas, max = MAX_COLUMNAS, visibles = null) {
+    /** @type {string[][]} */
+    const res = [];
+    columnas.forEach(col => {
+        if (res.length && !col.some(c => !visibles || visibles.has(c))) res[res.length - 1].push(...col);
+        else res.push([...col]);
+    });
+    if (res.length > 1 && !res[0].some(c => !visibles || visibles.has(c))) res[1].unshift(...(/** @type {string[]} */ (res.shift())));
+    while (res.length > max) {
+        const sobrante = /** @type {string[]} */ (res.pop());
+        res[res.length - 1].push(...sobrante);
+    }
+    return res;
 }
 
-/** Sube (-1) o baja (1) una posición dentro de la lista. */
-export function moverEnLista(lista, cual, delta) {
-    const i = lista.indexOf(cual), j = i + delta;
-    if (i === -1 || j < 0 || j >= lista.length) return [...lista];
-    const copia = [...lista];
-    [copia[i], copia[j]] = [copia[j], copia[i]];
-    return copia;
-}
-
-/** Nueva disposición con `cual` en `columna`, antes de `antesDe` (o al final). No muta la original. */
-export function colocarEnColumna(disposicion, cual, columna, antesDe = null) {
-    const nueva = { izq: disposicion.izq.filter(c => c !== cual), cen: disposicion.cen.filter(c => c !== cual), der: disposicion.der.filter(c => c !== cual) };
-    nueva[columna] = colocarEnLista(nueva[columna], cual, antesDe);
-    return nueva;
-}
-
-/** Nueva disposición con la tarjeta movida al final de otra columna. */
-export function pasarAColumna(disposicion, cual, columna) {
-    return colocarEnColumna(disposicion, cual, columna);
-}
-
-/** Nueva disposición con la tarjeta una posición arriba (-1) o abajo (1) dentro de su columna. */
-export function moverEnColumna(disposicion, cual, delta) {
-    const col = columnaDe(disposicion, cual);
-    return { ...disposicion, [col]: moverEnLista(disposicion[col], cual, delta) };
+/**
+ * Mueve una tarjeta a `colDestino` (si es igual a la cantidad de columnas, abre una nueva), delante de `antesDe` o al final.
+ * Las columnas que quedan vacías desaparecen. Devuelve las columnas nuevas, o null si no hay cambio
+ * o el resultado superaría `max` columnas con tarjetas visibles. Con `exigirDosColumnas` tampoco deja una sola columna con
+ * tarjetas visibles si antes había más de una (la página nunca queda en una sola columna por un movimiento).
+ * @param {readonly (readonly string[])[]} columnas
+ * @param {string} id
+ * @param {number} colDestino
+ * @param {string | null} [antesDe]
+ * @param {{ max?: number, visibles?: ReadonlySet<string> | null, exigirDosColumnas?: boolean }} [opciones]
+ * @returns {string[][] | null}
+ */
+export function moverCard(columnas, id, colDestino, antesDe = null, { max = MAX_COLUMNAS, visibles = null, exigirDosColumnas = false } = {}) {
+    const nuevas = columnas.map(c => c.filter(x => x !== id));
+    if (colDestino >= nuevas.length) {
+        nuevas.push([id]);
+    } else {
+        const destino = nuevas[Math.max(0, colDestino)];
+        const i = antesDe ? destino.indexOf(antesDe) : -1;
+        destino.splice(i === -1 ? destino.length : i, 0, id);
+    }
+    const resultado = nuevas.filter(c => c.length > 0);
+    const esVisible = (x) => !visibles || visibles.has(x);
+    const columnasVisibles = (cols) => cols.filter(c => c.some(esVisible)).length;
+    if (columnasVisibles(resultado) > max) return null;
+    if (exigirDosColumnas && columnasVisibles(columnas) > 1 && columnasVisibles(resultado) < 2) return null;
+    return JSON.stringify(resultado) === JSON.stringify(columnas) ? null : resultado;
 }

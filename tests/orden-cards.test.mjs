@@ -1,80 +1,93 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    DISPOSICION_POR_DEFECTO, COLUMNAS, columnasActivas, normalizarDisposicion, normalizarOrdenMovil, columnaDe,
-    colocarEnLista, moverEnLista, colocarEnColumna, pasarAColumna, moverEnColumna,
+    normalizarOrdenCards, columnasDesdeOrden, tamanosDeColumnas, prepararColumnas, moverCard, esTamanosColumnasValidos, MAX_COLUMNAS
 } from '../src/services/orden-cards.js';
 import { CARDS } from '../src/core/constantes.js';
 
-const todas = d => [...d.izq, ...d.cen, ...d.der].sort();
-const porDefecto = () => ({ izq: [...DISPOSICION_POR_DEFECTO.izq], cen: [], der: [...DISPOSICION_POR_DEFECTO.der] });
+const ORDEN = ['resumen', 'atajos', 'estadisticas', 'calendario', 'servicios'];
 
-test('disposición: sin nada guardado o inválido queda la de por defecto', () => {
-    assert.deepEqual(normalizarDisposicion(null), porDefecto());
-    assert.deepEqual(normalizarDisposicion('basura'), porDefecto());
-    assert.deepEqual(normalizarDisposicion({ izq: 'x', der: 7, cen: {} }), porDefecto());
+test('normalizarOrdenCards: sin nada guardado, inválido o en formato anterior devuelve todas las tarjetas', () => {
+    assert.deepEqual(normalizarOrdenCards(null), [...CARDS]);
+    assert.deepEqual(normalizarOrdenCards('basura'), [...CARDS]);
+    assert.deepEqual(normalizarOrdenCards({ izq: ['servicios', 'resumen'], cen: ['atajos'], der: ['estadisticas', 'calendario'] }),
+        ['servicios', 'resumen', 'atajos', 'estadisticas', 'calendario']);
 });
 
-test('disposición: una elección libre de tres columnas se respeta, sin repetidos ni desconocidos', () => {
-    const d = normalizarDisposicion({ izq: ['servicios', 'resumen', 'nada', 'resumen'], cen: ['atajos', 'servicios'], der: ['estadisticas', 'calendario', 'atajos'] });
-    assert.deepEqual(d, { izq: ['servicios', 'resumen'], cen: ['atajos'], der: ['estadisticas', 'calendario'] });
-    assert.deepEqual(todas(d), [...CARDS].sort());
+test('Columnas: sin tamaños guardados se usa el reparto por defecto (todas a la izquierda salvo la última, que va a la derecha)', () => {
+    assert.deepEqual(columnasDesdeOrden(ORDEN), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [4, 1]), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [2, 2, 1]), [['resumen', 'atajos'], ['estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [0, 5]), [ORDEN]);   // una columna vacía no existe
+    // tamaños que no suman el total o inválidos: reparto por defecto
+    assert.deepEqual(columnasDesdeOrden(ORDEN, [4]), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
+    assert.deepEqual(columnasDesdeOrden(ORDEN, 'x'), [['resumen', 'atajos', 'estadisticas', 'calendario'], ['servicios']]);
 });
 
-test('disposición: con 2 columnas lo del centro pasa al final de la derecha', () => {
-    const d = normalizarDisposicion({ izq: ['resumen'], cen: ['atajos', 'calendario'], der: ['servicios', 'estadisticas'] }, CARDS, 2);
-    assert.deepEqual(d, { izq: ['resumen'], cen: [], der: ['servicios', 'estadisticas', 'atajos', 'calendario'] });
+test('Columnas: validación de tamaños (hasta 3, enteros; la primera puede ser 0 por compatibilidad)', () => {
+    assert.equal(esTamanosColumnasValidos([1, 2]), true);
+    assert.equal(esTamanosColumnasValidos([0, 3]), true);
+    assert.equal(esTamanosColumnasValidos([1, 0]), false);
+    assert.equal(esTamanosColumnasValidos([1, 1, 1, 1]), false);
+    assert.equal(esTamanosColumnasValidos([1.5, 1]), false);
+    assert.equal(esTamanosColumnasValidos([]), false);
+    assert.equal(esTamanosColumnasValidos([1, 2], 4), false);
+    assert.equal(MAX_COLUMNAS, 3);
 });
 
-test('disposición: las columnas pueden quedar vacías', () => {
-    const d = normalizarDisposicion({ izq: [...CARDS], cen: [], der: [] });
-    assert.deepEqual([d.cen, d.der], [[], []]);
-    assert.equal(d.izq.length, CARDS.length);
+test('Columnas: mover una tarjeta a otra columna, entre dos tarjetas o al final', () => {
+    const base = [['resumen'], ['estadisticas', 'servicios']];
+    assert.deepEqual(moverCard(base, 'resumen', 1, 'servicios'), [['estadisticas', 'resumen', 'servicios']]);
+    assert.deepEqual(moverCard(base, 'servicios', 0), [['resumen', 'servicios'], ['estadisticas']]);
+    assert.deepEqual(moverCard(base, 'servicios', 1, 'estadisticas'), [['resumen'], ['servicios', 'estadisticas']]);
+    assert.equal(moverCard(base, 'estadisticas', 1, 'servicios'), null);   // ya está ahí: sin cambio
 });
 
-test('disposición: una tarjeta que no existía al guardar entra al final de su columna por defecto', () => {
-    assert.deepEqual(normalizarDisposicion({ izq: ['resumen', 'atajos'], der: ['servicios'] }),
-        { izq: ['resumen', 'atajos', 'estadisticas', 'calendario'], cen: [], der: ['servicios'] });
+test('Columnas: soltar en el hueco de la derecha abre una columna nueva, y una columna vacía desaparece', () => {
+    const base = [['resumen'], ['estadisticas', 'servicios']];
+    const tres = moverCard(base, 'servicios', 2);
+    assert.deepEqual(tres, [['resumen'], ['estadisticas'], ['servicios']]);
+    assert.deepEqual(tamanosDeColumnas(tres), [1, 1, 1]);
+    // la única tarjeta de una columna al hueco de al lado no cambia nada (la columna se vacía y se vuelve a abrir)
+    assert.equal(moverCard(tres, 'servicios', 3), null);
+    // vaciar una columna del medio la quita
+    assert.deepEqual(moverCard(tres, 'estadisticas', 0), [['resumen', 'estadisticas'], ['servicios']]);
+    // la primera columna también desaparece si se vacía: la segunda pasa a ser la primera
+    assert.deepEqual(moverCard([['resumen'], ['estadisticas', 'servicios']], 'resumen', 1), [['estadisticas', 'servicios', 'resumen']]);
 });
 
-test('disposición: acepta el formato anterior (lista con la última a la derecha) y el de dos columnas sin centro', () => {
-    assert.deepEqual(normalizarDisposicion(['servicios', 'resumen', 'atajos', 'estadisticas', 'calendario']),
-        { izq: ['servicios', 'resumen', 'atajos', 'estadisticas'], cen: [], der: ['calendario'] });
+test('Columnas: nunca más de 3 columnas con tarjetas visibles', () => {
+    const tres = [['resumen'], ['estadisticas'], ['servicios']];
+    assert.equal(moverCard(tres, 'servicios', 3), null);
+    assert.equal(moverCard([['resumen', 'estadisticas'], ['servicios']], 'estadisticas', 2, null, { max: 2 }), null);
+    // una columna de tarjetas ocultas no cuenta
+    const visibles = new Set(['resumen', 'estadisticas']);
+    assert.deepEqual(moverCard([['resumen'], ['estadisticas'], ['servicios']], 'resumen', 3, null, { max: 3, visibles }), [['estadisticas'], ['servicios'], ['resumen']]);
 });
 
-test('columnasActivas: 2 o 3', () => {
-    assert.deepEqual(columnasActivas(2), ['izq', 'der']);
-    assert.deepEqual(columnasActivas(3), [...COLUMNAS]);
-    assert.deepEqual(columnasActivas(undefined), ['izq', 'der']);
+test('Columnas: preparar para dibujar funde columnas sin tarjetas visibles y respeta el máximo', () => {
+    const cols = [['resumen'], ['estadisticas'], ['servicios']];
+    assert.deepEqual(prepararColumnas(cols), cols);
+    assert.deepEqual(prepararColumnas(cols, 2), [['resumen'], ['estadisticas', 'servicios']]);
+    assert.deepEqual(prepararColumnas(cols, 3, new Set(['resumen', 'servicios'])), [['resumen', 'estadisticas'], ['servicios']]);
+    // una primera columna sin tarjetas visibles se funde con la siguiente
+    assert.deepEqual(prepararColumnas(cols, 3, new Set(['estadisticas', 'servicios'])), [['resumen', 'estadisticas'], ['servicios']]);
+    // no modifica lo que recibe
+    assert.deepEqual(cols, [['resumen'], ['estadisticas'], ['servicios']]);
 });
 
-test('orden del celular: parte del de escritorio (izquierda, centro y derecha) y respeta uno propio', () => {
-    const base = { izq: ['resumen'], cen: ['atajos'], der: ['servicios', 'estadisticas', 'calendario'] };
-    assert.deepEqual(normalizarOrdenMovil(null, base), ['resumen', 'atajos', 'servicios', 'estadisticas', 'calendario']);
-    assert.deepEqual(normalizarOrdenMovil(['servicios', 'nada', 'servicios', 'resumen'], base), ['servicios', 'resumen', 'atajos', 'estadisticas', 'calendario']);
-});
-
-test('colocar y mover en una lista', () => {
-    assert.deepEqual(colocarEnLista(['a', 'b', 'c'], 'c', 'a'), ['c', 'a', 'b']);
-    assert.deepEqual(colocarEnLista(['a', 'b', 'c'], 'a'), ['b', 'c', 'a']);
-    assert.deepEqual(colocarEnLista(['a', 'b'], 'x', 'inexistente'), ['a', 'b', 'x']);
-    assert.deepEqual(moverEnLista(['a', 'b', 'c'], 'b', -1), ['b', 'a', 'c']);
-    assert.deepEqual(moverEnLista(['a', 'b', 'c'], 'a', -1), ['a', 'b', 'c'], 'en el borde no hace nada');
-    assert.deepEqual(moverEnLista(['a', 'b', 'c'], 'c', 1), ['a', 'b', 'c']);
-});
-
-test('colocar entre tres columnas sin mutar la original', () => {
-    const d = normalizarDisposicion(null);
-    const copia = JSON.stringify(d);
-    const n1 = colocarEnColumna(d, 'resumen', 'der', 'servicios');
-    assert.deepEqual(n1.der, ['resumen', 'servicios']);
-    assert.ok(!n1.izq.includes('resumen'));
-    assert.equal(columnaDe(n1, 'resumen'), 'der');
-    const n2 = pasarAColumna(d, 'estadisticas', 'cen');
-    assert.deepEqual([n2.izq, n2.cen], [['resumen', 'atajos', 'calendario'], ['estadisticas']]);
-    assert.equal(columnaDe(n2, 'estadisticas'), 'cen');
-    assert.deepEqual(pasarAColumna(n2, 'estadisticas', 'der').cen, []);
-    assert.deepEqual(moverEnColumna(d, 'estadisticas', -1).izq, ['resumen', 'estadisticas', 'atajos', 'calendario']);
-    assert.equal(JSON.stringify(d), copia);
-    for (const x of [n1, n2]) assert.deepEqual(todas(x), [...CARDS].sort());
+test('Columnas: en escritorio un movimiento nunca deja una sola columna', () => {
+    const opc = { exigirDosColumnas: true };
+    // la única tarjeta de una columna no puede pasar a la otra (quedaría una sola)
+    assert.equal(moverCard([['resumen', 'estadisticas'], ['servicios']], 'servicios', 0, null, opc), null);
+    // pero sí se puede cambiar de lugar dentro de la derecha o pasar de una columna derecha a otra
+    assert.deepEqual(moverCard([['resumen'], ['estadisticas', 'servicios']], 'servicios', 1, 'estadisticas', opc), [['resumen'], ['servicios', 'estadisticas']]);
+    assert.deepEqual(moverCard([['resumen'], ['estadisticas'], ['servicios']], 'servicios', 1, null, opc), [['resumen'], ['estadisticas', 'servicios']]);
+    // las tarjetas ocultas no cuentan: si 'servicios' está oculta, la derecha tiene una sola visible
+    const visibles = new Set(['resumen', 'estadisticas']);
+    assert.equal(moverCard([['resumen'], ['estadisticas', 'servicios']], 'estadisticas', 0, null, { ...opc, visibles }), null);
+    // si ya había una sola columna, se puede mover libremente
+    assert.deepEqual(moverCard([['resumen', 'estadisticas']], 'estadisticas', 0, 'resumen', opc), [['estadisticas', 'resumen']]);
+    // sin la restricción (móvil) se permite
+    assert.deepEqual(moverCard([['resumen', 'estadisticas'], ['servicios']], 'servicios', 0), [['resumen', 'estadisticas', 'servicios']]);
 });
