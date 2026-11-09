@@ -132,7 +132,7 @@ export class OrdenTarjetas {
             destino?.appendChild(card);
         }));
         this._actualizarColumnas();
-        this.renderLista(cols);
+        this.renderLista();
     }
 
     _quitarEntrada() {
@@ -151,15 +151,19 @@ export class OrdenTarjetas {
     }
 
     // ── Lista en Ajustes ─────────────────────────────────────
-    renderLista(cols = this._columnasActuales()) {
+    renderLista() {
         const etiqueta = $('label-orden-cards');
         if (etiqueta) etiqueta.textContent = `Tarjetas y posición (${esEscritorio() ? 'PC' : 'celular'})`;
         const lista = $('lista-orden-cards');
         if (!lista) return;
-        cols.flat().forEach(cual => {
-            const item = $('orden-item-' + cual);
-            if (item) lista.appendChild(item);
-        });
+        const ordenDeseado = esEscritorio() ? this.obtenerOrdenPC() : this.obtenerOrdenMovil();
+        const ordenActual = Array.from(lista.children).map(item => item.id.replace('orden-item-', ''));
+        if (ordenActual.join() !== ordenDeseado.join()) {
+            ordenDeseado.forEach(cual => {
+                const item = $('orden-item-' + cual);
+                if (item) lista.appendChild(item);
+            });
+        }
     }
 
     alternarVisibilidad(cual) {
@@ -251,6 +255,7 @@ export class OrdenTarjetas {
         };
 
         const bindStart = (eventType, getY, opts) => lista.addEventListener(eventType, (e) => {
+            if (e.target.closest('.toggle-switch')) return;
             const item = e.target.closest('.drag-handle')?.closest('.orden-card-item');
             if (!item) return;
             startY = getY(e);
