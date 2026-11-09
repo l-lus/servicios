@@ -151,7 +151,7 @@ export class StorageService {
                         remotos: datos.servicios, categoriasRemotas: datos.categorias,
                         modoInicial: modo, rango: crudo.rango && typeof crudo.rango === 'object' ? crudo.rango : null,
                     });
-                    if (elegido) this._aplicarImportacion(elegido, datos);
+                    if (elegido) this._aplicarImportacion(elegido, datos, crudo);
                 } catch (error) {
                     console.error('Error al importar:', error);
                     this.app.ui.mostrarToast('Error al importar: ' + error.message, 'error');
@@ -169,7 +169,7 @@ export class StorageService {
         return ImportarExportar.fusionarServicios(this.servicios, serviciosRemoto);
     }
 
-    _aplicarImportacion(modo, datos) {
+    _aplicarImportacion(modo, datos, crudo = null) {
         const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
         if (modo === 'combinar') {
             const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
@@ -188,6 +188,7 @@ export class StorageService {
         } else {
             this.servicios = datos.servicios;
             this.app.categoria.saveCategorias(cats);
+            if (crudo) ImportarExportar.aplicarConfigImportada(crudo);
             this.app.utils.postGuardado('importar (reemplazar)');
             const resumen = ImportarExportar.describirContenido(datos.servicios, cats);
             this.app.ui.mostrarToast(`Restaurados: ${resumen}`, 'success');

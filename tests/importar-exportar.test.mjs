@@ -111,3 +111,35 @@ test('contar y perdidasAlReemplazar: lo local que no está en el respaldo', () =
     assert.deepEqual(IE.perdidasAlReemplazar(locales, remotos), { servicios: 1, facturas: 2, ingresos: 1 });
     assert.deepEqual(IE.perdidasAlReemplazar(remotos, locales), { servicios: 0, facturas: 0, ingresos: 0 });
 });
+
+test('config exportable en respaldos: valida, exporta y detecta cambios de preferencias', async () => {
+    const exportable = IE.obtenerConfigExportable();
+    assert.equal(typeof exportable['estilo-calendario'], 'string');
+    assert.equal(typeof exportable['estilo-tarjeta'], 'string');
+    assert.equal(typeof exportable['fondo-card'], 'string');
+    assert.equal(typeof exportable['hover-popup-calendario'], 'boolean');
+    assert.equal(typeof exportable['rueda-calendario'], 'boolean');
+    assert.equal(Array.isArray(exportable['orden-tarjetas']), true);
+    assert.equal(Array.isArray(exportable['columnas-tarjetas']), true);
+
+    assert.equal(IE.validarCamposConfigImport({
+        'estilo-calendario': 'cuadrado-aro',
+        'estilo-tarjeta': 'clasica',
+        'fondo-card': 'obelisco',
+        'hover-popup-calendario': false,
+        'rueda-calendario': true,
+        'orden-tarjetas': ['servicios', 'resumen'],
+        'columnas-tarjetas': [2, 3],
+    }), true);
+
+    assert.equal(IE.validarCamposConfigImport({ 'estilo-calendario': 'inexistente' }), false);
+    assert.equal(IE.validarCamposConfigImport({ 'columnas-tarjetas': [0, 0] }), false);
+
+    const cambios = IE.calcularCambiosConfigImport({
+        'estilo-calendario': 'punto',
+        'hover-popup-calendario': true,
+    });
+    assert.equal(cambios.includes('estilo del calendario'), true);
+    assert.equal(cambios.includes('popup del calendario (PC)'), true);
+});
+

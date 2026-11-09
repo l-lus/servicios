@@ -1,5 +1,14 @@
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { plural } from '../core/formato.js';
+import { STORAGE_KEYS, CARDS, FONDO_CARD_POR_DEFECTO } from '../core/constantes.js';
+import { StorageHelper } from '../core/almacenamiento.js';
+import { Preferencias } from '../core/preferencias.js';
+import { Motion } from '../core/movimiento.js';
+import { EstiloCalendario, ESTILOS_CALENDARIO } from '../core/estilo-calendario.js';
+import { EstiloTarjeta, ESTILOS_TARJETA } from '../core/estilo-tarjeta.js';
+import { FONDOS_SVG } from '../data/fondos.js';
+import { EventosApp } from '../core/eventos.js';
+import { normalizarOrdenCards, columnasDesdeOrden, tamanosDeColumnas, esTamanosColumnasValidos } from './orden-cards.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
 
 // ====================================================================
@@ -10,7 +19,131 @@ const mismaCategoria = (a, b) => a.toLowerCase() === b.toLowerCase();
 const cambioFactura = (a, b) => a.monto !== b.monto || a.fecha !== b.fecha || a.pagada !== b.pagada || a.fechaPago !== b.fechaPago;
 const sinIngresos = servicios => servicios.filter(s => s.id !== SERVICIO_INGRESOS_ID);
 
+const CLAVE_TARJETAS_VISIBLES = 'tarjetasVisibles';
+const MAX_ITEMS_LISTA_UI = 64;
+const MAX_LARGO_ID_UI = 40;
+const _esListaDeIds = (v) => Array.isArray(v) && v.length <= MAX_ITEMS_LISTA_UI && v.every(x => typeof x === 'string' && x.length > 0 && x.length <= MAX_LARGO_ID_UI);
+const _esMapaDeBooleanos = (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length <= MAX_ITEMS_LISTA_UI && Object.values(v).every(x => typeof x === 'boolean');
+
+const _ordenActual = () => normalizarOrdenCards(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null));
+const _ordenMovilActual = () => normalizarOrdenCards(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS_MOVIL, null) ?? StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null));
+const _columnasActuales = () => tamanosDeColumnas(columnasDesdeOrden(_ordenActual(), StorageHelper.getObject(STORAGE_KEYS.COLUMNAS_CARDS, null)));
+const _visiblesActuales = () => Object.fromEntries(CARDS.map(c => [c, StorageHelper.getBoolean(STORAGE_KEYS.CARD_VISIBLE(c), true)]));
+
+/** @param {any} pref @param {string} etiqueta @param {any} [alAplicar] */
+const _opcion = (pref, etiqueta, alAplicar = null) => ({
+    clave: pref.clave,
+    etiqueta,
+    esValido: (v) => typeof v === 'boolean',
+    actual: pref.get,
+    aplicar: (v) => { pref.set(v); alAplicar?.(v); },
+});
+
+/** @param {string} clave @param {string} etiqueta @param {() => string[]} actual @param {any} [alAplicar] */
+const _ordenDeTarjetas = (clave, etiqueta, actual, alAplicar = null) => ({
+    clave,
+    etiqueta,
+    tarjetas: true,
+    esValido: _esListaDeIds,
+    actual,
+    distinto: (v) => normalizarOrdenCards(v).join() !== actual().join(),
+    aplicar: (v, data) => { StorageHelper.setItem(clave, normalizarOrdenCards(v)); alAplicar?.(data); },
+});
+
+/**
+ * Configuración que viaja en un respaldo. Cada campo sabe validarse, leerse, aplicarse y decir si cambió.
+ * Lo que un archivo no trae (o trae inválido) no se toca: los respaldos viejos no incluyen todo.
+ * @type {any[]}
+ */
+export const CONFIG_RESPALDO = [
+    {
+        clave: STORAGE_KEYS.REDUCIR_ANIMACIONES,
+        etiqueta: 'animaciones',
+        esValido: (v) => ['auto', 'on', 'off'].includes(v),
+        actual: () => Motion.modo(),
+        aplicar: (v) => Motion.setModo(v),
+    },
+    {
+        clave: STORAGE_KEYS.ESTILO_TARJETA,
+        etiqueta: 'estilo de la tarjeta de resumen',
+        esValido: (v) => ESTILOS_TARJETA.some(e => e.id === v),
+        actual: EstiloTarjeta.actual,
+        aplicar: (v) => EstiloTarjeta.setEstilo(v),
+    },
+    {
+        clave: STORAGE_KEYS.ESTILO_CALENDARIO,
+        etiqueta: 'estilo del calendario',
+        esValido: (v) => ESTILOS_CALENDARIO.some(e => e.id === v),
+        actual: EstiloCalendario.actual,
+        aplicar: (v) => EstiloCalendario.setEstilo(v),
+    },
+    _opcion(Preferencias.HOVER_POPUP, 'popup del calendario (PC)'),
+    _opcion(Preferencias.RUEDA_CALENDARIO, 'rueda del calendario (PC)', () => EventosApp.emit('config:rueda-calendario')),
+    _opcion(Preferencias.BLUR_MONTOS, 'privacidad de montos'),
+    _opcion(Preferencias.INGRESOS_HABILITADO, 'registrar ingresos'),
+    {
+        clave: STORAGE_KEYS.FONDO_CARD,
+        etiqueta: 'fondo de la tarjeta de resumen',
+        esValido: (v) => v === 'ninguno' || FONDOS_SVG.some(f => f.id === v),
+        actual: () => StorageHelper.getItem(STORAGE_KEYS.FONDO_CARD, FONDO_CARD_POR_DEFECTO, true),
+        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.FONDO_CARD, v, true); EventosApp.emit('config:fondo-card'); },
+    },
+    _ordenDeTarjetas(STORAGE_KEYS.ORDEN_CARDS, 'orden de tarjetas', _ordenActual, (data) => {
+        if (!Array.isArray(data[STORAGE_KEYS.COLUMNAS_CARDS])) StorageHelper.removeItem(STORAGE_KEYS.COLUMNAS_CARDS);
+    }),
+    _ordenDeTarjetas(STORAGE_KEYS.ORDEN_CARDS_MOVIL, 'orden de tarjetas (móvil)', _ordenMovilActual),
+    {
+        clave: STORAGE_KEYS.COLUMNAS_CARDS,
+        etiqueta: 'columnas de tarjetas',
+        tarjetas: true,
+        esValido: (v) => esTamanosColumnasValidos(v),
+        actual: _columnasActuales,
+        distinto: (v) => v.join() !== _columnasActuales().join(),
+        aplicar: (v) => StorageHelper.setItem(STORAGE_KEYS.COLUMNAS_CARDS, v),
+    },
+    {
+        clave: CLAVE_TARJETAS_VISIBLES,
+        etiqueta: 'tarjetas visibles',
+        tarjetas: true,
+        esValido: _esMapaDeBooleanos,
+        actual: _visiblesActuales,
+        distinto: (v) => {
+            const actuales = _visiblesActuales();
+            return CARDS.some(c => typeof v[c] === 'boolean' && v[c] !== actuales[c]);
+        },
+        aplicar: (v) => CARDS.forEach(c => {
+            if (typeof v[c] === 'boolean') StorageHelper.setItem(STORAGE_KEYS.CARD_VISIBLE(c), v[c]);
+        }),
+    },
+];
+
 export const ImportarExportar = {
+    obtenerConfigExportable() {
+        return Object.fromEntries(CONFIG_RESPALDO.map(c => [c.clave, c.actual()]));
+    },
+
+    validarCamposConfigImport(data) {
+        if (!data || typeof data !== 'object') return false;
+        return CONFIG_RESPALDO.every(c => data[c.clave] === undefined || c.esValido(data[c.clave]));
+    },
+
+    aplicarConfigImportada(data) {
+        if (!data || typeof data !== 'object') return;
+        const aplicados = CONFIG_RESPALDO.filter(c => c.esValido(data[c.clave]));
+        aplicados.forEach(c => c.aplicar(data[c.clave], data));
+        if (aplicados.some(c => c.tarjetas)) EventosApp.emit('config:tarjetas');
+    },
+
+    calcularCambiosConfigImport(data) {
+        const cambios = [];
+        if (!data || typeof data !== 'object') return cambios;
+        CONFIG_RESPALDO.forEach(c => {
+            const v = data[c.clave];
+            if (c.esValido(v) && (c.distinto ? c.distinto(v) : v !== c.actual())) cambios.push(c.etiqueta);
+        });
+        return cambios;
+    },
+
     // ── Validación y normalización de datos externos ──────────
     // Todo lo que entra desde un archivo o un Gist pasa por acá: valida tipos, formatos y rangos,
     // y reconstruye cada objeto solo con los campos conocidos (descarta propiedades extra en vez de
@@ -93,13 +226,14 @@ export const ImportarExportar = {
     },
 
     // ── Respaldo ──────────────────────────────────────────────
-    /** Archivo de exportación: versión de esquema + hash de integridad. */
+    /** Archivo de exportación: versión de esquema + hash de integridad + configuración actual. */
     async armarRespaldo(servicios, categorias, ahora = new Date(), rango = null) {
         const contenido = { servicios, categorias };
         return {
             version: SecurityAndUtils.SECURITY_LIMITS.SCHEMA_VERSION,
             fecha: ahora.toISOString(),
             hash: await SecurityAndUtils.calcularHashSHA256(contenido),
+            ...ImportarExportar.obtenerConfigExportable(),
             // Respaldo parcial: queda fuera del hash (que solo cubre los datos) y sirve para avisar al restaurarlo
             ...(rango ? { rango: { desde: rango.desde || '', hasta: rango.hasta || '' } } : {}),
             ...contenido
