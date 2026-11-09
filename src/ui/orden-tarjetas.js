@@ -17,7 +17,7 @@ const consultaAncho = window.matchMedia('(min-width: 1100px)');
 const esEscritorio = () => consultaEscritorio.matches;
 const maxColumnas = () => (!esEscritorio() ? 1 : consultaAncho.matches ? MAX_COLUMNAS : 2);
 
-const SELECTOR_ENCABEZADOS = '#card-resumen .resumen-titulo, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
+const SELECTOR_ENCABEZADOS = '#card-resumen, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
 const SELECTOR_CARDS = '#card-resumen, #card-estadisticas, #card-calendario, #card-servicios';
 
 const VENTANA_PERSONALIZAR_MS = 1000;
@@ -341,10 +341,11 @@ export class OrdenTarjetas {
             elegir: (e) => {
                 if (VistaPrevia.activa()) return null;
                 const el = e.target instanceof Element ? e.target : null;
-                const header = el?.closest(SELECTOR_ENCABEZADOS);
+                if (!el || el.closest('#btn-info-resumen')) return null;
+                const header = el.closest(SELECTOR_ENCABEZADOS);
                 return header ? header.closest(SELECTOR_CARDS) : null;
             },
-            capturar: (card) => card.querySelector('.resumen-titulo, .card-header-collapsible') || card,
+            capturar: (card) => card.querySelector('.card-header-collapsible') || card,
             alEmpezar: (card) => {
                 columnasInicial = this._columnasActuales();
                 columnasEnCurso = columnasInicial;

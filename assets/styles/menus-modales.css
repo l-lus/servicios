@@ -705,6 +705,17 @@ body.tarjeta-arrastrando-activa * {
     cursor: grabbing !important;
 }
 
+#card-resumen {
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    outline: none;
+}
+
+#card-resumen:focus-visible {
+    outline: 2px solid var(--c-blue);
+    outline-offset: 2px;
+}
+
 /* Descripción debajo del título en los encabezados de modal */
 .modal-header {
     flex-wrap: wrap;

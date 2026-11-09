@@ -15,6 +15,12 @@ export default async (b) => {
     await click('#btn-toggle-card-calendario');
     console.log('mostrar calendario:', await dist());
     await click('#btn-cerrar-config'); await click('#btn-cerrar-modal-perfiles');
+    // pulsación larga y soltar sobre el cuerpo de #card-resumen abre VistaPrevia
+    await b.eval(`(()=>{ const el=document.getElementById('resumen-toggle')||document.getElementById('card-resumen'); const r=el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:9,button:0,clientX:r.left+20,clientY:r.top+10,pointerType:'mouse'})); return true})()`);
+    await b.sleep(450);
+    await b.eval(`window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:9})); true`); await b.sleep(500);
+    console.log('pulsación larga en resumen abre vista previa:', await v(`document.getElementById('vista-previa-panel').classList.contains('show')`));
+    await click('#vista-previa-listo');
     // teclado en PC (Alt + flechas)
     await b.eval(`document.getElementById('calendario-header').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',altKey:true,bubbles:true})); true`); await b.sleep(500);
     console.log('Alt+→ en calendario (pasa a col 2):', await dist());
