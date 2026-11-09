@@ -1,9 +1,12 @@
+import { setColapsable } from '../core/dom.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
-import { STORAGE_KEYS } from '../core/constantes.js';
+import { STORAGE_KEYS, FONDO_CARD_POR_DEFECTO } from '../core/constantes.js';
 import { GestorPerfiles } from '../services/gestor-perfiles.js';
+import { Anim } from './animaciones.js';
 import { ModalManager } from './gestor-modales.js';
+import { TarjetaFondos } from './tarjeta-fondos.js';
 
 // ============================================================
 // PERFIL SERVICE — gestión de perfiles de usuario
@@ -11,6 +14,7 @@ import { ModalManager } from './gestor-modales.js';
 export class PerfilService {
     constructor(app) {
         this.app = app;
+        this._giroPlus = 0;
     }
 
     // ── Getters de conveniencia ───────────────────────────────
@@ -34,6 +38,7 @@ export class PerfilService {
         this.app.storage.guardarDatosPerfilActivo();
         this.perfilActivo = perfilId;
         StorageHelper.setItem(STORAGE_KEYS.PERFIL_ACTIVO, perfilId);
+        TarjetaFondos.setFondoCard(StorageHelper.getItem(STORAGE_KEYS.FONDO_CARD, FONDO_CARD_POR_DEFECTO, true));
         this.app.storage.cargarDatosPerfilActivo();
         this.app._estadisticaCategoriaActiva = null;
         this.app.ultimoEstadoEstadisticas = null;
@@ -43,7 +48,26 @@ export class PerfilService {
     }
 
     // ── UI — modal lista ──────────────────────────────────────
+    togglePanelAgregar(forzar) {
+        const panel = document.getElementById('perfil-agregar-panel');
+        const btn = document.getElementById('btn-toggle-agregar-perfil');
+        if (!panel || !btn) return;
+        const antes = panel.classList.contains('expanded');
+        const abierto = forzar !== undefined ? forzar : !antes;
+        if (abierto !== antes) {
+            this._giroPlus += 45;
+            btn.style.setProperty('--giro-plus', `${this._giroPlus}deg`);
+        }
+        setColapsable(panel, abierto);
+        btn.setAttribute('aria-expanded', String(abierto));
+        if (abierto) {
+            const input = document.getElementById('perfil-nuevo-nombre');
+            if (input && !input.disabled) setTimeout(() => input.focus(), 80);
+        }
+    }
+
     abrirModal() {
+        this.togglePanelAgregar(false);
         this.renderLista();
         ModalManager.abrir('modal-selector-perfiles');
     }
@@ -52,10 +76,15 @@ export class PerfilService {
         const lista = document.getElementById('perfiles-lista');
         const perfilesArray = Object.values(this.perfiles);
         const inputNuevo = document.getElementById('perfil-nuevo-nombre');
+        const maxAlcanzado = !GestorPerfiles.puedeCrear(this.perfiles);
         if (inputNuevo) {
-            const maxAlcanzado = !GestorPerfiles.puedeCrear(this.perfiles);
             inputNuevo.disabled = maxAlcanzado;
             inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
+        }
+        const btnToggle = document.getElementById('btn-toggle-agregar-perfil');
+        if (btnToggle) {
+            btnToggle.disabled = maxAlcanzado;
+            if (maxAlcanzado) this.togglePanelAgregar(false);
         }
         montar(lista, html`${perfilesArray.map(perfil => {
             const esActivo = perfil.id === this.perfilActivo;
@@ -84,7 +113,9 @@ export class PerfilService {
         GestorPerfiles.crear(this.perfiles, nombre);
         input.value = '';
         this.app.ui.mostrarToast('Perfil creado', 'success');
-        this.renderLista();
+        const lista = document.getElementById('perfiles-lista');
+        Anim.alturaCambio(lista, () => this.renderLista());
+        this.togglePanelAgregar(false);
     }
 
     // ── UI — modal editar ─────────────────────────────────────
@@ -140,3 +171,4 @@ export class PerfilService {
         this.renderLista();
     }
 }
+
