@@ -559,35 +559,47 @@
     text-align: right;
 }
 
-/* Toggle Switch */
+/* Toggle Switch (estilo iOS) */
 .toggle-switch {
     flex-shrink: 0;
-    width: 44px;
-    height: 26px;
+    margin-left: auto;
+    width: 2.6rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-full);
     background: var(--toggle-track-off);
-    border-radius: var(--radius-lg);
     position: relative;
-    transition: background var(--transition-base);
+    transition: background var(--dur-fast) ease;
 }
 
-.toggle-switch.on {
-    background: var(--c-blue);
-}
-
-.toggle-thumb {
+.toggle-switch::after {
+    content: '';
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 20px;
-    height: 20px;
-    background: var(--c-white);
+    top: 2px;
+    left: 2px;
+    width: calc(1.5rem - 4px);
+    height: calc(1.5rem - 4px);
     border-radius: 50%;
-    transition: transform var(--dur-fast) var(--ease-pop);
+    background: var(--c-white);
     box-shadow: var(--shadow-chip);
+    transition: transform var(--dur-fast) var(--ease-pop);
 }
 
-.toggle-switch.on .toggle-thumb {
-    transform: translateX(18px);
+.btn-activo .toggle-switch,
+.toggle-switch.on,
+.toggle-switch[aria-pressed="true"] {
+    background: var(--c-active);
+}
+
+.btn-activo .toggle-switch::after,
+.toggle-switch.on::after,
+.toggle-switch[aria-pressed="true"]::after {
+    transform: translateX(calc(2.6rem - 1.5rem));
+}
+
+button:disabled .toggle-switch {
+    opacity: 0.5;
 }
 
 /* Novedades */

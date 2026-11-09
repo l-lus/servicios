@@ -27,8 +27,7 @@ export class UIManager {
     toggleBlur() {
         this.app.blurHabilitado = !this.app.blurHabilitado;
         StorageHelper.setItem(STORAGE_KEYS.BLUR_MONTOS, this.app.blurHabilitado.toString());
-        const indicator = document.getElementById('blur-indicator');
-        if (indicator) indicator.textContent = this.app.blurHabilitado ? 'SI' : 'NO';
+        this.actualizarIndicadoresConfig();
         const el = document.getElementById('resumen-toggle');
         if (!this.app.blurHabilitado) {
             this.app.resumenDesblurado = true;
@@ -66,13 +65,19 @@ export class UIManager {
 
     actualizarIndicadoresConfig() {
         const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
-        set('ingresos-indicator', this.ingresosHabilitado() ? 'SI' : 'NO');
-        set('blur-indicator', this.app.blurHabilitado ? 'SI' : 'NO');
+        const setToggle = (id, activo) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.classList.toggle('btn-activo', Boolean(activo));
+            btn.setAttribute('aria-pressed', String(Boolean(activo)));
+        };
+        setToggle('menu-toggle-ingresos', this.ingresosHabilitado());
+        setToggle('menu-toggle-blur', this.app.blurHabilitado);
+        setToggle('menu-toggle-hover-popup', Preferencias.HOVER_POPUP.get());
+        setToggle('menu-toggle-rueda-calendario', Preferencias.RUEDA_CALENDARIO.get());
         set('animaciones-indicator', Motion.etiqueta());
         set('resumen-estilo-indicator', TarjetaFondos._getLabelFondo(TarjetaFondos.getFondoCard()));
         set('calendario-estilo-indicator', EstiloCalendario.etiqueta());
-        set('hover-popup-indicator', Preferencias.HOVER_POPUP.get() ? 'SI' : 'NO');
-        set('rueda-calendario-indicator', Preferencias.RUEDA_CALENDARIO.get() ? 'SI' : 'NO');
     }
 
     abrirVistaPreviaResumen({ desdeAjustes = false } = {}) {
@@ -157,8 +162,7 @@ export class UIManager {
     /** Activa o desactiva el registro de ingresos (`silencioso`: sin aviso ni cierre del menú, para el asistente inicial). */
     setIngresos(nuevoEstado, { silencioso = false } = {}) {
         StorageHelper.setItem(STORAGE_KEYS.INGRESOS_HABILITADO, nuevoEstado.toString());
-        const indicator = document.getElementById('ingresos-indicator');
-        if (indicator) indicator.textContent = nuevoEstado ? 'SI' : 'NO';
+        this.actualizarIndicadoresConfig();
         this.app.vista.renderServicios();
         if (!silencioso) {
             this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');

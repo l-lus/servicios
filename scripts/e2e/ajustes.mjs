@@ -10,9 +10,9 @@ export default async (b) => {
     await b.shot('/tmp/aj_perfiles.png');
     await click('#btn-perfiles-ajustes'); console.log('ajustes:', await abiertos());
     await b.shot('/tmp/aj_config_pc.png');
-    console.log('indicadores:', await v(`['tema-indicator','resumen-estilo-indicator','calendario-estilo-indicator','blur-indicator','animaciones-indicator','hover-popup-indicator','rueda-calendario-indicator','ingresos-indicator','dolar-hora'].map(i=>i+'='+document.getElementById(i).textContent).join(' ')`));
-    await click('#menu-toggle-blur'); console.log('privacidad (sigue abierto):', await abiertos(), await v(`document.getElementById('blur-indicator').textContent`));
-    await click('#menu-toggle-ingresos'); console.log('ingresos:', await v(`document.getElementById('ingresos-indicator').textContent`), '|', await abiertos());
+    console.log('indicadores:', await v(`['tema-indicator','resumen-estilo-indicator','calendario-estilo-indicator','animaciones-indicator','dolar-hora'].map(i=>i+'='+document.getElementById(i).textContent).join(' ')`));
+    await click('#menu-toggle-blur'); console.log('privacidad (sigue abierto):', await abiertos(), await v(`document.getElementById('menu-toggle-blur').classList.contains('btn-activo')`));
+    await click('#menu-toggle-ingresos'); console.log('ingresos:', await v(`document.getElementById('menu-toggle-ingresos').classList.contains('btn-activo')`), '|', await abiertos());
     await click('#menu-tema'); console.log('tema (vista previa):', await v(`document.getElementById('vista-previa-panel').classList.contains('show')`));
     await click('#vista-previa-filas button'); await click('#vista-previa-listo'); console.log('volver de tema →', await abiertos());
     await click('#menu-limpiar'); console.log('borrar:', await abiertos());

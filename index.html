@@ -730,9 +730,7 @@
                         <span class="gist-privacy-note d-block mt-1">Sube automáticamente al guardar y comprueba cambios
                             al iniciar.</span>
                     </span>
-                    <div class="toggle-switch" id="gist-autosync-toggle">
-                        <div class="toggle-thumb"></div>
-                    </div>
+                    <div class="toggle-switch" id="gist-autosync-toggle"></div>
                 </label>
 
                 <p id="gist-sync-status" class="gist-sync-status mt-2"></p>
@@ -850,7 +848,7 @@
                         <strong>Registrar ingresos</strong>
                         <span class="text-muted">Para ver qué parte de lo que cobrás se va en facturas.</span>
                     </div>
-                    <button type="button" class="toggle-switch" id="bienvenida-ingresos" role="switch" aria-pressed="false" aria-label="Registrar ingresos"><span class="toggle-thumb"></span></button>
+                    <button type="button" class="toggle-switch" id="bienvenida-ingresos" role="switch" aria-pressed="false" aria-label="Registrar ingresos"></button>
                 </div>
                 <div>
                     <strong>Mostrar la lista</strong>
@@ -1575,7 +1573,7 @@
                             <button type="button" id="menu-toggle-blur">
                                 <svg class="icon"><use href="#icon-eye" /></svg>
                                 <span class="settings-list-text"><span>Privacidad</span><span class="settings-list-desc">Desenfoca los montos del resumen</span></span>
-                                <span class="settings-valor" id="blur-indicator"></span>
+                                <span class="toggle-switch" aria-hidden="true"></span>
                             </button>
                             <button type="button" id="menu-toggle-animaciones">
                                 <svg class="icon"><use href="#icon-clock" /></svg>
@@ -1585,12 +1583,12 @@
                             <button type="button" id="menu-toggle-hover-popup" class="config-solo-pc">
                                 <svg class="icon"><use href="#icon-info" /></svg>
                                 <span class="settings-list-text"><span>Detalle al pasar el mouse</span><span class="settings-list-desc">En días del calendario</span></span>
-                                <span class="settings-valor" id="hover-popup-indicator"></span>
+                                <span class="toggle-switch" aria-hidden="true"></span>
                             </button>
                             <button type="button" id="menu-toggle-rueda-calendario" class="config-solo-pc">
                                 <svg class="icon"><use href="#icon-calendar" /></svg>
                                 <span class="settings-list-text"><span>Cambiar mes con la rueda</span><span class="settings-list-desc">Al girar sobre el calendario</span></span>
-                                <span class="settings-valor" id="rueda-calendario-indicator"></span>
+                                <span class="toggle-switch" aria-hidden="true"></span>
                             </button>
                             </div>
                         </div>
@@ -1602,12 +1600,12 @@
                             <button type="button" id="menu-toggle-ingresos">
                                 <svg class="icon"><use href="#icon-cash" /></svg>
                                 <span class="settings-list-text"><span>Registrar ingresos</span><span class="settings-list-desc">Compara tus facturas con lo que cobrás</span></span>
-                                <span class="settings-valor" id="ingresos-indicator"></span>
+                                <span class="toggle-switch" aria-hidden="true"></span>
                             </button>
                             <button type="button" id="menu-categorias">
                                 <svg class="icon"><use href="#icon-categorias" /></svg>
                                 <span class="settings-list-text"><span>Categorías</span><span class="settings-list-desc">Crear y borrar categorías</span></span>
-                                
+                                <svg class="icon icon-indicator"><use href="#icon-chevron-right" /></svg>
                             </button>
                                 <button type="button" id="menu-dolar">
                                     <svg class="icon"><use href="#icon-dollar" /></svg>
@@ -1625,22 +1623,22 @@
                             <button type="button" id="menu-gist">
                                 <svg class="icon"><use href="#icon-cloud-sync" /></svg>
                                 <span class="settings-list-text"><span>Sincronización</span><span class="settings-list-desc">Respaldo en un Gist de GitHub</span></span>
-                                
+                                <svg class="icon icon-indicator"><use href="#icon-chevron-right" /></svg>
                             </button>
                             <button type="button" id="menu-exportar">
                                 <svg class="icon"><use href="#icon-bandeja" /><use class="icon-flecha" href="#icon-flecha-bandeja-bajar" /></svg>
                                 <span class="settings-list-text"><span>Respaldar</span><span class="settings-list-desc">Todo, un mes o un rango de fechas</span></span>
-                                
+                                <svg class="icon icon-indicator"><use href="#icon-chevron-right" /></svg>
                             </button>
                             <button type="button" id="menu-importar">
                                 <svg class="icon"><use href="#icon-bandeja" /><use class="icon-flecha" href="#icon-flecha-bandeja-subir" /></svg>
                                 <span class="settings-list-text"><span>Restaurar</span><span class="settings-list-desc">Desde un archivo, con resumen previo</span></span>
-                                
+                                <svg class="icon icon-indicator"><use href="#icon-chevron-right" /></svg>
                             </button>
                             <button type="button" id="menu-limpiar" class="btn-delete">
                                 <svg class="icon"><use href="#icon-trash" /></svg>
                                 <span class="settings-list-text"><span>Borrar datos</span><span class="settings-list-desc">Todo o por tipo</span></span>
-                                
+                                <svg class="icon icon-indicator"><use href="#icon-chevron-right" /></svg>
                             </button>
                             </div>
                         </div>

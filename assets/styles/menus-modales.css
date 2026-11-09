@@ -1055,6 +1055,16 @@ form.modal-content {
     color: var(--text-muted);
 }
 
+.icon-indicator {
+    flex-shrink: 0;
+    margin-left: auto;
+    opacity: 0.5;
+}
+
+.btn-activo .icon-indicator {
+    opacity: 1;
+}
+
 @media (min-width: 768px) {
     #modal-config > .modal-content {
         max-width: var(--modal-w-xl);
