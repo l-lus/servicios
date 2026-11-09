@@ -241,24 +241,14 @@ export class CalendarioVista {
         this._mes = mes;
 
         const celdas = mes.semanas.flat();
-        const idxHoy = celdas.findIndex(c => c?.esHoy);
-        const finSemana = idxHoy === -1 ? -1 : idxHoy - (idxHoy % 7) + 6;
-        const semana = idxHoy === -1 ? [] : celdas.map((c, i) => [c, i]).filter(([c, i]) => c && i >= idxHoy - (idxHoy % 7) && i <= finSemana && i % 7 !== 0 && i % 7 !== 6);
-        const banda = semana.length ? { fila: 2 + Math.floor(semana[0][1] / 7), desde: 1 + (semana[0][1] % 7), hasta: 1 + (semana[semana.length - 1][1] % 7) } : null;
 
-        montar(cont, html`${DIAS.map(d => html`<div class="calendario-dia-nombre">${d}</div>`)}${celdas.map((c, i) => {
+        montar(cont, html`${DIAS.map(d => html`<div class="calendario-dia-nombre">${d}</div>`)}${celdas.map((c) => {
             if (!c) return html`<div class="calendario-dia vacio"></div>`;
-            const finde = i % 7 === 0 || i % 7 === 6;
             const clases = ['calendario-dia', c.clase ? `dia-${c.clase}` : 'dia-sin-factura'];
             if (c.esHoy) clases.push('hoy');
-            if (!c.clase && finde) clases.push('no-laborable');
             if (c.facturas.length) clases.push('cursor-pointer');
             return html`<div class="${clases.join(' ')}" data-fecha="${c.fecha}" ${c.facturas.length ? html`role="button" tabindex="0" data-n="${c.facturas.length}" aria-label="${c.dia}: ${c.facturas.length === 1 ? '1 factura' : `${c.facturas.length} facturas`}"` : ''}><span class="calendario-dia-num">${c.dia}</span></div>`;
-        })}${banda ? html`<div class="calendario-semana-actual" aria-hidden="true" data-fila="${banda.fila}" data-desde="${banda.desde}" data-hasta="${banda.hasta}"></div>` : ''}`);
-        // La CSP no admite style en línea: la posición de la banda se asigna por JS (CSSOM)
-        cont.querySelectorAll('.calendario-semana-actual').forEach(b => {
-            b.style.gridArea = `${b.dataset.fila} / ${b.dataset.desde} / ${Number(b.dataset.fila) + 1} / ${Number(b.dataset.hasta) + 1}`;
-        });
+        })}`);
 
         const r = mes.resumen;
         montar($('calendario-resumen'), r.facturas === 0

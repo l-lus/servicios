@@ -1100,17 +1100,6 @@
     user-select: none;
 }
 
-/* Banda de la semana actual: absoluta dentro de la fila de la grilla, detrás de las celdas */
-.calendario-semana-actual {
-    position: absolute;
-    inset: 6px -6px;
-    border-radius: var(--radius-full);
-    background: var(--input-bg);
-    opacity: 0.5;
-    pointer-events: none;
-    z-index: var(--z-fondo);
-}
-
 .calendario-dia-nombre {
     padding: var(--space-xs) 0;
     text-align: center;
@@ -1150,10 +1139,6 @@
 
 .calendario-dia.hoy.dia-sin-factura {
     color: var(--text-main);
-}
-
-.calendario-dia.dia-sin-factura.no-laborable {
-    opacity: 0.5;
 }
 
 /* Un día con facturas (por defecto: relleno-aro): disco algo más oscuro que el color del día y, separado por un hueco, un aro fino del mismo color */
