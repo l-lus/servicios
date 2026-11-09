@@ -599,7 +599,7 @@
 }
 
 button:disabled .toggle-switch {
-    opacity: 0.5;
+    opacity: var(--opacity-disabled);
 }
 
 /* Novedades */

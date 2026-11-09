@@ -655,33 +655,39 @@ mark.ayuda-resaltado--activa {
 /* ============================================================
            TARJETAS Y ORDEN
         ============================================================ */
-.orden-cards-lista {
+.drag-handle {
+    justify-content: flex-start;
+    text-align: left;
+    border-radius: var(--radius-md);
+}
+
+.drag-handle > span:not(.toggle-switch) {
+    flex: 1;
+    min-width: 0;
+}
+
+.drag-handle .icon:first-child {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+#lista-orden-cards {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    padding: var(--space-sm) 0 var(--space-lg);
+    gap: var(--space-xsm);
 }
 
-.orden-card-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-md);
-    background: var(--bg-card);
+.orden-card-item.arrastrando {
+    opacity: 0;
 }
 
-.orden-card-nombre {
-    flex: 1;
-    font-weight: var(--fw-medium);
-}
-
-.orden-flecha-sube {
-    transform: rotate(180deg);
-}
-
-.orden-card-item .icon-btn:disabled {
-    opacity: var(--opacity-disabled);
+.drag-clone {
+    position: fixed;
+    z-index: var(--z-menu);
+    pointer-events: none;
+    margin: 0;
+    transform: scale(1.02);
+    opacity: 0.9;
 }
 
 .card.reordenando {
@@ -819,12 +825,13 @@ form.modal-content {
     flex: 1;
 }
 
-.time-btn {
+.time-btn,
+.btn-group > .time-btn {
     width: auto;
     min-width: var(--touch-target);
     height: var(--touch-target);
     padding: var(--space-sm);
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
 
 .btn-cancel,
@@ -1093,64 +1100,6 @@ form.modal-content {
 }
 
 /* Disposición de tarjetas: columnas editables */
-.orden-contexto {
-    margin: var(--space-sm) 0 0;
-    font-size: var(--text-sm);
-}
-
-.orden-columna {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-}
-
-.orden-columna + .orden-columna {
-    margin-top: var(--space-md);
-}
-
-.orden-columna-titulo {
-    padding-left: var(--space-xs);
-    font-size: var(--text-sm);
-    font-weight: var(--fw-semibold);
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-
-.orden-columna-vacia {
-    padding: var(--space-md);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius-lg);
-    text-align: center;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-}
-
-/* Selector de columna de cada tarjeta (1, 2 o 3) */
-.orden-columnas {
-    display: inline-flex;
-    overflow: hidden;
-    border-radius: var(--radius-full);
-    background: var(--input-bg);
-}
-
-.orden-col-btn {
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--fw-semibold);
-}
-
-.orden-col-btn[aria-pressed="true"] {
-    background: var(--c-active);
-    color: var(--c-white);
-}
-
 .columna-vacia {
     display: none !important;
 }

@@ -812,30 +812,6 @@
         </div>
     </div>
 
-    <div class="modal" id="modal-tarjetas" role="dialog" aria-modal="true" aria-labelledby="modal-tarjetas-titulo">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-tarjetas-titulo">Tarjetas y orden</h3>
-                <p class="text-muted">Elegí cuáles mostrar y dónde va cada una. También podés mantener presionado el título de una tarjeta y arrastrarla (o usar Alt + flechas).</p>
-            </div>
-            <div class="modal-body custom-scroll">
-            <div class="respaldo-tipos reporte-formatos" role="group" aria-label="Diseño a editar">
-                <button type="button" class="respaldo-tipo tarjetas-modo" data-modo="pc" aria-pressed="true">PC</button>
-                <button type="button" class="respaldo-tipo tarjetas-modo" data-modo="movil" aria-pressed="false">Celular</button>
-            </div>
-            <p class="text-muted orden-contexto" id="orden-cards-contexto"></p>
-            <div class="orden-cards-lista" id="lista-orden-cards"></div>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn-secondary" id="btn-tarjetas-restablecer">Restablecer</button>
-                <button type="button" class="button" id="modal-tarjetas-close">
-                    <svg class="icon"><use href="#icon-cancel" /></svg>
-                    Listo
-                </button>
-            </div>
-        </div>
-    </div>
-
     <div class="modal" id="modal-bienvenida" role="dialog" aria-modal="true" aria-labelledby="modal-bienvenida-titulo">
         <div class="modal-content">
             <div class="modal-header">
@@ -1565,11 +1541,6 @@
                                 <span class="settings-list-text"><span>Días del calendario</span><span class="settings-list-desc">Cómo se marcan en la grilla</span></span>
                                 <span class="settings-valor" id="calendario-estilo-indicator"></span>
                             </button>
-                            <button type="button" id="menu-tarjetas">
-                                <svg class="icon"><use href="#icon-menu" /></svg>
-                                <span class="settings-list-text"><span>Tarjetas y orden</span><span class="settings-list-desc">Mostrar, ocultar y mover</span></span>
-                                
-                            </button>
                             <button type="button" id="menu-toggle-blur">
                                 <svg class="icon"><use href="#icon-eye" /></svg>
                                 <span class="settings-list-text"><span>Privacidad</span><span class="settings-list-desc">Desenfoca los montos del resumen</span></span>
@@ -1594,6 +1565,39 @@
                         </div>
                     </div>
                     <div>
+                        <div class="form-group config-actions">
+                            <label id="label-orden-cards">Tarjetas y posición</label>
+                            <div id="lista-orden-cards">
+                                <div class="orden-card-item" id="orden-item-resumen">
+                                    <button type="button" id="btn-toggle-card-resumen" class="drag-handle flex-1" data-card="resumen">
+                                        <svg class="icon"><use href="#icon-activity" /></svg>
+                                        <span>Resumen</span>
+                                        <span class="toggle-switch" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="orden-card-item" id="orden-item-estadisticas">
+                                    <button type="button" id="btn-toggle-card-estadisticas" class="drag-handle flex-1" data-card="estadisticas">
+                                        <svg class="icon"><use href="#icon-stats" /></svg>
+                                        <span>Estadísticas</span>
+                                        <span class="toggle-switch" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="orden-card-item" id="orden-item-calendario">
+                                    <button type="button" id="btn-toggle-card-calendario" class="drag-handle flex-1" data-card="calendario">
+                                        <svg class="icon"><use href="#icon-calendar" /></svg>
+                                        <span>Calendario</span>
+                                        <span class="toggle-switch" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="orden-card-item" id="orden-item-servicios">
+                                    <button type="button" id="btn-toggle-card-servicios" class="drag-handle flex-1" data-card="servicios">
+                                        <svg class="icon"><use href="#icon-list" /></svg>
+                                        <span>Servicios</span>
+                                        <span class="toggle-switch" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="config-actions form-group">
                             <label>Datos de la app</label>
                             <div class="settings-list">

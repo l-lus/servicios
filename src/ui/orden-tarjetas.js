@@ -1,7 +1,6 @@
 import { StorageHelper } from '../core/almacenamiento.js';
-import { STORAGE_KEYS, CARDS, CARDS_ETIQUETAS } from '../core/constantes.js';
+import { STORAGE_KEYS, CARDS } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
-import { html, montar } from '../core/html.js';
 import {
     normalizarOrdenCards, columnasDesdeOrden, prepararColumnas, moverCard, tamanosDeColumnas, MAX_COLUMNAS,
 } from '../services/orden-cards.js';
@@ -32,7 +31,7 @@ const _esCard = (el) => el.id?.startsWith('card-');
 export class OrdenTarjetas {
     constructor(app) {
         this.app = app;
-        this.edicion = 'pc';
+        this._recienArrastrado = false;
     }
 
     // ── Estado guardado ──────────────────────────────────────
@@ -89,9 +88,13 @@ export class OrdenTarjetas {
     aplicarVisibilidad() {
         CARDS.forEach(cual => {
             const card = _elCard(cual);
-            if (!card) return;
             const visible = this.esVisible(cual);
-            card.classList.toggle('card-oculta', !visible);
+            if (card) card.classList.toggle('card-oculta', !visible);
+            const btn = $('btn-toggle-card-' + cual);
+            if (btn) {
+                btn.classList.toggle('btn-activo', visible);
+                btn.setAttribute('aria-pressed', String(visible));
+            }
         });
     }
 
@@ -129,7 +132,7 @@ export class OrdenTarjetas {
             destino?.appendChild(card);
         }));
         this._actualizarColumnas();
-        this.renderLista();
+        this.renderLista(cols);
     }
 
     _quitarEntrada() {
@@ -148,86 +151,21 @@ export class OrdenTarjetas {
     }
 
     // ── Lista en Ajustes ─────────────────────────────────────
-    renderLista() {
-        const cont = $('lista-orden-cards');
-        if (!cont) return;
-        const pc = this.edicion === 'pc';
-        document.querySelectorAll('#modal-tarjetas .tarjetas-modo').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.modo === 'pc') === pc)));
-        $('orden-cards-contexto').textContent = pc
-            ? 'En PC las tarjetas se reparten en 2 o 3 columnas (arrastrá una al borde derecho para abrir la 3.ª columna; si queda vacía se cierra sola).'
-            : 'En el celular las tarjetas van en una sola columna, con su propio orden.';
-
-        const fila = (cual, lista, i, colIdx) => html`
-            <div class="orden-card-item" data-card="${cual}">
-                <span class="orden-card-nombre">${CARDS_ETIQUETAS[cual]}</span>
-                <button type="button" class="icon-btn" data-mover="-1" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir ${CARDS_ETIQUETAS[cual]}">
-                    <svg class="icon orden-flecha-sube"><use href="#icon-chevron-down" /></svg>
-                </button>
-                <button type="button" class="icon-btn" data-mover="1" ${i === lista.length - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar ${CARDS_ETIQUETAS[cual]}">
-                    <svg class="icon"><use href="#icon-chevron-down" /></svg>
-                </button>
-                ${colIdx !== null ? html`<span class="orden-columnas" role="group" aria-label="Columna de ${CARDS_ETIQUETAS[cual]}">${[0, 1, 2].map(k => html`
-                    <button type="button" class="orden-col-btn" data-columna="${k}" aria-pressed="${k === colIdx}" title="Columna ${k + 1}" aria-label="Pasar ${CARDS_ETIQUETAS[cual]} a la columna ${k + 1}">${k + 1}</button>`)}</span>` : ''}
-                <button type="button" class="toggle-switch ${this.esVisible(cual) ? 'on' : ''}" data-visible="${cual}" role="switch" aria-checked="${this.esVisible(cual)}" aria-label="Mostrar ${CARDS_ETIQUETAS[cual]}"><span class="toggle-thumb"></span></button>
-            </div>`;
-
-        if (pc) {
-            const cols = this.obtenerColumnasPC(MAX_COLUMNAS);
-            montar(cont, html`${cols.map((col, k) => html`
-                <div class="orden-columna" data-columna-lista="${k}">
-                    <div class="orden-columna-titulo">Columna ${k + 1}</div>
-                    ${col.map((c, i) => fila(c, col, i, k))}
-                </div>`)}`);
-        } else {
-            const lista = this.obtenerOrdenMovil();
-            montar(cont, html`<div class="orden-columna">${lista.map((c, i) => fila(c, lista, i, null))}</div>`);
-        }
+    renderLista(cols = this._columnasActuales()) {
+        const etiqueta = $('label-orden-cards');
+        if (etiqueta) etiqueta.textContent = `Tarjetas y posición (${esEscritorio() ? 'PC' : 'celular'})`;
+        const lista = $('lista-orden-cards');
+        if (!lista) return;
+        cols.flat().forEach(cual => {
+            const item = $('orden-item-' + cual);
+            if (item) lista.appendChild(item);
+        });
     }
-
-    _editaLaVisible() { return (this.edicion === 'pc') === esEscritorio(); }
 
     alternarVisibilidad(cual) {
         StorageHelper.setItem(STORAGE_KEYS.CARD_VISIBLE(cual), !this.esVisible(cual));
         this.aplicarVisibilidad();
         this.aplicar();
-    }
-
-    mover(cual, delta) {
-        if (this.edicion === 'pc') {
-            const cols = this.obtenerColumnasPC(MAX_COLUMNAS);
-            const colIdx = cols.findIndex(c => c.includes(cual));
-            if (colIdx === -1) return;
-            const col = cols[colIdx];
-            const pos = col.indexOf(cual);
-            const destinoPos = pos + delta;
-            if (destinoPos < 0 || destinoPos >= col.length) return;
-            const antesDe = delta < 0 ? col[pos - 1] : (col[pos + 2] ?? null);
-            const nuevas = moverCard(cols, cual, colIdx, antesDe, { max: MAX_COLUMNAS, visibles: new Set(CARDS), exigirDosColumnas: true });
-            if (!nuevas) return;
-            this.guardarColumnasPC(nuevas);
-            if (this._editaLaVisible()) uiAnimarReubicacion(() => this.obtenerCardsVisibles(), c => c.id, () => this.aplicar());
-            else this.renderLista();
-        } else {
-            const lista = this.obtenerOrdenMovil();
-            const pos = lista.indexOf(cual);
-            const destinoPos = pos + delta;
-            if (pos === -1 || destinoPos < 0 || destinoPos >= lista.length) return;
-            const antesDe = delta < 0 ? lista[pos - 1] : (lista[pos + 2] ?? null);
-            const nuevas = moverCard([lista], cual, 0, antesDe, { max: 1, visibles: new Set(CARDS), exigirDosColumnas: false });
-            if (!nuevas) return;
-            this.guardarOrdenMovil(nuevas.flat());
-            if (this._editaLaVisible()) uiAnimarReubicacion(() => this.obtenerCardsVisibles(), c => c.id, () => this.aplicar());
-            else this.renderLista();
-        }
-    }
-
-    pasarDeColumna(cual, colDestino) {
-        const cols = this.obtenerColumnasPC(MAX_COLUMNAS);
-        const nuevas = moverCard(cols, cual, Number(colDestino), null, { max: MAX_COLUMNAS, visibles: this._tarjetasVisibles(), exigirDosColumnas: true });
-        if (!nuevas) return;
-        this.guardarColumnasPC(nuevas);
-        if (this._editaLaVisible()) uiAnimarReubicacion(() => this.obtenerCardsVisibles(), c => c.id, () => this.aplicar());
-        else this.renderLista();
     }
 
     restablecer() {
@@ -237,6 +175,101 @@ export class OrdenTarjetas {
         CARDS.forEach(c => StorageHelper.removeItem(STORAGE_KEYS.CARD_VISIBLE(c)));
         this.aplicarVisibilidad();
         this.aplicar();
+    }
+
+    // ── Arrastre en lista de Ajustes ─────────────────────────
+    iniciarDragOrdenCards() {
+        const lista = $('lista-orden-cards');
+        if (!lista) return;
+
+        let draggingEl = null;
+        let dragClone = null;
+        let startY = 0;
+        let initialYOffset = 0;
+        let dragTimer = null;
+        const DRAG_DELAY = 150;
+
+        const getCardFromItem = (el) => {
+            const handle = el?.classList?.contains('drag-handle') ? el : el?.querySelector('.drag-handle');
+            return handle?.dataset?.card;
+        };
+
+        const initDrag = (item, clientY) => {
+            draggingEl = item;
+            const rect = item.getBoundingClientRect();
+            initialYOffset = clientY - rect.top;
+            dragClone = item.cloneNode(true);
+            dragClone.classList.add('drag-clone');
+            Object.assign(dragClone.style, {
+                top: `${rect.top}px`, left: `${rect.left}px`,
+                width: `${rect.width}px`, height: `${rect.height}px`
+            });
+            document.body.appendChild(dragClone);
+            draggingEl.classList.add('arrastrando');
+            if (navigator.vibrate) { try { navigator.vibrate(30); } catch (_) { } }
+        };
+
+        const moveDrag = (clientY) => {
+            if (!dragClone || !draggingEl) return;
+            const area = lista.getBoundingClientRect();
+            const alto = dragClone.getBoundingClientRect().height;
+            const top = Math.min(Math.max(clientY - initialYOffset, area.top), Math.max(area.top, area.bottom - alto));
+            dragClone.style.top = `${top}px`;
+
+            const target = [...lista.querySelectorAll('.orden-card-item')].find(item => {
+                if (item === draggingEl) return false;
+                const r = item.getBoundingClientRect();
+                return clientY >= r.top && clientY <= r.bottom;
+            });
+
+            if (target) {
+                const targetRect = target.getBoundingClientRect();
+                const targetMiddle = targetRect.top + targetRect.height / 2;
+                if (clientY < targetMiddle) lista.insertBefore(draggingEl, target);
+                else lista.insertBefore(draggingEl, target.nextSibling);
+            }
+        };
+
+        const endDrag = () => {
+            clearTimeout(dragTimer);
+            if (!draggingEl) return;
+            if (dragClone) {
+                dragClone.remove();
+                dragClone = null;
+            }
+            draggingEl.classList.remove('arrastrando');
+
+            const itemsDOM = Array.from(lista.querySelectorAll('.orden-card-item'));
+            const nuevoOrden = itemsDOM.map(i => getCardFromItem(i)).filter(Boolean);
+            if (esEscritorio()) this.guardarOrdenPC(nuevoOrden);
+            else this.guardarOrdenMovil(nuevoOrden);
+            this.aplicar();
+
+            draggingEl = null;
+            this._recienArrastrado = true;
+            setTimeout(() => { this._recienArrastrado = false; }, 50);
+        };
+
+        const bindStart = (eventType, getY, opts) => lista.addEventListener(eventType, (e) => {
+            const item = e.target.closest('.drag-handle')?.closest('.orden-card-item');
+            if (!item) return;
+            startY = getY(e);
+            dragTimer = setTimeout(() => initDrag(item, startY), DRAG_DELAY);
+        }, opts);
+
+        const bindMove = (target, eventType, getY, opts) => target.addEventListener(eventType, (e) => {
+            if (!draggingEl) { if (Math.abs(getY(e) - startY) > 10) clearTimeout(dragTimer); return; }
+            e.preventDefault();
+            moveDrag(getY(e));
+        }, opts);
+
+        bindStart('touchstart', e => e.touches[0].clientY, { passive: true });
+        bindStart('mousedown', e => e.clientY);
+        bindMove(lista, 'touchmove', e => e.touches[0].clientY, { passive: false });
+        bindMove(document, 'mousemove', e => e.clientY);
+        lista.addEventListener('touchend', endDrag);
+        lista.addEventListener('touchcancel', endDrag);
+        document.addEventListener('mouseup', endDrag);
     }
 
     // ── Arrastre y teclado sobre las tarjetas ────────────────
@@ -375,7 +408,6 @@ export class OrdenTarjetas {
 
     // ── Inicio ───────────────────────────────────────────────
     init() {
-        this.edicion = esEscritorio() ? 'pc' : 'movil';
         this.aplicarVisibilidad();
         this.aplicar();
         setTimeout(() => { this._listo = true; this._quitarEntrada(); }, 1500);
@@ -389,25 +421,13 @@ export class OrdenTarjetas {
 
     bindEventos() {
         this.iniciarArrastre();
-        $('menu-tarjetas').addEventListener('click', () => {
-            this.edicion = esEscritorio() ? 'pc' : 'movil';
-            this.renderLista();
-            this.app.ui.abrirModal('modal-tarjetas');
+        this.iniciarDragOrdenCards();
+        CARDS.forEach(cual => {
+            $('btn-toggle-card-' + cual)?.addEventListener('click', () => {
+                if (this._recienArrastrado) return;
+                this.alternarVisibilidad(cual);
+            });
         });
-        document.querySelectorAll('#modal-tarjetas .tarjetas-modo').forEach(b => {
-            b.addEventListener('click', () => { this.edicion = b.dataset.modo; this.renderLista(); });
-        });
-        $('lista-orden-cards').addEventListener('click', (e) => {
-            const item = e.target.closest('.orden-card-item');
-            if (!item) return;
-            const cual = item.dataset.card;
-            const mover = e.target.closest('[data-mover]');
-            if (mover && !mover.disabled) this.mover(cual, Number(mover.dataset.mover));
-            else if (e.target.closest('[data-columna]')) this.pasarDeColumna(cual, e.target.closest('[data-columna]').dataset.columna);
-            else if (e.target.closest('[data-visible]')) this.alternarVisibilidad(cual);
-        });
-        $('btn-tarjetas-restablecer').addEventListener('click', () => { this.restablecer(); this.app.ui.mostrarToast('Tarjetas restablecidas', 'success'); });
-        $('modal-tarjetas-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-tarjetas'));
     }
 }
 

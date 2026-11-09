@@ -19,7 +19,7 @@ export default async (b) => {
     await click('#menu-borrar-categorias'); await b.sleep(300); console.log('confirmar borrar categorías:', await abiertos());
     await click('#modal-confirmar-cancel'); console.log('cancelar confirmación →', await abiertos());
     await click('#btn-cerrar-borrar'); console.log('volver de borrar →', await abiertos());
-    await click('#menu-tarjetas'); console.log('tarjetas:', await abiertos()); await click('#modal-tarjetas-close');
+    await click('#btn-toggle-card-calendario'); console.log('toggle card calendario:', await v(`document.getElementById('btn-toggle-card-calendario').classList.contains('btn-activo')`)); await click('#btn-toggle-card-calendario');
     await click('#menu-categorias'); console.log('categorías:', await abiertos()); await b.eval(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); true`); await b.sleep(500); console.log('Esc en categorías →', await abiertos());
     await click('#menu-gist'); console.log('gist:', await abiertos()); await click('#btn-gist-cerrar'); console.log('cerrar gist →', await abiertos());
     await click('#btn-ayuda-config'); console.log('ayuda desde ajustes:', await abiertos()); await click('#modal-ayuda-close'); console.log('cerrar ayuda →', await abiertos());
