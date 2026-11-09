@@ -85,3 +85,6 @@ export const StorageHelper = (function () {
         setProfileKeyResolver
     };
 })();
+
+export const Almacenamiento = StorageHelper;
+

@@ -6,13 +6,15 @@ import { STORAGE_KEYS } from './constantes.js';
 // ============================================================
 // 'on' = reducir animaciones, 'off' = animaciones completas, 'auto' = sigue al
 // sistema (prefers-reduced-motion). El CSS solo mira <html data-motion>, que
-// flash.js aplica antes del primer paint con la misma regla.
+// tema-inicial.js aplica antes del primer paint con la misma regla.
 export const Motion = (function () {
     'use strict';
 
     const MODOS = ['auto', 'on', 'off'];
     const ETIQUETAS = { auto: 'Auto', on: 'SI', off: 'NO' };
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mq = typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : /** @type {MediaQueryList} */ (/** @type {unknown} */ ({ matches: false }));
     let modo = null;
     let iniciado = false;
 
@@ -28,6 +30,7 @@ export const Motion = (function () {
         return m === 'on' || (m === 'auto' && mq.matches);
     }
     function _aplicar() {
+        if (typeof document === 'undefined') return;
         document.documentElement.setAttribute('data-motion', reducido() ? 'reduce' : 'full');
     }
     function init() {
@@ -51,3 +54,5 @@ export const Motion = (function () {
         scrollBehavior: () => (reducido() ? 'auto' : 'smooth')
     };
 })();
+
+export const Movimiento = Motion;

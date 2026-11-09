@@ -1,5 +1,5 @@
 export const APP_NOMBRE = 'SERVICIOS';
-export const APP_VERSION = 'v261102';
+export const APP_VERSION = 'v261109';
 
 // ============================================================
 // STORAGE KEYS — única fuente de verdad de las claves de localStorage
@@ -20,11 +20,16 @@ export const STORAGE_KEYS = Object.freeze({
     ESTADISTICAS_TIPO: 'estadisticas-tipo',
     ESTADISTICAS_COLAPSADAS: 'estadisticas-collapsed',
     CALENDARIO_ABIERTO: 'calendario-abierto',
+    ESTILO_CALENDARIO: 'estilo-calendario',
+    HOVER_POPUP: 'hover-popup-calendario',
+    RUEDA_CALENDARIO: 'rueda-calendario',
+    ESTILO_TARJETA: 'estilo-tarjeta',
+    FONDO_CARD: 'fondo-card',
     BIENVENIDA_VISTA: 'bienvenida-vista',
     ATAJOS: 'atajos',
     ORDEN_CARDS: 'orden-tarjetas',
     ORDEN_CARDS_MOVIL: 'orden-tarjetas-movil',
-    COLUMNAS_PC: 'columnas-pc',
+    COLUMNAS_CARDS: 'columnas-tarjetas',
     CARD_VISIBLE: (cual) => `tarjeta-visible-${cual}`,
     SERVICIOS_COLLAPSE: 'servicios-collapse-state',
     GIST_TOKEN: 'gist_token',
@@ -32,6 +37,9 @@ export const STORAGE_KEYS = Object.freeze({
     DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
     HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,
 });
+
+/** Fondo de la tarjeta principal de un perfil nuevo o restablecido. */
+export const FONDO_CARD_POR_DEFECTO = 'golden-gate';
 
 /** Tarjetas de la pantalla principal, en su orden por defecto (el id del elemento es `card-<nombre>`). */
 export const CARDS = Object.freeze(['resumen', 'atajos', 'estadisticas', 'calendario', 'servicios']);
