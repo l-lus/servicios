@@ -1190,12 +1190,13 @@ body.vista-previa-sin-velo .vista-previa-velo {
     visibility: visible;
 }
 
+/* La cabecera (flechas con el título y Listo) va abajo del todo, donde cae el pulgar; las filas quedan arriba y el panel crece hacia arriba */
 .vista-previa-cabecera {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-md);
-    margin-bottom: var(--space-sm);
+    margin-top: var(--space-sm);
 }
 
 /* El título va centrado entre dos flechas: la de la izquierda pasa a la personalización anterior y la de la derecha, a la siguiente.
