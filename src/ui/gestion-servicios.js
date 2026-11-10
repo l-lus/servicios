@@ -6,6 +6,7 @@ import { RespaldoModal } from './respaldo-modal.js';
 import { normalizarBusqueda } from '../core/busqueda-texto.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { GestorPerfiles } from '../services/gestor-perfiles.js';
+import { SecurityAndUtils } from '../core/seguridad.js';
 import { ListenersApp } from './listeners-app.js';
 import { ServicioService } from './servicio-service.js';
 import { VistaServicios } from './vista-servicios.js';
@@ -75,12 +76,9 @@ export class GestionServicios {
         this.origenModalFactura = null; // 'menu' o 'servicio'
         this._anoExpandidoFacturas = {};
         this._anoExpandidoIngresos = {};
-        try {
-            this._catColapsadas = StorageHelper.getObject(STORAGE_KEYS.CAT_COLAPSADAS, {});
-            this._catColapsadasAntesBusqueda = null;
-        } catch (e) {
-            this._catColapsadas = {};
-        }
+        // Sus claves son nombres de categorías (datos): diccionario sin prototipo, validado al cargar
+        this._catColapsadas = SecurityAndUtils.diccionarioDeBanderas(StorageHelper.getObject(STORAGE_KEYS.CAT_COLAPSADAS, null));
+        this._catColapsadasAntesBusqueda = null;
 
         this._agrupacionActiva = StorageHelper.getItem(STORAGE_KEYS.CAT_AGRUPACION) === 'on';
         this._vistaEstados = StorageHelper.getItem(STORAGE_KEYS.VISTA_ESTADOS) === 'true';
@@ -328,7 +326,7 @@ export class GestionServicios {
         const aplicarBusqueda = (termino) => {
             // Al empezar a escribir, guardar estado de grupos
             if (!this.terminoBusqueda && termino) {
-                this._catColapsadasAntesBusqueda = JSON.parse(JSON.stringify(this._catColapsadas));
+                this._catColapsadasAntesBusqueda = SecurityAndUtils.diccionarioDeBanderas(this._catColapsadas);
             }
 
             this.terminoBusqueda = termino;

@@ -45,6 +45,21 @@ export const SecurityAndUtils = (function () {
         return CLAVES_PROTO_PELIGROSAS.includes(key) ? undefined : value;
     }
 
+    /**
+     * Diccionario de banderas cuyas claves son datos (nombres de categorías, ids…): una copia que no hereda de Object.prototype (una clave como
+     * «constructor» o «toString» no existe hasta que se la marca) y que solo conserva las claves en `true`. Sirve para validar uno guardado y para copiarlo.
+     * @param {unknown} crudo @param {number} [maxClaves] @param {number} [maxLargo]
+     * @returns {Record<string, true>}
+     */
+    function diccionarioDeBanderas(crudo, maxClaves = 500, maxLargo = SECURITY_LIMITS.MAX_STRING_LENGTH) {
+        const limpio = Object.create(null);
+        if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) return limpio;
+        Object.keys(crudo).slice(0, maxClaves).forEach(clave => {
+            if (crudo[clave] === true && clave.length <= maxLargo) limpio[clave] = true;
+        });
+        return limpio;
+    }
+
     function generarIDSeguro() {
         if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
             const array = new Uint32Array(4);
@@ -69,6 +84,7 @@ export const SecurityAndUtils = (function () {
         limpiarTexto,
         escapeHtml,
         reviverJSONSeguro,
+        diccionarioDeBanderas,
         generarIDSeguro,
         calcularHashSHA256
     };

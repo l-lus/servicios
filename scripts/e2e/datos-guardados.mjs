@@ -35,6 +35,24 @@ export default async (b) => {
     await b.eval(`document.querySelector('#gist-autosync-toggle').click(); document.querySelector('#btn-gist-guardar')?.click(); true`); await b.sleep(500);
     console.log('perfiles → Object.prototype limpio:', await v(`!('gistAuto' in {}) && !('gistId' in {})`), '| guardado en:', await v(`Object.keys(JSON.parse(localStorage.getItem('gestion_servicios_perfiles'))).join(',')`));
 
+    // categorías guardadas con basura y una categoría llamada «constructor» (clave heredada en un objeto común): se listan solo las válidas y el grupo se puede colapsar y expandir
+    await sembrar({
+        [CLAVE]: JSON.stringify([{ id: 'tel', nombre: 'Tel', categoria: 'constructor', facturas: [] }]),
+        'categorias-servicios': JSON.stringify(['constructor', 7, null, { a: 1 }, 'Casa', 'casa', '  ']),
+        'cat-agrupacion': 'on',
+        'cat-colapsadas': JSON.stringify({ Casa: 'si', toString: 1 }),
+    });
+    const colapsado = () => v(`document.querySelector('.servicios-grupo-cat[data-cat="constructor"] .servicios-grupo-cat-chevron')?.classList.contains('collapsed')`);
+    const inicial = await colapsado();
+    await b.eval(`document.querySelector('.servicios-grupo-cat[data-cat="constructor"] .servicios-grupo-cat-header')?.click(); true`); await b.sleep(500);
+    const trasClic = await colapsado();
+    await b.ir(b.url); await b.sleep(2000);
+    console.log('categorías → grupo «constructor» colapsado: al inicio', inicial, '| tras tocarlo', trasClic, '| tras recargar', await colapsado(), '| guardado:', await v(`localStorage.getItem('cat-colapsadas')`));
+    await b.eval(`document.querySelector('#header-profile-btn').click(); true`); await b.sleep(400);
+    await b.eval(`document.querySelector('#btn-perfiles-ajustes').click(); true`); await b.sleep(400);
+    await b.eval(`document.querySelector('#menu-categorias').click(); true`); await b.sleep(500);
+    console.log('categorías → lista:', await v(`[...document.querySelectorAll('#categorias-lista .categoria-tag')].map(e => e.textContent.trim()).join(' / ')`));
+
     await sembrar({ [CLAVE]: JSON.stringify([{ id: 'gas', nombre: 'Gas', categoria: '', facturas: [] }]) });
     console.log('sano → lista:', await lista(), '| toast:', JSON.stringify(await toast()), '| rescate:', await v(`localStorage.getItem(${JSON.stringify(RESCATE)})`));
 };

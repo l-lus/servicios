@@ -3,6 +3,7 @@ import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
+import { ImportarExportar } from '../services/importar-exportar.js';
 import { $ } from '../core/dom.js';
 
 // ============================================================
@@ -14,8 +15,10 @@ export class CategoriaService {
     }
 
     // ── Persistencia ──────────────────────────────────────────
+    // Lo guardado se valida como cualquier dato de afuera: solo textos limpios, sin repetir y hasta el máximo
     getCategorias() {
-        return StorageHelper.getObject(STORAGE_KEYS.CATEGORIAS, []);
+        const guardadas = StorageHelper.getObject(STORAGE_KEYS.CATEGORIAS, []);
+        return ImportarExportar.normalizarCategorias(Array.isArray(guardadas) ? guardadas : []).slice(0, SecurityAndUtils.SECURITY_LIMITS.MAX_CATEGORIAS);
     }
 
     saveCategorias(cats) {

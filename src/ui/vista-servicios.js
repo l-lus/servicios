@@ -157,7 +157,7 @@ export class VistaServicios {
         };
 
         // Agrupar por categoría
-        const gruposCat = {};
+        const gruposCat = Object.create(null);   // las claves son nombres de categorías (datos): sin prototipo, «constructor» es una categoría más
         serviciosOrdenados.forEach(servicio => {
             const cat = servicio.categoria || '';
             if (!gruposCat[cat]) gruposCat[cat] = [];
