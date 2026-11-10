@@ -68,15 +68,7 @@ export class StorageService {
         }
     }
 
-    // ── Validación y normalización de datos externos ──────────
-    // Todo lo que entra desde un archivo o un Gist pasa por acá: valida
-    // tipos, formatos y rangos, y reconstruye cada objeto solo con los
-    // campos conocidos (descarta propiedades extra en vez de rechazar el
-    // archivo, para no romper backups viejos). Lanza Error con un mensaje
-    // legible si algo no es válido.
-
-    // Categorías: solo strings, saneadas, sin vacías ni duplicadas
-    // (sin distinguir mayúsculas).
+    // La validación y normalización de datos externos vive en ImportarExportar (services/importar-exportar.js).
 
     // Archivo de exportación: versión de esquema + hash de integridad.
     async _construirExportacion() {
@@ -222,12 +214,6 @@ export class StorageService {
             const resumen = ImportarExportar.describirContenido(datos.servicios, cats);
             this.app.ui.mostrarToast(`Restaurados: ${resumen}`, 'success');
         }
-    }
-
-    generarResumenComparacion(serviciosRemoto, etiqueta = 'archivo', categoriasRemoto = []) {
-        const { combinar, reemplazar } = ImportarExportar.compararRespaldo(
-            this.servicios, serviciosRemoto, this.app.categoria.getCategorias(), categoriasRemoto);
-        return `<strong>Combinar:</strong> ${combinar}<br><strong>Reemplazar:</strong> ${reemplazar}`;
     }
 
     async limpiarDatos(tipo = 'todo') {
