@@ -1161,9 +1161,13 @@ body.vista-previa-sin-velo .vista-previa-velo {
     background: transparent;
 }
 
-.vista-previa-objetivo {
+.vista-previa-objetivo,
+#card-resumen.vista-previa-objetivo {
     position: relative;
     z-index: var(--z-vista-previa-objetivo);
+    /* contorno de acento: la tarjeta que se está personalizando se distingue del resto, que queda atenuado */
+    outline: 2px solid var(--c-blue);
+    outline-offset: 3px;
 }
 
 .vista-previa-panel {
