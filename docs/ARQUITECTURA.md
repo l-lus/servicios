@@ -67,6 +67,9 @@ tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: 
 - Todo `.js` nuevo: import con extensión `.js` y `npm run release`.
 - **Un commit local por cada cambio / punto tocado**: cada ajuste, funcionalidad o corrección lleva su propio commit individual (sin `git push`) tras correr `npm run release` y `npm test`.
 
+## Contrato de errores
+Los servicios no lanzan excepciones por casos esperados (datos vacíos, fechas repetidas…): devuelven un resultado que la UI interpreta. La única excepción es la validación de datos externos (`ImportarExportar.normalizarDatos`, por medio de `fallar`), que lanza un `Error` con mensaje legible y lo captura quien importa. Lo vigila `tests/architecture.test.mjs`.
+
 ## Navegación de ajustes
 Header (perfil) → modal Perfiles → modal Ajustes → cada opción. `ModalManager.abrirConPadre/cerrarConRetorno` (y `alternar`) recuerdan el modal padre: cerrar un hijo vuelve al anterior, como en Horarios. `UIManager.abrirModal/cerrarModal` aplican esa regla cuando Ajustes está abierto.
 

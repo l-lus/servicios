@@ -361,6 +361,16 @@ test('SVG de fondos: el sanitizador quita los atributos style (la CSP los bloque
     for (const f of FONDOS_SVG) assert.doesNotMatch(f.svg('#123456'), /\sstyle\s*=|<script|\bon\w+\s*=|href\s*=/i, `el fondo ${f.id} usa algo que el sanitizador quita`);
 });
 
+test('Errores: los servicios no lanzan por errores esperados, devuelven resultados (solo la validación de datos externos lanza, con mensaje legible)', () => {
+    const conThrow = srcFiles
+        .filter(a => a.startsWith('src/services/') && a !== 'src/services/importar-exportar.js')
+        .filter(a => /\bthrow\b/.test(fs.readFileSync(a, 'utf8')));
+    assert.deepEqual(conThrow, []);
+    // importar-exportar: un único punto de lanzamiento (`fallar`, en normalizarDatos); quien importa captura y muestra el mensaje
+    const lanzamientos = fs.readFileSync('src/services/importar-exportar.js', 'utf8').match(/\bthrow\b/g) ?? [];
+    assert.equal(lanzamientos.length, 1);
+});
+
 test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
     const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
