@@ -119,16 +119,22 @@ export class ClienteGist {
 
 /**
  * Guarda de la subida automática: ¿se puede pisar el Gist con lo local?
- * - `'subir'`: la lectura salió bien y lo local no es mucho menos que lo remoto, o no se pudo comparar por otro motivo (sin red…), que no bloquea.
  * - `'no-confiable'`: la frase no abre el Gist o apareció en claro uno cifrado (`codigo`): pisarlo lo dejaría ilegible para los otros dispositivos.
+ * - `'novedades'`: el Gist trae algo que acá no está (registros nuevos, versiones más nuevas, borrados de otro dispositivo): subir sin combinar lo pisaría.
+ *   Se frena hasta que la persona lo confirme (`analisis` es el de `ImportarExportar.compararConRemoto`).
  * - `'menos-datos'`: lo local es menos del umbral de lo remoto (`medida`).
- * @param {LecturaGist | ErrorGist} lectura @param {any[]} servicios @param {string[]} categorias
- * @returns {{ accion: 'subir' } | { accion: 'no-confiable', codigo: string } | { accion: 'menos-datos', medida: { local: number, remoto: number } }}
+ * - `'subir'`: la lectura salió bien y no hay nada de lo anterior, o no se pudo comparar por otro motivo (sin red…), que no bloquea. `borrados` es el registro unido
+ *   con el del Gist (se sube ese, para no perder los borrados que el Gist ya tenía); null si no se pudo leer.
+ * @param {LecturaGist | ErrorGist} lectura
+ * @param {{ servicios: any[], categorias: string[], borrados: import('./sincronizacion.js').Borrado[] }} local @param {Date} ahora
+ * @returns {{ accion: 'subir', borrados: import('./sincronizacion.js').Borrado[] | null } | { accion: 'no-confiable', codigo: string } | { accion: 'novedades', analisis: ReturnType<typeof ImportarExportar.compararConRemoto> } | { accion: 'menos-datos', medida: { local: number, remoto: number } }}
  */
-export function evaluarSubidaAutomatica(lectura, servicios, categorias) {
+export function evaluarSubidaAutomatica(lectura, local, ahora) {
     if ('error' in lectura) {
-        return esGistNoConfiable(lectura) ? { accion: 'no-confiable', codigo: lectura.codigo } : { accion: 'subir' };
+        return esGistNoConfiable(lectura) ? { accion: 'no-confiable', codigo: lectura.codigo } : { accion: 'subir', borrados: null };
     }
-    const medida = ImportarExportar.subidaAutomaticaSegura(servicios, categorias, lectura.servicios, lectura.categorias);
-    return medida.segura ? { accion: 'subir' } : { accion: 'menos-datos', medida };
+    const analisis = ImportarExportar.compararConRemoto(local, lectura, ahora);
+    if (analisis.hayNovedades) return { accion: 'novedades', analisis };
+    const medida = ImportarExportar.subidaAutomaticaSegura(local.servicios, local.categorias, lectura.servicios, lectura.categorias);
+    return medida.segura ? { accion: 'subir', borrados: analisis.borrados } : { accion: 'menos-datos', medida };
 }

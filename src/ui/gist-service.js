@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { RespaldoCifrado } from '../services/respaldo-cifrado.js';
 import { esIdDeGist } from '../services/gestor-perfiles.js';
+import { Sincronizacion } from '../services/sincronizacion.js';
 import { ClienteGist, nombreArchivoGist, esGistNoConfiable, evaluarSubidaAutomatica } from '../services/cliente-gist.js';
 import { FraseCifrado } from './frase-cifrado.js';
 import { CampoFrase } from './campo-frase.js';
@@ -27,6 +28,7 @@ export class GistService {
         /** La sal del último sobre visto de cada Gist: al volver a subir se reutiliza y no hay que derivar la clave de nuevo. @type {Record<string, string>} */
         this._sales = {};
         this._avisoFraseMostrado = false;
+        this._avisoNovedadesMostrado = false;
         this.campoFrase = new CampoFrase(
             { input: 'gist-frase', ojo: 'gist-frase-eye', generar: 'btn-gist-generar-frase', recordar: 'gist-recordar-frase-toggle' },
             (mensaje, tipo, duracion) => this.app.ui.mostrarToast(mensaje, tipo, duracion));
@@ -191,7 +193,12 @@ export class GistService {
             const frase = FraseCifrado.actual();
             if (!FraseCifrado.disponible()) { this._avisarFraseFaltante(silencioso); return; }
             // Subir con una frase que no abre el Gist actual lo dejaría ilegible para los otros dispositivos: se pide confirmación (a mano) o se frena (automática)
-            if (existente && !remotoVerificado && !(await this._fraseAbreElRemoto(perfil.gistId, token, silencioso))) return;
+            if (existente && !remotoVerificado) {
+                const remoto = await this._puedePisarElRemoto(perfil.gistId, token, silencioso);
+                if (remoto === false) return;
+                // se sube también lo que el Gist ya sabía que se borró
+                if (remoto) this.app.storage.borrados = Sincronizacion.unirBorrados(this.app.storage.borrados, remoto.borrados, new Date());
+            }
 
             const respaldo = await this.app.storage._construirExportacion();
             const sellado = await RespaldoCifrado.sellar(respaldo, frase, { sal: this._sales[perfil.gistId] ?? null });
@@ -241,24 +248,26 @@ export class GistService {
     }
 
     /**
-     * ¿La frase actual abre el contenido del Gist? true si abre, si el Gist está vacío, en claro o no se pudo consultar (sin red: no se bloquea nada);
-     * false si no abre: a mano se pregunta si reemplazarlo igual; en la subida automática se frena y se avisa.
+     * ¿Se puede reemplazar el Gist con lo local? Devuelve la lectura del Gist si se pudo abrir (vacío o en claro también), null si no se pudo consultar (sin red: no se bloquea nada)
+     * o la persona eligió reemplazarlo igual, y false si no se sigue: la frase no lo abre y a mano se canceló, o la subida automática se frena y se avisa.
+     * @returns {Promise<false | null | import('../services/cliente-gist.js').LecturaGist>}
      */
-    async _fraseAbreElRemoto(gistId, token, silencioso) {
+    async _puedePisarElRemoto(gistId, token, silencioso) {
         const lectura = await this._leerRemoto(gistId, token, { avisarSinCifrar: false });
-        if (!esGistNoConfiable(lectura)) return true;
-        const codigo = /** @type {any} */ (lectura).codigo;
+        if (!('error' in lectura)) return lectura;
+        if (!esGistNoConfiable(lectura)) return null;
         if (silencioso) {
-            this._avisarAutoFrenada(codigo);
+            this._avisarAutoFrenada(lectura.codigo);
             return false;
         }
-        return codigo === 'sin-cifrar'
+        const reemplazar = await (lectura.codigo === 'sin-cifrar'
             ? ModalManager.confirmar(
                 'El Gist estaba cifrado y ahora su contenido está en claro: alguien lo cambió. Si seguís, se reemplaza con tus datos locales, cifrados. ¿Subir igual?',
                 'Reemplazar', '#icon-cloud-sync', { titulo: 'El Gist fue alterado' })
             : ModalManager.confirmar(
                 'La frase no abre el contenido actual del Gist (otra frase, o el Gist fue alterado). Si seguís, el Gist se reemplaza con tus datos locales y su contenido actual se pierde. ¿Subir igual?',
-                'Reemplazar', '#icon-cloud-sync', { titulo: 'La frase no abre el Gist' });
+                'Reemplazar', '#icon-cloud-sync', { titulo: 'La frase no abre el Gist' }));
+        return reemplazar ? null : false;
     }
 
     subir() {
@@ -275,18 +284,21 @@ export class GistService {
         this._debounceTimer = setTimeout(async () => {
             if (this._subiendo) return;
 
-            // Guard: si hay un gist existente, comparar tamaño antes de subir
+            // Guard: si hay un gist existente, comparar con lo que tiene antes de subir
             if (this.esIdValido(perfil.gistId)) {
                 const lectura = await this._leerRemoto(perfil.gistId, this.getToken(), { avisarSinCifrar: false });
                 // Si no se puede comparar por otro motivo (sin internet, etc.), se deja pasar
                 if ('error' in lectura && !esGistNoConfiable(lectura)) console.warn('AutoSync guard: no se pudo comparar con remoto, se permite la subida.', lectura.error);
-                const veredicto = evaluarSubidaAutomatica(lectura, this.servicios, this.app.categoria.getCategorias());
+                const veredicto = evaluarSubidaAutomatica(lectura, { servicios: this.servicios, categorias: this.app.categoria.getCategorias(), borrados: this.app.storage.borrados }, new Date());
                 if (veredicto.accion === 'no-confiable') { this._avisarAutoFrenada(veredicto.codigo); return; }
+                if (veredicto.accion === 'novedades') { this._pausarPorNovedades(/** @type {any} */ (lectura), veredicto.analisis); return; }
                 if (veredicto.accion === 'menos-datos') {
                     console.warn(`AutoSync bloqueado: datos locales (${veredicto.medida.local}b) son menos del 75% del remoto (${veredicto.medida.remoto}b)`);
                     this.app.ui.mostrarToast('Subida automática bloqueada: lo que hay acá es mucho menos que lo que hay en el Gist. Si es a propósito, subí a mano con el botón Subir', 'error', 8000);
                     return;
                 }
+                // se sube también lo que el Gist ya sabía que se borró
+                if (veredicto.accion === 'subir' && veredicto.borrados) this.app.storage.borrados = veredicto.borrados;
             }
 
             this._ejecutarSubida(true, { remotoVerificado: true });
@@ -348,6 +360,14 @@ export class GistService {
         }
     }
 
+    /** La subida automática espera: el Gist tiene cambios sin aplicar y subir sin combinar los pisaría. Avisa una sola vez por sesión (o hasta que se apliquen). */
+    _pausarPorNovedades(data, analisis) {
+        this.app._gistDatosPendientes = data;
+        if (this._avisoNovedadesMostrado) return;
+        this.app.ui.mostrarToast('Subida automática en espera: en el Gist hay cambios que todavía no combinaste (por ejemplo, algo borrado en otro dispositivo). Revisalos y combiná para seguir sincronizando', 'warning', 8000);
+        this._mostrarNovedades(data, analisis);
+    }
+
     /**
      * Aviso de novedades del Gist (nada se aplica hasta que la persona lo confirme): chips con lo que cambiaría, incluido lo que se borró en otro dispositivo.
      * @param {any} data lo leído del Gist @param {{ diff: any, categoriasNuevas: number }} analisis @param {number} [demoraMs]
@@ -368,6 +388,7 @@ export class GistService {
             montar(detalle, html`${chips}`);
         }
         this.app._gistDatosPendientes = data;
+        this._avisoNovedadesMostrado = true;
         setTimeout(() => this.app.ui.abrirModal('modal-gist-novedades'), demoraMs);
     }
 
@@ -408,6 +429,7 @@ export class GistService {
         this.app.storage._aplicarImportacion(modo, data, data.crudo);
         this.setPerfil({ gistLastSync: new Date().toISOString() });
         this.app._gistDatosPendientes = null;
+        this._avisoNovedadesMostrado = false;
         return true;
     }
 

@@ -111,16 +111,45 @@ test('escribir: HTTP de error, respuesta sin id y red caída vuelven como error 
     assert.equal((await new ClienteGist(async () => { throw new Error('offline'); }).escribir(datos)).error, 'offline');
 });
 
-test('evaluarSubidaAutomatica: sube, frena por Gist no confiable o frena si lo local es mucho menos que lo remoto', async () => {
-    const lectura = { servicios, categorias: ['Casa'], crudo: {}, cifrado: true };
-    assert.deepEqual(evaluarSubidaAutomatica(lectura, servicios, ['Casa']), { accion: 'subir' });
+test('evaluarSubidaAutomatica: sube, frena por Gist no confiable, por novedades sin combinar, o por tener mucho menos que lo remoto', async () => {
+    const ahora = new Date('2026-11-12T12:00:00Z');
+    const local = (servicios_, borrados = []) => ({ servicios: servicios_, categorias: ['Casa'], borrados });
+    const lectura = { servicios, categorias: ['Casa'], borrados: [], crudo: {}, cifrado: true };
+    assert.deepEqual(evaluarSubidaAutomatica(lectura, local(servicios), ahora), { accion: 'subir', borrados: [] });
 
-    assert.deepEqual(evaluarSubidaAutomatica({ error: 'x', codigo: 'sin-cifrar' }, servicios, []), { accion: 'no-confiable', codigo: 'sin-cifrar' });
-    assert.deepEqual(evaluarSubidaAutomatica({ error: 'x', codigo: 'descifrado' }, servicios, []), { accion: 'no-confiable', codigo: 'descifrado' });
+    assert.deepEqual(evaluarSubidaAutomatica({ error: 'x', codigo: 'sin-cifrar' }, local(servicios), ahora), { accion: 'no-confiable', codigo: 'sin-cifrar' });
+    assert.deepEqual(evaluarSubidaAutomatica({ error: 'x', codigo: 'descifrado' }, local(servicios), ahora), { accion: 'no-confiable', codigo: 'descifrado' });
     // sin red u otro motivo para no comparar: no bloquea
-    assert.deepEqual(evaluarSubidaAutomatica({ error: 'x', codigo: 'red' }, servicios, []), { accion: 'subir' });
+    assert.deepEqual(evaluarSubidaAutomatica({ error: 'x', codigo: 'red' }, local(servicios), ahora), { accion: 'subir', borrados: null });
 
-    const veredicto = evaluarSubidaAutomatica(lectura, [], []);
+    // lo local es mucho menos que lo remoto, pero lo remoto no trae nada nuevo para combinar (todo está borrado acá hace poco)
+    const muchos = Array.from({ length: 30 }, (_, i) => ({ id: `f${i}`, monto: 1000 + i, fecha: '2026-11-10', pagada: false, fechaPago: null, modificada: '2026-11-01T00:00:00.000Z' }));
+    const remotoGrande = { ...lectura, servicios: [{ id: 'luz', nombre: 'Luz', categoria: '', facturas: muchos }] };
+    const borradosLocales = muchos.map(f => ({ servicio: 'luz', id: f.id, fecha: '2026-11-11T00:00:00.000Z' }));
+    const veredicto = evaluarSubidaAutomatica(remotoGrande, local([{ id: 'luz', nombre: 'Luz', categoria: '', facturas: [] }], borradosLocales), ahora);
     assert.equal(veredicto.accion, 'menos-datos');
     assert.ok(veredicto.medida.local < veredicto.medida.remoto);
+});
+
+test('evaluarSubidaAutomatica: lo que el Gist trae y acá falta (registros, o borrados de otro dispositivo) frena la subida; los borrados del Gist se conservan al subir', () => {
+    const ahora = new Date('2026-11-12T12:00:00Z');
+    const f1 = { id: 'f1', monto: 15000, fecha: '2026-11-03', pagada: false, fechaPago: null, modificada: '2026-11-01T00:00:00.000Z' };
+    const local = { servicios: [{ id: 'luz', nombre: 'Luz', categoria: '', facturas: [f1] }], categorias: [], borrados: [] };
+    const remoto = (servicios_, borrados = []) => ({ servicios: servicios_, categorias: [], borrados, crudo: {}, cifrado: true });
+
+    // otro dispositivo agregó una factura
+    const conNueva = evaluarSubidaAutomatica(remoto([{ id: 'luz', nombre: 'Luz', categoria: '', facturas: [f1, { ...f1, id: 'f2' }] }]), local, ahora);
+    assert.equal(conNueva.accion, 'novedades');
+    assert.equal(conNueva.analisis.diff.facturasAgregadas, 1);
+
+    // otro dispositivo borró f1 (acá sigue)
+    const borrado = { servicio: 'luz', id: 'f1', fecha: '2026-11-05T00:00:00.000Z' };
+    const conBorrado = evaluarSubidaAutomatica(remoto([{ id: 'luz', nombre: 'Luz', categoria: '', facturas: [] }], [borrado]), local, ahora);
+    assert.equal(conBorrado.accion, 'novedades');
+    assert.equal(conBorrado.analisis.diff.facturasEliminadas, 1);
+
+    // el Gist sabe de un borrado de algo que acá nunca estuvo: no hay nada que combinar, pero al subir ese registro no se pierde
+    const ajeno = { servicio: 'luz', id: 'f9', fecha: '2026-11-05T00:00:00.000Z' };
+    const sinNada = evaluarSubidaAutomatica(remoto(local.servicios, [ajeno]), local, ahora);
+    assert.deepEqual(sinNada, { accion: 'subir', borrados: [ajeno] });
 });
