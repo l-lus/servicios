@@ -3,6 +3,18 @@
 // ====================================================================
 const MS_DIA = 1000 * 60 * 60 * 24;
 
+const DIAS_POR_MES = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/** ¿Es una fecha 'YYYY-MM-DD' que existe en el calendario? ('2026-02-30' o '2026-13-01' no lo son). Para validar fechas que vienen de afuera. @param {unknown} v */
+export function esFechaISO(v) {
+    const m = typeof v === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(v) : null;
+    if (!m) return false;
+    const anio = Number(m[1]), mes = Number(m[2]), dia = Number(m[3]);
+    if (mes < 1 || mes > 12 || dia < 1) return false;
+    const bisiesto = anio % 4 === 0 && (anio % 100 !== 0 || anio % 400 === 0);
+    return dia <= (mes === 2 && bisiesto ? 29 : DIAS_POR_MES[mes - 1]);
+}
+
 /** 'YYYY-MM-DD' → Date a medianoche local. */
 export function parseDate(str) {
     return new Date(str + 'T00:00:00');

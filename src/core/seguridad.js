@@ -14,9 +14,9 @@ export const SecurityAndUtils = (function () {
         SCHEMA_VERSION: 2,
     };
 
+    // Las fechas se validan con esFechaISO (core/fechas.js), que además comprueba que existan en el calendario
     const REGEX_PATTERNS = {
         ID: /^[A-Za-z0-9_-]{1,100}$/,
-        FECHA: /^\d{4}-\d{2}-\d{2}$/,
     };
 
     /**

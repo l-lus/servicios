@@ -16,7 +16,7 @@ assets/{manifest.json, icons/, fonts/, styles/{tokens,base,vistas,menus-modales,
 src/main.js
 src/data/   fondos (catálogo de ilustraciones SVG para la tarjeta de resumen)
 src/core/   secretos (la frase de cifrado: solo en la sesión o, con «recordar», en el navegador), cifrado (sobre AES-GCM con frase: PBKDF2-SHA-256 y sal propia de cada destino; sin DOM, `crypto` inyectable), dom ($, $$, formulario, selectPorId, delegado, valorDe, alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
-            busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp),
+            busqueda-texto, fechas (`esFechaISO` valida las fechas que vienen de afuera), formato, html, constantes, eventos (EventosApp),
             seguridad (SecurityAndUtils: límites, `limpiarTexto` para texto de afuera —sin lista negra de símbolos: el escape lo hace `html`—, ids y hash), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
 src/ui/     frase-cifrado, campo-frase, frase-modal (la frase de cifrado: guardado, campo común y modal al importar), calendario-vista, vista-previa, header-posicion (reubicar el encabezado arrastrándolo), transicion-layout (desliza encabezado y tarjetas al cruzar un corte de ancho), tarjeta-fondos, popups, iconos-animados, recarga-gesto,

@@ -27,6 +27,8 @@ test('normalizarDatos: rechaza estructuras inválidas con un mensaje legible', (
     assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { monto: 'x' })])]), /monto inválido/);
     assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { monto: 1e12 })])]), /monto inválido/);
     assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { fecha: '10/11/2026' })])]), /fecha inválida/);
+    assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { fecha: '2026-99-99' })])]), /fecha inválida/, 'con el formato correcto pero fuera del calendario');
+    assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { pagada: true, fechaPago: '2026-02-30' })])]), /fecha de pago inválida/);
     assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { moneda: 'eur' })])]), /moneda inválida/);
     assert.throws(() => IE.normalizarDatos([srv('a', [fac('f', { tipo: 'raro' })])]), /tipo inválido/);
     assert.throws(() => IE.normalizarDatos([srv('a', [fac('f'), fac('f')])]), /id duplicado/);

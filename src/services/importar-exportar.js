@@ -1,5 +1,6 @@
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { plural } from '../core/formato.js';
+import { esFechaISO } from '../core/fechas.js';
 import { STORAGE_KEYS, CARDS, FONDO_CARD_POR_DEFECTO } from '../core/constantes.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { Preferencias } from '../core/preferencias.js';
@@ -267,9 +268,9 @@ export const ImportarExportar = {
                 if (idsFacturas.has(f.id)) fallar(`${dondeF}: id duplicado`);
                 idsFacturas.add(f.id);
                 if (typeof f.monto !== 'number' || !Number.isFinite(f.monto) || Math.abs(f.monto) > L.MAX_MONTO) fallar(`${dondeF}: monto inválido`);
-                if (typeof f.fecha !== 'string' || !R.FECHA.test(f.fecha)) fallar(`${dondeF}: fecha inválida`);
+                if (!esFechaISO(f.fecha)) fallar(`${dondeF}: fecha inválida`);
                 if (typeof f.pagada !== 'boolean') fallar(`${dondeF}: estado de pago inválido`);
-                if (f.fechaPago != null && (typeof f.fechaPago !== 'string' || !R.FECHA.test(f.fechaPago))) fallar(`${dondeF}: fecha de pago inválida`);
+                if (f.fechaPago != null && !esFechaISO(f.fechaPago)) fallar(`${dondeF}: fecha de pago inválida`);
                 if (f.tipo !== undefined && !TIPOS.includes(f.tipo)) fallar(`${dondeF}: tipo inválido`);
                 if (f.moneda !== undefined && f.moneda !== null && !MONEDAS.includes(f.moneda)) fallar(`${dondeF}: moneda inválida`);
                 if (f.conCredito !== undefined && typeof f.conCredito !== 'boolean') fallar(`${dondeF}: crédito inválido`);
