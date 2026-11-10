@@ -114,7 +114,7 @@ test('contar y perdidasAlReemplazar: lo local que no está en el respaldo', () =
 
 test('config exportable en respaldos: valida, exporta y detecta cambios de preferencias', async () => {
     const exportable = IE.obtenerConfigExportable();
-    assert.equal(typeof exportable['gestion_servicios_theme'], 'string');
+    assert.equal('gestion_servicios_theme' in exportable, false, 'el tema es de cada dispositivo: no viaja en el respaldo');
     assert.equal(typeof exportable['estilo-calendario'], 'string');
     assert.equal(typeof exportable['estilo-tarjeta'], 'string');
     assert.equal(typeof exportable['posicion-header'], 'string');
@@ -136,7 +136,6 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
     assert.equal(Array.isArray(exportable['columnas-tarjetas-3']), true);
 
     assert.equal(IE.validarCamposConfigImport({
-        'gestion_servicios_theme': 'crema',
         'estilo-calendario': 'cuadrado-aro',
         'estilo-tarjeta': 'clasica',
         'posicion-header': 'left',
@@ -158,7 +157,8 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
         'resumen-mostrar-pagado': 'true',
     }), true);
 
-    assert.equal(IE.validarCamposConfigImport({ 'gestion_servicios_theme': 'inexistente' }), false);
+    assert.equal(IE.validarCamposConfigImport({ 'gestion_servicios_theme': 'inexistente' }), true, 'un respaldo viejo con tema se acepta y el tema se ignora');
+    assert.equal(IE.calcularCambiosConfigImport({ 'gestion_servicios_theme': 'crema' }).includes('tema'), false);
     assert.equal(IE.validarCamposConfigImport({ 'estilo-calendario': 'inexistente' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'columnas-tarjetas': [0, 0] }), false);
     assert.equal(IE.validarCamposConfigImport({ 'posicion-header-movil': 'left' }), false, 'un costado no vale en móvil');

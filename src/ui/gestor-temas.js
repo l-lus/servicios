@@ -74,8 +74,6 @@ function renderSelector(idLista = 'bienvenida-temas') {
     });
 }
 
-EventosApp.on('config:tema', (tema) => aplicarTema(tema));
-
 export const GestorTemas = {
     temaGuardado,
     aplicarTema,

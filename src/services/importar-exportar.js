@@ -9,7 +9,6 @@ import { PosicionHeader, posicionesPermitidas } from '../core/posicion-header.js
 import { EstiloTarjeta, ESTILOS_TARJETA } from '../core/estilo-tarjeta.js';
 import { FONDOS_SVG } from '../data/fondos.js';
 import { EventosApp } from '../core/eventos.js';
-import { TEMAS } from '../core/temas.js';
 import { normalizarOrdenCards, leerLayout, columnasDesdeOrden, tamanosDeColumnas, esTamanosColumnasValidos } from './orden-cards.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
 
@@ -98,13 +97,6 @@ export const CONFIG_RESPALDO = [
         esValido: (v) => posicionesPermitidas(false).includes(v),
         actual: () => PosicionHeader.guardada(false),
         aplicar: (v) => PosicionHeader.fijar(false, v),
-    },
-    {
-        clave: STORAGE_KEYS.TEMA,
-        etiqueta: 'tema',
-        esValido: (v) => TEMAS.some(t => t.id === v),
-        actual: () => StorageHelper.getItem(STORAGE_KEYS.TEMA, null) || 'dark',
-        aplicar: (v) => { StorageHelper.setItem(STORAGE_KEYS.TEMA, v); EventosApp.emit('config:tema', v); },
     },
     _opcion(Preferencias.HOVER_POPUP, 'popup del calendario (PC)', () => EventosApp.emit('config:hover-popup')),
     _opcion(Preferencias.RUEDA_CALENDARIO, 'rueda del calendario (PC)', () => EventosApp.emit('config:rueda-calendario')),
