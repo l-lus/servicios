@@ -4,6 +4,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EstadoFacturas } from '../services/estado-facturas.js';
 import { Anim } from './animaciones.js';
+import { $ } from '../core/dom.js';
 // ============================================================
 // VISTASERVICIOS
 // ============================================================
@@ -74,8 +75,8 @@ export class VistaServicios {
     }
 
     aplicarEstadoServicios(estado) {
-        const contenido = document.getElementById('servicios-content');
-        const chevron = document.getElementById('servicios-chevron');
+        const contenido = $('servicios-content');
+        const chevron = $('servicios-chevron');
 
         // Remover todas las clases de estado
         contenido.classList.remove('collapsed', 'semi-collapsed');
@@ -98,10 +99,10 @@ export class VistaServicios {
     }
 
     renderServicios() {
-        const nombrePerfil = document.getElementById('nombre-perfil-header');
+        const nombrePerfil = $('nombre-perfil-header');
         if (nombrePerfil) nombrePerfil.textContent = EstadoApp.perfiles[EstadoApp.perfilActivo]?.nombre || '';
 
-        const lista = document.getElementById('servicios-lista');
+        const lista = $('servicios-lista');
         if (!lista) return;
 
         const scrollPos = window.scrollY;
@@ -345,7 +346,7 @@ export class VistaServicios {
     }
 
     aplicarOrden() {
-        const select = document.getElementById('select-orden');
+        const select = $('select-orden');
         this.app.ordenActual = select.value;
         StorageHelper.setItem(STORAGE_KEYS.ORDEN, this.app.ordenActual);
         this.renderServicios();

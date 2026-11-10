@@ -2,6 +2,7 @@ import { EstadoApp } from '../services/estado-app.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { PilaHistorial, clonar } from '../services/pila-historial.js';
 import { IconosAnimados } from './iconos-animados.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // HISTORIAL MANAGER — undo/redo: une la pila (services) con la app y los botones
@@ -32,7 +33,7 @@ export class HistorialManager {
     deshacer() {
         const paso = this._pila.deshacer();
         if (!paso) return;
-        IconosAnimados.girarIcono(document.getElementById('btn-undo'), -1);
+        IconosAnimados.girarIcono($('btn-undo'), -1);
         this._aplicarEstado(paso.estado);
         this.app.ui.mostrarToast('Deshecho', 'info', undefined, paso.descripcion);
     }
@@ -40,7 +41,7 @@ export class HistorialManager {
     rehacer() {
         const paso = this._pila.rehacer();
         if (!paso) return;
-        IconosAnimados.girarIcono(document.getElementById('btn-redo'), 1);
+        IconosAnimados.girarIcono($('btn-redo'), 1);
         this._aplicarEstado(paso.estado);
         this.app.ui.mostrarToast('Rehecho', 'info', undefined, paso.descripcion);
     }
@@ -65,8 +66,8 @@ export class HistorialManager {
     }
 
     actualizarBotones() {
-        const undo = document.getElementById('btn-undo');
-        const redo = document.getElementById('btn-redo');
+        const undo = $('btn-undo');
+        const redo = $('btn-redo');
         if (undo) undo.disabled = !this.puedeDeshacer();
         if (redo) redo.disabled = !this.puedeRehacer();
     }

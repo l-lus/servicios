@@ -1,3 +1,4 @@
+import { $ } from '../core/dom.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ReporteHTML, SECCIONES_MENSUAL, SECCIONES_INDIVIDUAL } from '../services/reporte-html.js';
@@ -6,7 +7,6 @@ import { ReportesTexto } from '../services/reportes-texto.js';
 // ============================================================
 // REPORTE — modal para elegir formato (HTML o texto) y secciones antes de generar
 // ============================================================
-const $ = id => document.getElementById(id);
 
 export class ReporteModal {
     constructor(app) {

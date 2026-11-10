@@ -1,3 +1,4 @@
+import { $ } from '../core/dom.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
@@ -15,7 +16,6 @@ import { VistaPrevia } from './vista-previa.js';
 // ============================================================
 // CALENDARIO — vista mensual de vencimientos (mismo diseño y animaciones que el calendario de Horarios)
 // ============================================================
-const $ = id => document.getElementById(id);
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const ETIQUETA_CLASE = { vencido: 'Vencida', urgente: 'Vence pronto', proximo: 'Próxima', lejano: 'Pendiente', pagado: 'Pagada', favor: 'Saldo a favor' };

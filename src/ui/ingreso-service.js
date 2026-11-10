@@ -1,6 +1,7 @@
 import { restaFechas } from '../core/fechas.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
+import { $ } from '../core/dom.js';
 // ============================================================
 // INGRESO SERVICE — ciclo de vida de ingresos
 // ============================================================
@@ -19,7 +20,7 @@ export class IngresoService {
     abrirModalLista(servicioId, { resaltar = null } = {}) {
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
-        const lista = document.getElementById('lista-ingresos-modal');
+        const lista = $('lista-ingresos-modal');
         if (servicio.facturas.length === 0) {
             montar(lista, html`<div class="empty-state"><p>No hay ingresos registrados</p></div>`);
         } else {
@@ -42,7 +43,7 @@ export class IngresoService {
                 return this.app.factura.generarGrupoAno(grupo.ano, grupo.items, itemsHTML, 'ingreso', index);
             })}`);
         }
-        document.getElementById('modal-ingresos-lista').dataset.servicioId = servicioId;
+        $('modal-ingresos-lista').dataset.servicioId = servicioId;
         this.app.ui.abrirModal('modal-ingresos-lista');
         const anoGuardado = this.app._anoExpandidoIngresos[servicioId];
         if (anoGuardado) { this.app.vista._restaurarAnoExpandido(anoGuardado); this.app._anoExpandidoIngresos[servicioId] = null; }
@@ -51,7 +52,7 @@ export class IngresoService {
 
     abrirModal(ingresoId = null, desdeMenu = false) {
         if (ingresoId) {
-            const modal = document.getElementById('modal-ingresos-lista');
+            const modal = $('modal-ingresos-lista');
             if (modal?.classList.contains('active')) {
                 const sid  = modal.dataset.servicioId;
                 const item = document.querySelector(`.factura-item[data-id="${CSS.escape(ingresoId)}"]`);
@@ -66,20 +67,20 @@ export class IngresoService {
             const servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
             const ingreso  = servicio?.facturas.find(f => f.id === ingresoId);
             if (ingreso) {
-                document.getElementById('editar-ingreso-monto').value = ingreso.monto;
-                document.getElementById('editar-ingreso-tipo').value  = ingreso.tipo || 'regular';
-                document.getElementById('editar-ingreso-fecha').value = ingreso.fecha;
+                $('editar-ingreso-monto').value = ingreso.monto;
+                $('editar-ingreso-tipo').value  = ingreso.tipo || 'regular';
+                $('editar-ingreso-fecha').value = ingreso.fecha;
                 this.app.utils.setMonedaBtn('editar-ingreso-moneda', 'btn-editar-ingreso-moneda', ingreso.moneda || 'ars');
                 // Refrescar CustomSelect editar-ingreso-tipo
-                const csdEditTipo = document.getElementById('editar-ingreso-tipo-csd');
+                const csdEditTipo = $('editar-ingreso-tipo-csd');
                 if (csdEditTipo?._customSelect) csdEditTipo._customSelect.refresh();
             }
             this.app.ui.abrirModal('modal-editar-ingreso');
         } else {
-            document.getElementById('form-ingreso').reset();
+            $('form-ingreso').reset();
             this.app.utils.setMonedaBtn('ingreso-moneda', 'btn-ingreso-moneda', 'ars');
             // Refrescar CustomSelect ingreso-tipo (reset puede haber alterado la opción visible)
-            const csdTipo = document.getElementById('ingreso-tipo-csd');
+            const csdTipo = $('ingreso-tipo-csd');
             if (csdTipo?._customSelect) csdTipo._customSelect.refresh();
             this.app.ui.abrirModal('modal-agregar-ingreso');
         }
@@ -87,11 +88,11 @@ export class IngresoService {
 
     guardar(e) {
         e.preventDefault();
-        const esEditar = document.getElementById('modal-editar-ingreso').classList.contains('active');
-        const monto  = parseFloat(document.getElementById(esEditar ? 'editar-ingreso-monto' : 'ingreso-monto').value);
-        const tipo   = document.getElementById(esEditar ? 'editar-ingreso-tipo'   : 'ingreso-tipo').value;
-        const fecha  = document.getElementById(esEditar ? 'editar-ingreso-fecha'  : 'ingreso-fecha').value;
-        const moneda = document.getElementById(esEditar ? 'editar-ingreso-moneda' : 'ingreso-moneda').value;
+        const esEditar = $('modal-editar-ingreso').classList.contains('active');
+        const monto  = parseFloat($(esEditar ? 'editar-ingreso-monto' : 'ingreso-monto').value);
+        const tipo   = $(esEditar ? 'editar-ingreso-tipo'   : 'ingreso-tipo').value;
+        const fecha  = $(esEditar ? 'editar-ingreso-fecha'  : 'ingreso-fecha').value;
+        const moneda = $(esEditar ? 'editar-ingreso-moneda' : 'ingreso-moneda').value;
         if (!this.app.factura.validarMonto(monto, false)) return;
         if (!this.app.factura.validarFecha(fecha)) return;
         let servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);

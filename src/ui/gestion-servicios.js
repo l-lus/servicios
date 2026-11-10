@@ -37,6 +37,7 @@ import { UtilsService } from './utils-service.js';
 import { VistaPrevia } from './vista-previa.js';
 import { HeaderPosicion } from './header-posicion.js';
 import { TransicionLayout } from './transicion-layout.js';
+import { $ } from '../core/dom.js';
 
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
@@ -220,27 +221,27 @@ export class GestionServicios {
             this._vistaEstados = StorageHelper.getItem(STORAGE_KEYS.VISTA_ESTADOS) === 'true';
             this.ordenActual = StorageHelper.getItem(STORAGE_KEYS.ORDEN) || 'nombre';
             this.serviciosCollapseState = StorageHelper.getItem(STORAGE_KEYS.SERVICIOS_COLLAPSE) || 'semi-collapsed';
-            const selectOrden = document.getElementById('select-orden');
+            const selectOrden = $('select-orden');
             if (selectOrden) selectOrden.value = this.ordenActual;
-            const selectVista = document.getElementById('select-vista');
+            const selectVista = $('select-vista');
             if (selectVista) {
                 if (this._vistaEstados) selectVista.value = 'estados';
                 else if (this._agrupacionActiva) selectVista.value = 'categorias';
                 else selectVista.value = 'todo';
             }
-            document.getElementById('select-orden-csd')?._customSelect?.refresh();
-            document.getElementById('select-vista-csd')?._customSelect?.refresh();
+            $('select-orden-csd')?._customSelect?.refresh();
+            $('select-vista-csd')?._customSelect?.refresh();
             this.vista.aplicarEstadoServicios(this.serviciosCollapseState);
             this.vista.renderServicios();
         });
         EventosApp.on('config:estadisticas', () => {
             this.tipoEstadisticaActual = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
-            const selEstTipo = document.getElementById('estadisticas-tipo');
+            const selEstTipo = $('estadisticas-tipo');
             if (selEstTipo) selEstTipo.value = this.tipoEstadisticaActual;
-            document.getElementById('estadisticas-tipo-csd')?._customSelect?.refresh();
+            $('estadisticas-tipo-csd')?._customSelect?.refresh();
             const colapsadas = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) === 'true';
-            document.getElementById('estadisticas-content')?.classList.toggle('collapsed', colapsadas);
-            document.getElementById('estadisticas-chevron')?.classList.toggle('collapsed', colapsadas);
+            $('estadisticas-content')?.classList.toggle('collapsed', colapsadas);
+            $('estadisticas-chevron')?.classList.toggle('collapsed', colapsadas);
             this.estadisticas.cambiarTipoEstadistica();
         });
         EventosApp.on('config:resumen', () => {
@@ -251,19 +252,19 @@ export class GestionServicios {
         // Restaurar estado de estadísticas colapsadas
         const estadisticasColapsadas = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS) === 'true';
         if (estadisticasColapsadas) {
-            document.getElementById('estadisticas-content').classList.add('collapsed');
-            document.getElementById('estadisticas-chevron').classList.add('collapsed');
+            $('estadisticas-content').classList.add('collapsed');
+            $('estadisticas-chevron').classList.add('collapsed');
         } else {
             // Si está expandido, cargar el tipo guardado
             const tipoGuardado = StorageHelper.getItem(STORAGE_KEYS.ESTADISTICAS_TIPO) || 'mensual';
             this.tipoEstadisticaActual = tipoGuardado;
-            document.getElementById('estadisticas-tipo').value = tipoGuardado;
+            $('estadisticas-tipo').value = tipoGuardado;
             this.estadisticas.cambiarTipoEstadistica();
         }
 
         // Inicializar CustomSelect para estadisticas-tipo
-        const csdEstTipo = document.getElementById('estadisticas-tipo-csd');
-        const selEstTipo = document.getElementById('estadisticas-tipo');
+        const csdEstTipo = $('estadisticas-tipo-csd');
+        const selEstTipo = $('estadisticas-tipo');
         if (csdEstTipo && selEstTipo && !csdEstTipo._customSelect) {
             csdEstTipo._customSelect = new CustomSelect(csdEstTipo, selEstTipo, () => {
                 this.tipoEstadisticaActual = selEstTipo.value;
@@ -281,41 +282,41 @@ export class GestionServicios {
         this.vista.aplicarEstadoServicios(serviciosState);
 
         // Botón ordenar
-        document.getElementById('btn-sort').addEventListener('click', () => {
-            const select = document.getElementById('select-orden');
+        $('btn-sort').addEventListener('click', () => {
+            const select = $('select-orden');
             if (select) select.value = this.ordenActual;
-            const selectVista = document.getElementById('select-vista');
+            const selectVista = $('select-vista');
             if (selectVista) {
                 if (this._vistaEstados) selectVista.value = 'estados';
                 else if (this._agrupacionActiva) selectVista.value = 'categorias';
                 else selectVista.value = 'todo';
             }
             // Refrescar CustomSelects del modal-ordenar
-            const csdOrden = document.getElementById('select-orden-csd');
+            const csdOrden = $('select-orden-csd');
             if (csdOrden?._customSelect) csdOrden._customSelect.refresh();
-            const csdVista = document.getElementById('select-vista-csd');
+            const csdVista = $('select-vista-csd');
             if (csdVista?._customSelect) csdVista._customSelect.refresh();
             this.ui.abrirModal('modal-ordenar');
         });
 
-        document.getElementById('select-orden').addEventListener('change', () => {
+        $('select-orden').addEventListener('change', () => {
             this.vista.aplicarOrden();
         });
 
-        document.getElementById('select-vista').addEventListener('change', (e) => this.vista.cambiarVista(e.target.value));
+        $('select-vista').addEventListener('change', (e) => this.vista.cambiarVista(e.target.value));
 
         // Listeners para sincronizar botón toggle de monto con el input
-        document.getElementById('factura-monto').addEventListener('input', (e) => {
+        $('factura-monto').addEventListener('input', (e) => {
             this.servicio.actualizarEstadoBotonToggle('factura-monto', 'btn-toggle-negativo');
         });
 
-        document.getElementById('editar-factura-monto').addEventListener('input', (e) => {
+        $('editar-factura-monto').addEventListener('input', (e) => {
             this.servicio.actualizarEstadoBotonToggle('editar-factura-monto', 'btn-editar-toggle-negativo');
         });
 
         // Buscador
-        const searchInput = document.getElementById('search-input');
-        const searchClear = document.getElementById('search-clear');
+        const searchInput = $('search-input');
+        const searchClear = $('search-clear');
 
         // Filtrar y re-renderizar la lista es lo costoso: se agrupa por
         // debounce. El botón de limpiar sí responde en cada tecla.
@@ -389,8 +390,8 @@ export class GestionServicios {
     _initCustomSelects() {
         // Helper para inicializar un CSD ligado a un <select> nativo
         const init = (wrapperId, selectId, onChange) => {
-            const wrapper = document.getElementById(wrapperId);
-            const native  = document.getElementById(selectId);
+            const wrapper = $(wrapperId);
+            const native  = $(selectId);
             if (wrapper && native && !wrapper._customSelect) {
                 wrapper._customSelect = new CustomSelect(wrapper, native, onChange);
             }
@@ -413,7 +414,7 @@ export class GestionServicios {
         // Modal ordenar — orden y vista
         init('select-orden-csd', 'select-orden', () => this.vista.aplicarOrden());
         init('select-vista-csd', 'select-vista', () => {
-            const val = document.getElementById('select-vista').value;
+            const val = $('select-vista').value;
             this._vistaEstados    = val === 'estados';
             this._agrupacionActiva = val === 'categorias';
             StorageHelper.setItem(STORAGE_KEYS.CAT_AGRUPACION, this._agrupacionActiva ? 'on' : 'off');

@@ -1,3 +1,4 @@
+import { $ } from '../core/dom.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EstadoApp } from '../services/estado-app.js';
@@ -6,7 +7,6 @@ import { GestorTemas } from './gestor-temas.js';
 // ============================================================
 // BIENVENIDA — asistente de primer uso: ingresos, forma de la lista y tema
 // ============================================================
-const $ = id => document.getElementById(id);
 
 export class BienvenidaModal {
     constructor(app) {

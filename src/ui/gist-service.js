@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { IconosAnimados } from './iconos-animados.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // GIST SERVICE — sincronización con GitHub Gist (Adaptado)
@@ -35,27 +36,27 @@ export class GistService {
 
     // ── UI ────────────────────────────────────────────────────
     toggleToken() {
-        const inp = document.getElementById('gist-token');
+        const inp = $('gist-token');
         if (!inp) return;
         inp.type = inp.type === 'password' ? 'text' : 'password';
     }
 
     toggleAuto() {
-        const toggle = document.getElementById('gist-autosync-toggle');
+        const toggle = $('gist-autosync-toggle');
         if (toggle) toggle.classList.toggle('on');
     }
 
     abrirModal() {
         const perfil = this.getPerfil();
-        document.getElementById('gist-token').value = this.getToken();
+        $('gist-token').value = this.getToken();
 
-        const elId = document.getElementById('gist-id');
+        const elId = $('gist-id');
         elId.value = perfil.gistId || '';
 
-        const toggle = document.getElementById('gist-autosync-toggle');
+        const toggle = $('gist-autosync-toggle');
         if (toggle) toggle.classList.toggle('on', !!perfil.gistAuto);
 
-        const elSync = document.getElementById('gist-sync-status');
+        const elSync = $('gist-sync-status');
         if (perfil.gistLastSync) {
             const d = new Date(perfil.gistLastSync);
             elSync.textContent = `Última sincronización: ${d.toLocaleDateString('es-AR')} ${d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -64,7 +65,7 @@ export class GistService {
         }
 
         // Controlar estado inicial del botón de redirección externa
-        const btnIr = document.getElementById('btn-gist-ir');
+        const btnIr = $('btn-gist-ir');
         if (btnIr) btnIr.disabled = !this.esIdValido(perfil.gistId);
 
         // Listener en vivo para el input de Gist ID
@@ -76,9 +77,9 @@ export class GistService {
     }
 
     guardarConfig() {
-        const token = document.getElementById('gist-token').value.trim();
-        const gistId = document.getElementById('gist-id').value.trim();
-        const auto = document.getElementById('gist-autosync-toggle').classList.contains('on');
+        const token = $('gist-token').value.trim();
+        const gistId = $('gist-id').value.trim();
+        const auto = $('gist-autosync-toggle').classList.contains('on');
 
         if (gistId && !this.esIdValido(gistId)) {
             this.app.mostrarToast('El Gist ID tiene un formato inválido', 'error');
@@ -97,8 +98,8 @@ export class GistService {
 
     actualizarBotones() {
         // Mantiene la compatibilidad con el fallback de exportar local en tu UI
-        const btnRespaldar = document.getElementById('btn-hist-respaldar');
-        const btnRestaurar = document.getElementById('btn-hist-restaurar');
+        const btnRespaldar = $('btn-hist-respaldar');
+        const btnRestaurar = $('btn-hist-restaurar');
         const tieneGist = this.esIdValido(this.getPerfil().gistId);
 
         if (!btnRespaldar || !btnRestaurar) return;
@@ -116,7 +117,7 @@ export class GistService {
 
     // Abrir el Gist actual en una pestaña nueva
     irAlGist() {
-        const id = document.getElementById('gist-id').value.trim();
+        const id = $('gist-id').value.trim();
         if (this.esIdValido(id)) {
             window.open(`https://gist.github.com/${id}`, '_blank');
         }
@@ -124,16 +125,16 @@ export class GistService {
 
     // ── Spinner en el botón de ajustes ──────────────────────
     _spinStart() {
-        document.getElementById('header-profile-btn')?.classList.add('icon-btn-spinning');
+        $('header-profile-btn')?.classList.add('icon-btn-spinning');
     }
     _spinStop() {
-        document.getElementById('header-profile-btn')?.classList.remove('icon-btn-spinning');
+        $('header-profile-btn')?.classList.remove('icon-btn-spinning');
     }
 
     _setBusy(busy) {
         this._subiendo = busy;
-        const btnSubir = document.getElementById('btn-gist-subir');
-        const btnBajar = document.getElementById('btn-gist-bajar');
+        const btnSubir = $('btn-gist-subir');
+        const btnBajar = $('btn-gist-bajar');
         if (btnSubir) btnSubir.disabled = busy;
         if (btnBajar) btnBajar.disabled = busy;
         if (busy) this._spinStart(); else this._spinStop();
@@ -170,7 +171,7 @@ export class GistService {
 
             this.setPerfil({ gistId: data.id, gistLastSync: new Date().toISOString() });
 
-            const elId = document.getElementById('gist-id');
+            const elId = $('gist-id');
             if (elId) elId.value = data.id;
 
             if (!silencioso) this.app.mostrarToast('Subida exitosa ✓', 'success');
@@ -183,11 +184,11 @@ export class GistService {
     }
 
     _sincronizarCredencialesDesdeModal() {
-        const modal = document.getElementById('modal-gist');
+        const modal = $('modal-gist');
         if (!modal || (!modal.classList.contains('show') && !modal.classList.contains('active'))) return;
-        const tokenInput = document.getElementById('gist-token');
-        const gistIdInput = document.getElementById('gist-id');
-        const autoToggle = document.getElementById('gist-autosync-toggle');
+        const tokenInput = $('gist-token');
+        const gistIdInput = $('gist-id');
+        const autoToggle = $('gist-autosync-toggle');
 
         const token = tokenInput ? tokenInput.value.trim() : '';
         const gistId = gistIdInput ? gistIdInput.value.trim() : '';
@@ -202,7 +203,7 @@ export class GistService {
 
     subir() {
         this._sincronizarCredencialesDesdeModal();
-        IconosAnimados.animarFlecha(document.getElementById('btn-gist-subir'), 'subir');
+        IconosAnimados.animarFlecha($('btn-gist-subir'), 'subir');
         this._ejecutarSubida(false);
     }
 
@@ -241,7 +242,7 @@ export class GistService {
     // ── Descarga y Novedades ──────────────────────────────────
     async bajar() {
         this._sincronizarCredencialesDesdeModal();
-        IconosAnimados.animarFlecha(document.getElementById('btn-gist-bajar'), 'bajar');
+        IconosAnimados.animarFlecha($('btn-gist-bajar'), 'bajar');
         const token = this.getToken();
         const perfil = this.getPerfil();
         if (!this.esIdValido(perfil.gistId)) { this.app.mostrarToast('Gist ID inválido', 'error'); return; }
@@ -290,7 +291,7 @@ export class GistService {
             if (diff.serviciosAgregados || diff.facturasAgregadas || diff.facturasActualizadas || diff.ingresosAgregados || nuevasCats) {
 
                 // Mostrar chips de resumen
-                const detalle = document.getElementById('gist-novedades-detalle');
+                const detalle = $('gist-novedades-detalle');
                 if (detalle) {
                     const chips = [];
                     if (diff.serviciosAgregados) chips.push(html`<div class="gist-novedades-chip"><span>Servicios</span><span class="gist-novedades-chip-count">+${diff.serviciosAgregados}</span></div>`);

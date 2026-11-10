@@ -1,5 +1,6 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { BackNav } from './gestor-modales.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // CONTEXT MENU SERVICE — menú contextual de servicios
@@ -10,7 +11,7 @@ export class ContextMenuService {
     }
 
     init() {
-        const menu = document.getElementById('ctx-menu-servicio');
+        const menu = $('ctx-menu-servicio');
 
         document.addEventListener('pointerdown', (e) => {
             if (!menu.contains(e.target)) this.cerrar();
@@ -18,7 +19,7 @@ export class ContextMenuService {
 
         document.addEventListener('scroll', () => this.cerrar(), true);
 
-        document.getElementById('ctx-seleccionar').addEventListener('click', () => {
+        $('ctx-seleccionar').addEventListener('click', () => {
             const id = this.app._ctxServicioId;
             this.cerrar();
             if (this.app.modoCalculadora) {
@@ -28,12 +29,12 @@ export class ContextMenuService {
             }
         });
 
-        document.getElementById('ctx-copiar-monto').addEventListener('click', () => {
+        $('ctx-copiar-monto').addEventListener('click', () => {
             this.copiarMonto();
             this.cerrar();
         });
 
-        document.getElementById('ctx-pagar-factura').addEventListener('click', () => {
+        $('ctx-pagar-factura').addEventListener('click', () => {
             this.pagarFactura();
             this.cerrar();
         });
@@ -46,15 +47,15 @@ export class ContextMenuService {
 
         const estaSeleccionado = this.app.serviciosSeleccionados.has(servicioId);
 
-        const btnSeleccionar = document.getElementById('ctx-seleccionar');
+        const btnSeleccionar = $('ctx-seleccionar');
         btnSeleccionar.childNodes[btnSeleccionar.childNodes.length - 1].textContent =
             this.app.modoCalculadora ? ' Cancelar selección' : ' Seleccionar';
 
-        const btnCopiar = document.getElementById('ctx-copiar-monto');
+        const btnCopiar = $('ctx-copiar-monto');
         btnCopiar.childNodes[btnCopiar.childNodes.length - 1].textContent =
             (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) ? ' Copiar total' : ' Copiar monto';
 
-        const btnPagar = document.getElementById('ctx-pagar-factura');
+        const btnPagar = $('ctx-pagar-factura');
         const btnPagarText = btnPagar.childNodes[btnPagar.childNodes.length - 1];
         if (estaSeleccionado && this.app.serviciosSeleccionados.size > 1) {
             const hayPagables = [...this.app.serviciosSeleccionados].some(id => {
@@ -69,7 +70,7 @@ export class ContextMenuService {
             btnPagarText.textContent = ' Pagar factura del mes';
         }
 
-        const menu = document.getElementById('ctx-menu-servicio');
+        const menu = $('ctx-menu-servicio');
         const margen = 8;
         let x = e.clientX, y = e.clientY;
 
@@ -88,7 +89,7 @@ export class ContextMenuService {
     }
 
     cerrar() {
-        const menu = document.getElementById('ctx-menu-servicio');
+        const menu = $('ctx-menu-servicio');
         const estabaAbierto = menu.classList.contains('active');
         menu.classList.remove('active');
         this.app._ctxServicioId = null;

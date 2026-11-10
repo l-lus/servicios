@@ -8,6 +8,7 @@ import { Anim } from './animaciones.js';
 import { CustomSelect } from './custom-select.js';
 import { TarjetaFondos } from './tarjeta-fondos.js';
 import { VistaPrevia } from './vista-previa.js';
+import { $ } from '../core/dom.js';
 
 const MAPA_COLOR_FONDO = {
     'borde-vencido': 'red',
@@ -24,7 +25,7 @@ export class EstadisticasService {
     constructor(app) {
         this.app = app;
         const prepararResumen = () => {
-            const card = document.getElementById('card-resumen');
+            const card = $('card-resumen');
             const estabaOculta = card?.classList.contains('card-oculta');
             if (estabaOculta) card.classList.remove('card-oculta');
             return () => {
@@ -53,7 +54,7 @@ export class EstadisticasService {
 
     // ── Helpers resumen ───────────────────────────────────────
     _actualizarBordeResumen(colorBorde) {
-        const card = document.getElementById('resumen-mes')?.closest('.card');
+        const card = $('resumen-mes')?.closest('.card');
         if (card) {
             card.classList.remove('borde-vencido', 'borde-urgente', 'borde-proximo', 'borde-lejano', 'borde-pagado');
             if (colorBorde) card.classList.add(colorBorde);
@@ -118,13 +119,13 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
     <div class="resumen-fecha">${fechaFormateada}</div>
 </div>
 </div>`;
-        const contResumen = document.getElementById('resumen-mes');
+        const contResumen = $('resumen-mes');
         if (debeAnimar) Anim.morph(contResumen, resumenHTML, '.resumen-valor, .resumen-valor-usd, .resumen-label');
         else montar(contResumen, resumenHTML);
-        const barra = document.getElementById('resumen-progreso-barra');
+        const barra = $('resumen-progreso-barra');
         if (barra) barra.style.setProperty('--barra-w', `${porcentajePagado}%`);
         StorageHelper.setItem(STORAGE_KEYS.RESUMEN_MOSTRAR_PAGADO, esPendiente ? 'false' : 'true');
-        const elBlur = document.getElementById('resumen-toggle');
+        const elBlur = $('resumen-toggle');
         if (elBlur) elBlur.classList.toggle('resumen-blur', this.app.blurHabilitado && !this.app.resumenDesblurado && (hayARS || hayUSD));
         this.app.ultimoEstadoResumen = estadoActual;
         this._actualizarBordeResumen(colorBorde);
@@ -147,12 +148,12 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
         if (vencenEsteMes.length > 0) partes.push(html`<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Vencen este mes</div>${vencenEsteMes.map(renderFila)}</div>`);
         if (pagadasOtroMes.length > 0) partes.push(html`<div class="info-resumen-grupo"><div class="info-resumen-grupo-titulo">Pagadas este mes (otro vencimiento)</div>${pagadasOtroMes.map(renderFilaOtroMes)}</div>`);
         if (partes.length === 0) partes.push(html`<div class="text-center-muted">Sin movimientos este mes</div>`);
-        montar(document.getElementById('modal-info-resumen-body'), html`${partes}`);
+        montar($('modal-info-resumen-body'), html`${partes}`);
         this.app.ui.abrirModal('modal-info-resumen');
     }
 
     toggleResumen() {
-        const resumenActual = document.getElementById('resumen-toggle');
+        const resumenActual = $('resumen-toggle');
         const estaBlureado = resumenActual?.classList.contains('resumen-blur');
         if (!this.app.resumenDesblurado && estaBlureado) {
             this.app.resumenDesblurado = true;
@@ -166,29 +167,29 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
 
     // ── Estadísticas anuales ──────────────────────────────────
     actualizarEstadisticasAnuales() {
-        const cont = document.getElementById('estadisticas-anual-container');
+        const cont = $('estadisticas-anual-container');
         if (!cont) return;
         const anios = ResumenAnual.aniosDisponibles(this.servicios);
         const anio = anios.includes(this._anioAnual) ? this._anioAnual : anios[0];
         this._anioAnual = anio;
 
-        if (!document.getElementById('select-anio-estadisticas')) {
+        if (!$('select-anio-estadisticas')) {
             montar(cont, html`
 <div class="calculador-campo"><label class="calculador-label">Año</label>
 <div class="custom-select-wrapper" id="select-anio-estadisticas-csd"><div class="custom-select-trigger"><span class="csd-label"></span><svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div><div class="custom-select-dropdown"></div></div>
 <select id="select-anio-estadisticas" class="select-mes-oculto"></select></div>
 <div class="estadisticas-lista" id="estadisticas-anual-lista"></div>`);
-            const select = document.getElementById('select-anio-estadisticas');
-            const wrapper = document.getElementById('select-anio-estadisticas-csd');
+            const select = $('select-anio-estadisticas');
+            const wrapper = $('select-anio-estadisticas-csd');
             wrapper._customSelect = new CustomSelect(wrapper, select, () => {
                 this._anioAnual = Number(select.value);
                 this.actualizarEstadisticasAnuales();
             });
         }
-        const select = document.getElementById('select-anio-estadisticas');
+        const select = $('select-anio-estadisticas');
         montar(select, html`${anios.map(a => html`<option value="${a}" ${a === anio ? 'selected' : ''}>${a}</option>`)}`);
         select.value = String(anio);
-        document.getElementById('select-anio-estadisticas-csd')._customSelect.refresh();
+        $('select-anio-estadisticas-csd')._customSelect.refresh();
 
         const r = ResumenAnual.calcular(this.servicios, anio);
         const fmt = (m, mon) => this.app.utils.formatearMoneda(m, mon);
@@ -227,7 +228,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
             <span class="anual-monto">${fmt(c[medida], medida)}</span>
         </div>`)}
     </div>` : ''}`;
-        const lista = document.getElementById('estadisticas-anual-lista');
+        const lista = $('estadisticas-anual-lista');
         montar(lista, r.facturas === 0 ? html`<span class="text-center-muted d-block sin-facturas-text">Sin facturas en ${anio}</span>` : filas);
         // La CSP no admite style en línea: el ancho de cada barra se asigna por JS (CSSOM)
         lista.querySelectorAll('.anual-barra').forEach(b => b.style.setProperty('--barra-w', `${b.dataset.pct}%`));
@@ -238,7 +239,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
         if (this.app.tipoEstadisticaActual === 'anual') { this.actualizarEstadisticasAnuales(); return; }
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
         const mesActual = hoy.getMonth(), añoActual = hoy.getFullYear();
-        const selectMes = document.getElementById('select-mes-estadisticas');
+        const selectMes = $('select-mes-estadisticas');
         let mesSeleccionado, añoSeleccionado;
         const yaExisteSelector = !!selectMes;
         if (selectMes?.value) {
@@ -289,26 +290,26 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
 
         const hayDatos = this.servicios.length > 0 && this.servicios.some(s => s.facturas?.length > 0);
         if (!yaExisteSelector || !hayDatos) {
-            montar(document.getElementById('estadisticas-mensual-container'), html`
+            montar($('estadisticas-mensual-container'), html`
 <div class="calculador-campo"><label class="calculador-label">Mes</label>
 <div class="custom-select-wrapper" id="select-mes-estadisticas-csd"><div class="custom-select-trigger"><span class="csd-label"></span><svg class="csd-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div><div class="custom-select-dropdown"></div></div>
 <select id="select-mes-estadisticas" class="select-mes-oculto"></select></div>
 <div id="estadisticas-categorias-tags"></div><div class="estadisticas-lista"></div>`);
-            const select = document.getElementById('select-mes-estadisticas');
+            const select = $('select-mes-estadisticas');
             montar(select, this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado));
-            const wrapper = document.getElementById('select-mes-estadisticas-csd');
+            const wrapper = $('select-mes-estadisticas-csd');
             const cs = new CustomSelect(wrapper, select, () => this.actualizarEstadisticas());
             wrapper._customSelect = cs;
             this._renderTagsCategoriaEstadisticas();
             renderizarContenido();
             this.app.ultimoEstadoEstadisticas = estadoActual;
         } else {
-            const selectActual = document.getElementById('select-mes-estadisticas');
+            const selectActual = $('select-mes-estadisticas');
             if (selectActual) {
                 const valorActual = selectActual.value;
                 montar(selectActual, this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado));
                 if (Array.from(selectActual.options).some(opt => opt.value === valorActual)) selectActual.value = valorActual;
-                const csd = document.getElementById('select-mes-estadisticas-csd');
+                const csd = $('select-mes-estadisticas-csd');
                 if (csd?._customSelect) csd._customSelect.refresh();
             }
             this._renderTagsCategoriaEstadisticas();
@@ -318,7 +319,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
     }
 
     _renderTagsCategoriaEstadisticas() {
-        const container = document.getElementById('estadisticas-categorias-tags');
+        const container = $('estadisticas-categorias-tags');
         if (!container) return;
         const cats = this.app.categoria.getCategorias();
         const catsUsadas = cats.filter(c => this.servicios.some(s => s.id !== this.app.SERVICIO_INGRESOS_ID && s.categoria === c));
@@ -337,15 +338,15 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
     }
 
     toggleEstadisticas() {
-        const content = document.getElementById('estadisticas-content');
-        const chevron = document.getElementById('estadisticas-chevron');
+        const content = $('estadisticas-content');
+        const chevron = $('estadisticas-chevron');
         content.classList.toggle('collapsed');
         chevron.classList.toggle('collapsed');
         const estaColapsado = content.classList.contains('collapsed');
         StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_COLAPSADAS, estaColapsado);
         if (!estaColapsado) {
-            document.getElementById('estadisticas-tipo').value = this.app.tipoEstadisticaActual;
-            const csdEstTipo = document.getElementById('estadisticas-tipo-csd');
+            $('estadisticas-tipo').value = this.app.tipoEstadisticaActual;
+            const csdEstTipo = $('estadisticas-tipo-csd');
             if (csdEstTipo?._customSelect) csdEstTipo._customSelect.refresh();
             this.cambiarTipoEstadistica();
         }
@@ -355,12 +356,12 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
         const tipo = this.app.tipoEstadisticaActual;
         const contenedores = { mensual: 'estadisticas-mensual-container', individual: 'estadisticas-individual-container', anual: 'estadisticas-anual-container' };
         Object.entries(contenedores).forEach(([clave, id]) => {
-            const el = document.getElementById(id);
+            const el = $(id);
             el.classList.toggle('visible', clave === tipo);
             el.classList.toggle('hidden', clave !== tipo);
         });
         // El reporte solo existe para el mes y para un servicio
-        document.getElementById('btn-reporte-estadisticas').classList.toggle('hidden', tipo === 'anual');
+        $('btn-reporte-estadisticas').classList.toggle('hidden', tipo === 'anual');
         if (tipo === 'mensual') this.actualizarEstadisticas();
         else if (tipo === 'anual') this.actualizarEstadisticasAnuales();
         else this.app.calculador.calcularPeriodo();
@@ -368,7 +369,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
 
     // ── Select servicios (calculador) ─────────────────────────
     actualizarSelectServicios() {
-        const select = document.getElementById('calculador-servicio');
+        const select = $('calculador-servicio');
         if (!select) return;
         const valorActual = select.value;
         const serviciosActivos = this.servicios
@@ -382,7 +383,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
             opciones.push(html`<option value="${this.app.SERVICIO_INGRESOS_ID}" ${this.app.SERVICIO_INGRESOS_ID === valorActual ? 'selected' : ''}>Ingresos</option>`);
         }
         montar(select, html`${opciones}`);
-        const csd = document.getElementById('calculador-servicio-csd');
+        const csd = $('calculador-servicio-csd');
         if (csd?._customSelect) csd._customSelect.refresh();
         if (valorActual && !this.servicios.find(s => s.id === valorActual)) {
             select.value = ''; this.app.calculador.calcularPeriodo();
@@ -390,23 +391,23 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
     }
 
     inicializarCalculador() {
-        const selectServicio = document.getElementById('calculador-servicio');
+        const selectServicio = $('calculador-servicio');
         if (!selectServicio) return;
         this.actualizarSelectServicios();
-        const csdWrapper = document.getElementById('calculador-servicio-csd');
+        const csdWrapper = $('calculador-servicio-csd');
         if (csdWrapper && !csdWrapper._customSelect) {
             csdWrapper._customSelect = new CustomSelect(csdWrapper, selectServicio, () => this.app.calculador.calcularPeriodo());
         }
-        const inputDesde = document.getElementById('calculador-desde');
-        const inputHasta = document.getElementById('calculador-hasta');
+        const inputDesde = $('calculador-desde');
+        const inputHasta = $('calculador-hasta');
         selectServicio.addEventListener('change', () => this.app.calculador.calcularPeriodo());
         inputDesde.addEventListener('change', () => this.app.calculador.calcularPeriodo());
         inputHasta.addEventListener('change', () => this.app.calculador.calcularPeriodo());
-        document.getElementById('btn-calculador-desde-hoy').addEventListener('click', () => {
+        $('btn-calculador-desde-hoy').addEventListener('click', () => {
             inputDesde.value = inputDesde.value ? '' : this.app.utils.obtenerFechaLocal();
             this.app.calculador.calcularPeriodo();
         });
-        document.getElementById('btn-calculador-hasta-hoy').addEventListener('click', () => {
+        $('btn-calculador-hasta-hoy').addEventListener('click', () => {
             inputHasta.value = inputHasta.value ? '' : this.app.utils.obtenerFechaLocal();
             this.app.calculador.calcularPeriodo();
         });
@@ -435,7 +436,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
     }
 
     abrirDebugEstadisticas(tipo) {
-        const selectMes = document.getElementById('select-mes-estadisticas');
+        const selectMes = $('select-mes-estadisticas');
         let mesSeleccionado, añoSeleccionado;
         if (selectMes && selectMes.value) {
             const [año, mes] = selectMes.value.split('-');
@@ -459,7 +460,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
             'ingresos': 'Ingresos',
         };
 
-        document.getElementById('modal-debug-titulo').textContent = titulos[tipo] || 'Detalle';
+        $('modal-debug-titulo').textContent = titulos[tipo] || 'Detalle';
 
         let items = [];
 
@@ -522,7 +523,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
             });
         });
 
-        const lista = document.getElementById('modal-debug-lista');
+        const lista = $('modal-debug-lista');
         if (items.length === 0) {
             montar(lista, html`<span class="text-center-muted d-block sin-facturas-text">Sin facturas para mostrar</span>`);
         } else {

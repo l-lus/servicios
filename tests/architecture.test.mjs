@@ -371,6 +371,13 @@ test('Errores: los servicios no lanzan por errores esperados, devuelven resultad
     assert.equal(lanzamientos.length, 1);
 });
 
+test('DOM: la UI busca elementos con el helper $ de core/dom.js (sin document.getElementById ni $ redefinidos)', () => {
+    const violaciones = srcFiles
+        .filter(f => f.startsWith('src/ui/'))
+        .filter(f => /document\.getElementById\(|^\s*const \$ = /m.test(fs.readFileSync(f, 'utf8')));
+    assert.deepEqual(violaciones, []);
+});
+
 test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
     const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));

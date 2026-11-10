@@ -1,3 +1,4 @@
+import { $ } from '../core/dom.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS, CARDS, CORTES_LAYOUT } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
@@ -10,7 +11,6 @@ import { VistaPrevia, VENTANA_PERSONALIZAR_MS, AVISO_PERSONALIZAR_MS } from './v
 // ============================================================
 // DISPOSICIÓN DE TARJETAS — visibilidad, columnas orgánicas en PC y orden propio en el celular
 // ============================================================
-const $ = id => document.getElementById(id);
 
 const consultaEscritorio = window.matchMedia(CORTES_LAYOUT.ESCRITORIO);
 const consultaAncho = window.matchMedia(CORTES_LAYOUT.ANCHO);

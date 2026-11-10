@@ -12,6 +12,7 @@ import { ModalManager } from './gestor-modales.js';
 import { TarjetaFondos } from './tarjeta-fondos.js';
 import { ToastManager } from './toast.js';
 import { VistaPrevia } from './vista-previa.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // UI MANAGER — modales, menús, tema, blur, toast, dólar
@@ -29,7 +30,7 @@ export class UIManager {
         this.app.blurHabilitado = !this.app.blurHabilitado;
         StorageHelper.setItem(STORAGE_KEYS.BLUR_MONTOS, this.app.blurHabilitado.toString());
         this.actualizarIndicadoresConfig();
-        const el = document.getElementById('resumen-toggle');
+        const el = $('resumen-toggle');
         if (!this.app.blurHabilitado) {
             this.app.resumenDesblurado = true;
             if (el) el.classList.remove('resumen-blur');
@@ -43,7 +44,7 @@ export class UIManager {
     // ── Animaciones ───────────────────────────────────────────
     toggleAnimaciones() {
         Motion.siguienteModo();
-        const indicator = document.getElementById('animaciones-indicator');
+        const indicator = $('animaciones-indicator');
         if (indicator) indicator.textContent = Motion.etiqueta();
         const msg = { auto: 'Animaciones según el sistema', on: 'Animaciones reducidas', off: 'Animaciones completas' };
         this.mostrarToast(msg[Motion.modo()], 'success');
@@ -65,9 +66,9 @@ export class UIManager {
     }
 
     actualizarIndicadoresConfig() {
-        const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+        const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
         const setToggle = (id, activo) => {
-            const btn = document.getElementById(id);
+            const btn = $(id);
             if (!btn) return;
             btn.classList.toggle('btn-activo', Boolean(activo));
             btn.setAttribute('aria-pressed', String(Boolean(activo)));
@@ -181,7 +182,7 @@ export class UIManager {
             this.mostrarToast(`Registro de ingresos ${nuevoEstado ? 'habilitado' : 'deshabilitado'}`, 'success');
         }
         this.app.estadisticas.actualizarSelectServicios();
-        const selectServicio = document.getElementById('calculador-servicio');
+        const selectServicio = $('calculador-servicio');
         if (!nuevoEstado && selectServicio?.value === this.app.SERVICIO_INGRESOS_ID) {
             selectServicio.value = '';
             this.app.calculador.calcularPeriodo();
@@ -215,25 +216,25 @@ export class UIManager {
 
     abrirAyuda() {
         AyudaBuscador.limpiar();
-        const padre = ['modal-config', 'modal-selector-perfiles'].find(id => document.getElementById(id)?.classList.contains('show'));
+        const padre = ['modal-config', 'modal-selector-perfiles'].find(id => $(id)?.classList.contains('show'));
         if (padre) ModalManager.alternar(padre, 'modal-ayuda');
         else ModalManager.abrir('modal-ayuda');
     }
 
     // ── Menú agregar ──────────────────────────────────────────
     toggleMenuAgregar() {
-        const menu = document.getElementById('menu-agregar');
+        const menu = $('menu-agregar');
         if (menu.classList.contains('active') || menu.classList.contains('show')) {
             this.cerrarMenuAgregar();
             return;
         }
-        document.getElementById('menu-agregar-overlay')?.classList.add('active');
+        $('menu-agregar-overlay')?.classList.add('active');
         ModalManager.abrir('menu-agregar');
     }
 
     cerrarMenuAgregar() {
-        const menu = document.getElementById('menu-agregar');
-        const overlay = document.getElementById('menu-agregar-overlay');
+        const menu = $('menu-agregar');
+        const overlay = $('menu-agregar-overlay');
         const estabaAbierto = menu && (menu.classList.contains('active') || menu.classList.contains('show'));
         if (!estabaAbierto) return;
 
@@ -243,8 +244,8 @@ export class UIManager {
     }
 
     _resetVistaMenuAgregar() {
-        document.getElementById('menu-vista-principal')?.classList.remove('hidden-vista');
-        const vistaCalc = document.getElementById('menu-vista-calcular');
+        $('menu-vista-principal')?.classList.remove('hidden-vista');
+        const vistaCalc = $('menu-vista-calcular');
         if (vistaCalc) {
             vistaCalc.classList.remove('visible-vista');
             vistaCalc.classList.add('hidden-vista');
@@ -252,7 +253,7 @@ export class UIManager {
     }
 
     actualizarMenuAgregar() {
-        const btnRecibo = document.getElementById('menu-agregar-recibo');
+        const btnRecibo = $('menu-agregar-recibo');
         if (btnRecibo) btnRecibo.classList.toggle('visible', this.ingresosHabilitado());
     }
 
@@ -279,14 +280,14 @@ export class UIManager {
             const fmt = v => v != null
                 ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 : '-';
-            const elOficial = document.getElementById('dolar-oficial');
-            const elMep = document.getElementById('dolar-mep');
-            const elHora = document.getElementById('dolar-hora');
+            const elOficial = $('dolar-oficial');
+            const elMep = $('dolar-mep');
+            const elHora = $('dolar-hora');
             if (elOficial) elOficial.textContent = oficial ? fmt(oficial.venta) : '-';
             if (elMep) elMep.textContent = mep ? fmt(mep.venta) : '-';
             if (elHora) elHora.textContent = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
         } catch {
-            const elHora = document.getElementById('dolar-hora');
+            const elHora = $('dolar-hora');
             if (elHora) elHora.textContent = 'sin conexión';
         }
     }
@@ -302,7 +303,7 @@ export class UIManager {
 
     volverDesdeModalActivo() {
         // 1. Context menu abierto tiene prioridad máxima
-        const ctxMenu = document.getElementById('ctx-menu-servicio');
+        const ctxMenu = $('ctx-menu-servicio');
         if (ctxMenu && (ctxMenu.classList.contains('active') || ctxMenu.classList.contains('show'))) {
             ModalManager.ejecutarAccionCierre('ctx-menu-servicio');
             return;
@@ -317,7 +318,7 @@ export class UIManager {
         }
 
         // 3. Paneles laterales
-        const menuAgregar = document.getElementById('menu-agregar');
+        const menuAgregar = $('menu-agregar');
         if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
             ModalManager.ejecutarAccionCierre('menu-agregar');
             return;

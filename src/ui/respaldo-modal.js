@@ -1,10 +1,10 @@
+import { $ } from '../core/dom.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { EstadoApp } from '../services/estado-app.js';
 
 // ============================================================
 // RESPALDO — modal para exportar todo, un mes o un rango de fechas
 // ============================================================
-const $ = id => document.getElementById(id);
 
 export class RespaldoModal {
     constructor(app) {

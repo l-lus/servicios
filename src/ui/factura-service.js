@@ -2,6 +2,7 @@ import { restaFechas } from '../core/fechas.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // FACTURA SERVICE — ciclo de vida de facturas
@@ -82,12 +83,12 @@ export class FacturaService {
     abrirModalLista(servicioId, { resaltar = null } = {}) {
         const servicio = this.servicios.find(s => s.id === servicioId);
         if (!servicio) return;
-        const lista     = document.getElementById('lista-facturas-modal');
-        const titulo    = document.getElementById('modal-facturas-titulo');
-        const btnBorrar = document.getElementById('btn-borrar-facturas-servicio');
+        const lista     = $('lista-facturas-modal');
+        const titulo    = $('modal-facturas-titulo');
+        const btnBorrar = $('btn-borrar-facturas-servicio');
         titulo.textContent = servicio.nombre;
         this.app.servicioActual = servicioId;
-        document.getElementById('modal-facturas-servicio').dataset.servicioId = servicioId;
+        $('modal-facturas-servicio').dataset.servicioId = servicioId;
         if (btnBorrar) btnBorrar.style.display = servicio.facturas.length > 0 ? '' : 'none';
         if (servicio.facturas.length === 0) {
             montar(lista, html`<div class="empty-state"><p>No hay facturas registradas</p></div>`);
@@ -148,71 +149,71 @@ export class FacturaService {
             this.app.origenModalFactura = origen;
             
             // Quitamos Math.abs para que muestre el signo -
-            document.getElementById(ids.monto).value = factura.monto; 
-            document.getElementById(ids.tipo).value  = factura.tipo || 'mensual';
-            document.getElementById(ids.fecha).value = factura.fecha;
+            $(ids.monto).value = factura.monto; 
+            $(ids.tipo).value  = factura.tipo || 'mensual';
+            $(ids.fecha).value = factura.fecha;
             this.app.utils.setMonedaBtn(ids.moneda, ids.btnMoneda, factura.moneda || 'ars');
             
-            const btnNeg = document.getElementById(ids.btnNegativo);
-            const inputMonto = document.getElementById(ids.monto);
+            const btnNeg = $(ids.btnNegativo);
+            const inputMonto = $(ids.monto);
             if (btnNeg) {
                 const esNeg = factura.monto < 0;
                 btnNeg.classList.toggle('activo', esNeg);
                 if (inputMonto) inputMonto.dataset.negativo = esNeg ? 'true' : 'false';
             }
             
-            const btnPagada = document.getElementById(ids.btnPagada);
+            const btnPagada = $(ids.btnPagada);
             if (factura.pagada || factura.conCredito) {
                 btnPagada.classList.add('pagada');
                 btnPagada.querySelector('use')?.setAttribute('href', '#icon-cancel');
-                const fpInput = document.getElementById(ids.fechaPago);
+                const fpInput = $(ids.fechaPago);
                 fpInput.disabled = false; fpInput.value = factura.fechaPago || '';
-                const btnCred = document.getElementById(ids.btnCredito);
+                const btnCred = $(ids.btnCredito);
                 if (btnCred) btnCred.classList.add('btn-credito-visible');
                 if (factura.conCredito) {
-                    document.getElementById(ids.conCredito).value = 'true';
+                    $(ids.conCredito).value = 'true';
                     if (btnCred) { btnCred.classList.add('pagada'); btnCred.querySelector('use')?.setAttribute('href', '#icon-card'); }
                 } else {
-                    document.getElementById(ids.conCredito).value = 'false';
+                    $(ids.conCredito).value = 'false';
                     this._resetBtnCredito(btnCred);
                 }
             } else {
                 btnPagada.classList.remove('pagada');
                 btnPagada.querySelector('use')?.setAttribute('href', '#icon-card');
-                document.getElementById(ids.fechaPago).disabled = true;
-                document.getElementById(ids.fechaPago).value = '';
-                const btnCred = document.getElementById(ids.btnCredito);
-                const inputCred = document.getElementById(ids.conCredito);
+                $(ids.fechaPago).disabled = true;
+                $(ids.fechaPago).value = '';
+                const btnCred = $(ids.btnCredito);
+                const inputCred = $(ids.conCredito);
                 if (inputCred) inputCred.value = 'false';
                 if (btnCred) btnCred.classList.remove('btn-credito-visible');
                 this._resetBtnCredito(btnCred);
             }
             // Poblar select de servicios en modal editar
-            const selEdit = document.getElementById(ids.servicio);
+            const selEdit = $(ids.servicio);
             if (selEdit) montar(selEdit, optsHTML);
             // Refrescar CustomSelects del modal editar-factura
-            const csdSvcEdit = document.getElementById('editar-factura-servicio-csd');
+            const csdSvcEdit = $('editar-factura-servicio-csd');
             if (csdSvcEdit?._customSelect) csdSvcEdit._customSelect.refresh();
-            const csdTipoEdit = document.getElementById('editar-factura-tipo-csd');
+            const csdTipoEdit = $('editar-factura-tipo-csd');
             if (csdTipoEdit?._customSelect) csdTipoEdit._customSelect.refresh();
             this.app.ui.abrirModal('modal-editar-factura');
         } else {
             // Poblar select ANTES de reset para que reset no lo borre
-            const selectSvc = document.getElementById('factura-servicio');
+            const selectSvc = $('factura-servicio');
             if (selectSvc) montar(selectSvc, optsHTML);
-            document.getElementById('form-factura').reset();
+            $('form-factura').reset();
             // Restaurar valores que reset borró
             if (selectSvc) montar(selectSvc, optsHTML);
             this.app.utils.setMonedaBtn('factura-moneda', 'btn-factura-moneda', 'ars');
-            document.getElementById('factura-fecha').value = this.app.utils.obtenerFechaLocal();
-            document.getElementById('btn-toggle-pagada').classList.remove('pagada');
-            document.getElementById('factura-fecha-pago').disabled = true;
-            document.getElementById('factura-fecha-pago').value = '';
-            this._resetBtnCredito(document.getElementById('btn-toggle-credito'));
+            $('factura-fecha').value = this.app.utils.obtenerFechaLocal();
+            $('btn-toggle-pagada').classList.remove('pagada');
+            $('factura-fecha-pago').disabled = true;
+            $('factura-fecha-pago').value = '';
+            this._resetBtnCredito($('btn-toggle-credito'));
             // Refrescar CustomSelects del modal nueva factura
-            const csdSvcNueva = document.getElementById('factura-servicio-csd');
+            const csdSvcNueva = $('factura-servicio-csd');
             if (csdSvcNueva?._customSelect) csdSvcNueva._customSelect.refresh();
-            const csdTipoNueva = document.getElementById('factura-tipo-csd');
+            const csdTipoNueva = $('factura-tipo-csd');
             if (csdTipoNueva?._customSelect) csdTipoNueva._customSelect.refresh();
             this.app.origenModalFactura = origen;
             if (origen === 'menu') this.app.ui.cerrarMenuAgregar();
@@ -230,8 +231,8 @@ export class FacturaService {
     toggleConCredito(modo = '') {
         const esEditar = modo === 'editar';
         const ids   = this.app.utils.idsFormFactura(esEditar);
-        const btn   = document.getElementById(ids.btnCredito);
-        const input = document.getElementById(ids.conCredito);
+        const btn   = $(ids.btnCredito);
+        const input = $(ids.conCredito);
         const use   = btn.querySelector('use');
         const esCredito = input.value === 'true';
         if (esCredito) {
@@ -246,13 +247,13 @@ export class FacturaService {
     }
 
     toggleEstadoPago(btnId = 'btn-toggle-pagada', inputId = 'factura-fecha-pago') {
-        const btn        = document.getElementById(btnId);
-        const fpInput    = document.getElementById(inputId);
+        const btn        = $(btnId);
+        const fpInput    = $(inputId);
         const use        = btn.querySelector('use');
         const estaPagada = btn.classList.contains('pagada');
         const esEditar   = btnId === 'btn-editar-toggle-pagada';
-        const btnCred    = document.getElementById(esEditar ? 'btn-editar-toggle-credito'  : 'btn-toggle-credito');
-        const inputCred  = document.getElementById(esEditar ? 'editar-factura-con-credito' : 'factura-con-credito');
+        const btnCred    = $(esEditar ? 'btn-editar-toggle-credito'  : 'btn-toggle-credito');
+        const inputCred  = $(esEditar ? 'editar-factura-con-credito' : 'factura-con-credito');
         if (estaPagada) {
             btn.classList.remove('pagada'); fpInput.disabled = true; fpInput.value = '';
             use.setAttribute('href', '#icon-card');
@@ -270,9 +271,9 @@ export class FacturaService {
     }
 
     toggleMontoNegativo(inputId) {
-        const input = document.getElementById(inputId);
+        const input = $(inputId);
         const btnId = inputId === 'factura-monto' ? 'btn-toggle-negativo' : 'btn-editar-toggle-negativo';
-        const btn   = document.getElementById(btnId);
+        const btn   = $(btnId);
         if (!input || !btn) return;
         
         const nuevoNegativo = input.dataset.negativo !== 'true';
@@ -288,27 +289,27 @@ export class FacturaService {
 
     establecerFechaHoy(tipo = 'factura', modo = 'agregar') {
         const id    = modo === 'editar' ? `editar-${tipo}-fecha` : `${tipo}-fecha`;
-        const input = document.getElementById(id);
+        const input = $(id);
         if (input) input.value = input.value ? '' : this.app.utils.obtenerFechaLocal();
     }
 
     // ── Guardar ───────────────────────────────────────────────
     guardar(e) {
         e.preventDefault();
-        const esEditar   = document.getElementById('modal-editar-factura').classList.contains('active');
+        const esEditar   = $('modal-editar-factura').classList.contains('active');
         const ids        = this.app.utils.idsFormFactura(esEditar);
-        const montoRaw   = parseFloat(document.getElementById(ids.monto).value);
-        const tipo       = document.getElementById(ids.tipo).value;
-        const fecha      = document.getElementById(ids.fecha).value;
-        const moneda     = document.getElementById(ids.moneda).value;
-        const btnPagada  = document.getElementById(ids.btnPagada);
+        const montoRaw   = parseFloat($(ids.monto).value);
+        const tipo       = $(ids.tipo).value;
+        const fecha      = $(ids.fecha).value;
+        const moneda     = $(ids.moneda).value;
+        const btnPagada  = $(ids.btnPagada);
         const estaPagada = btnPagada.classList.contains('pagada');
-        const fechaPago  = estaPagada ? document.getElementById(ids.fechaPago).value : null;
-        const conCredito = estaPagada ? (document.getElementById(ids.conCredito)?.value === 'true') : false;
-        const btnNeg     = document.getElementById(ids.btnNegativo);
-        const esNegativo = btnNeg?.classList.contains('activo') || document.getElementById(ids.monto).dataset.negativo === 'true';
+        const fechaPago  = estaPagada ? $(ids.fechaPago).value : null;
+        const conCredito = estaPagada ? ($(ids.conCredito)?.value === 'true') : false;
+        const btnNeg     = $(ids.btnNegativo);
+        const esNegativo = btnNeg?.classList.contains('activo') || $(ids.monto).dataset.negativo === 'true';
         const monto      = esNegativo ? -Math.abs(montoRaw) : Math.abs(montoRaw);
-        const servicioSelId = document.getElementById(ids.servicio)?.value || this.app.servicioActual;
+        const servicioSelId = $(ids.servicio)?.value || this.app.servicioActual;
 
         if (!this.validarMonto(montoRaw, true)) return;
         if (!this.validarFecha(fecha)) return;

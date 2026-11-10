@@ -3,6 +3,7 @@ import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // CATEGORIA SERVICE — CRUD de categorías de servicios
@@ -23,7 +24,7 @@ export class CategoriaService {
 
     // ── Selects ───────────────────────────────────────────────
     poblarSelect(selectId, valorSeleccionado = '') {
-        const sel = document.getElementById(selectId);
+        const sel = $(selectId);
         if (!sel) return;
         const cats = this.getCategorias();
         montar(sel, html`<option value="">Sin categoría</option>`);
@@ -35,7 +36,7 @@ export class CategoriaService {
             sel.appendChild(opt);
         });
         // Refrescar CustomSelect si existe
-        const csdWrapper = document.getElementById(selectId + '-csd');
+        const csdWrapper = $(selectId + '-csd');
         if (csdWrapper?._customSelect) csdWrapper._customSelect.refresh();
     }
 
@@ -46,7 +47,7 @@ export class CategoriaService {
         const origen = document.querySelector('.modal.active')?.id || null;
         this.app._modalServicioOrigen = origen === 'modal-config' ? null : origen;
         if (this.app._modalServicioOrigen) this.app.ui.cerrarModal(this.app._modalServicioOrigen);
-        document.getElementById('nueva-categoria-nombre').value = '';
+        $('nueva-categoria-nombre').value = '';
         this.renderLista();
         this.app.ui.abrirModal('modal-nueva-categoria');
     }
@@ -61,7 +62,7 @@ export class CategoriaService {
 
     // ── Render lista ──────────────────────────────────────────
     renderLista() {
-        const lista = document.getElementById('categorias-lista');
+        const lista = $('categorias-lista');
         if (!lista) return;
         const cats = this.getCategorias();
         if (cats.length === 0) {
@@ -93,7 +94,7 @@ export class CategoriaService {
 
     guardarNueva() {
         // Mismo saneamiento que las categorías importadas (ver StorageService._normalizarCategorias)
-        const nombre = SecurityAndUtils.sanitizeString(document.getElementById('nueva-categoria-nombre').value,
+        const nombre = SecurityAndUtils.sanitizeString($('nueva-categoria-nombre').value,
             SecurityAndUtils.SECURITY_LIMITS.MAX_NOMBRE_LENGTH);
         if (!nombre) { this.app.mostrarToast('El nombre es requerido', 'error'); return; }
         const cats = this.getCategorias();
@@ -103,16 +104,16 @@ export class CategoriaService {
         cats.push(nombre);
         cats.sort((a, b) => a.localeCompare(b));
         this.saveCategorias(cats);
-        document.getElementById('nueva-categoria-nombre').value = '';
+        $('nueva-categoria-nombre').value = '';
         this.poblarSelect('servicio-categoria',
             this.app._categoriaTargetSelect === 'servicio-categoria' ? nombre : '');
         this.poblarSelect('editar-servicio-categoria',
             this.app._categoriaTargetSelect === 'editar-servicio-categoria' ? nombre : '');
-        const sel = document.getElementById(this.app._categoriaTargetSelect);
+        const sel = $(this.app._categoriaTargetSelect);
         if (sel) {
             sel.value = nombre;
             // Refrescar el CSD del selector target (refleja la selección nueva)
-            const csdTarget = document.getElementById(this.app._categoriaTargetSelect + '-csd');
+            const csdTarget = $(this.app._categoriaTargetSelect + '-csd');
             if (csdTarget?._customSelect) csdTarget._customSelect.refresh();
         }
         this.app.guardarEstado(`agregar categoría (${nombre})`);

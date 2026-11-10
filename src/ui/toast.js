@@ -1,5 +1,6 @@
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { registrarSwipe } from './gestos.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // TOAST MANAGER (Cola, deduplicación, velocidad dinámica, swipe)
@@ -49,7 +50,7 @@ export const ToastManager = (function () {
 
         _toastRunning = true;
         const actual = _toastQueue.shift();
-        const toast = document.getElementById('toast');
+        const toast = $('toast');
         if (!toast) return;
 
         toast.classList.remove('show');
@@ -99,7 +100,7 @@ export const ToastManager = (function () {
     }
 
     function _pintarProgreso() {
-        const toast = document.getElementById('toast');
+        const toast = $('toast');
         if (!toast || !_progreso) return;
         const texto = toast.querySelector('.toast-texto');
         const barra = /** @type {HTMLProgressElement | null} */ (toast.querySelector('.toast-progreso'));
@@ -109,7 +110,7 @@ export const ToastManager = (function () {
     }
 
     function _mostrarProgreso() {
-        const toast = document.getElementById('toast');
+        const toast = $('toast');
         if (!toast || !_progreso) return;
         _toastRunning = true;
         _progresoVisible = true;
@@ -132,7 +133,7 @@ export const ToastManager = (function () {
     function _ocultarProgreso() {
         clearTimeout(_timerProgreso);
         _progresoVisible = false;
-        document.getElementById('toast')?.classList.remove('show');
+        $('toast')?.classList.remove('show');
     }
 
     function _descartarProgreso() {
@@ -168,14 +169,14 @@ export const ToastManager = (function () {
         if (_progresoVisible) return;
         if (_toastTimeout) { clearTimeout(_toastTimeout); _toastTimeout = null; }
         _toastAccionActual = null;
-        const toast = document.getElementById('toast');
+        const toast = $('toast');
         if (!toast || !toast.classList.contains('show')) return;
         toast.classList.remove('show');
         setTimeout(() => _procesarToastQueue(), 350);
     }
 
     function _habilitarCierreToast() {
-        const toast = document.getElementById('toast');
+        const toast = $('toast');
         if (!toast || toast.dataset.cierreInit) return;
         toast.dataset.cierreInit = '1';
         toast.addEventListener('click', () => {

@@ -3,6 +3,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { html, montar } from '../core/html.js';
 import { TEMAS, etiquetaTema, normalizarTema } from '../core/temas.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // GESTOR DE TEMAS — aplica el tema, sincroniza la barra del sistema y dibuja el selector
@@ -32,7 +33,7 @@ function aplicarTema(tema) {
     raiz.classList.toggle('dark-mode', _actual === 'dark');
     if (_actual === 'light' || _actual === 'dark') raiz.removeAttribute('data-theme');
     else raiz.setAttribute('data-theme', _actual);
-    const indicador = document.getElementById('tema-indicator');
+    const indicador = $('tema-indicator');
     if (indicador) indicador.textContent = etiquetaTema(_actual);
     document.querySelectorAll('.tema-opcion').forEach(b => {
         b.setAttribute('aria-pressed', String(b.dataset.tema === _actual));
@@ -56,7 +57,7 @@ function siguienteTema() {
 
 /** Dibuja las muestras del selector (una por tema). */
 function renderSelector(idLista = 'bienvenida-temas') {
-    const lista = document.getElementById(idLista);
+    const lista = $(idLista);
     if (!lista) return;
     montar(lista, html`${TEMAS.map(t => html`
         <button type="button" class="tema-opcion" data-tema="${t.id}" aria-pressed="${t.id === _actual}">

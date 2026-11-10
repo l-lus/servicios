@@ -2,6 +2,7 @@ import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { Calculadora } from '../services/calculadora.js';
 import { Anim } from './animaciones.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // CALCULADOR SERVICE — modo calculadora flotante + calculador
@@ -24,11 +25,11 @@ export class CalculadorService {
     activarModo(silencioso = false) {
         this.modoActivo = true;
         this.seleccionados.clear();
-        document.getElementById('btn-agregar-servicio').classList.add('modo-calculadora');
+        $('btn-agregar-servicio').classList.add('modo-calculadora');
         this.actualizar();
         this.app.vista.renderServicios();
         if (!silencioso) {
-            const flotante = document.getElementById('calculadora-flotante');
+            const flotante = $('calculadora-flotante');
             flotante.classList.add('visible');
             flotante.onclick = () => {
                 const arsVal = this.app._calcTotalARS ?? 0;
@@ -37,7 +38,7 @@ export class CalculadorService {
                 let texto = fmt(arsVal);
                 if (usdVal > 0) texto += ` / ${fmt(usdVal)}`;
                 navigator.clipboard.writeText(texto).then(() => {
-                    const contador = document.getElementById('calculadora-contador');
+                    const contador = $('calculadora-contador');
                     const original = contador.textContent;
                     contador.textContent = '✓ Copiado';
                     setTimeout(() => { contador.textContent = original; }, 1200);
@@ -50,10 +51,10 @@ export class CalculadorService {
         this.modoActivo = false;
         this.tipo = 'pendientes';
         this.seleccionados.clear();
-        document.getElementById('btn-agregar-servicio').classList.remove('modo-calculadora');
+        $('btn-agregar-servicio').classList.remove('modo-calculadora');
         this.actualizar();
         this.app.vista.renderServicios();
-        document.getElementById('calculadora-flotante').classList.remove('visible');
+        $('calculadora-flotante').classList.remove('visible');
         if (!silencioso) this.app.ui.mostrarToast('Calculadora Desactivada', 'info');
     }
 
@@ -74,20 +75,20 @@ export class CalculadorService {
         const { totalARS, totalUSD, cantidad: contadorFacturas } = Calculadora.totalSeleccion(this.servicios, this.seleccionados, this.tipo);
         this.app._calcTotalARS = totalARS;
         this.app._calcTotalUSD = totalUSD;
-        document.getElementById('calculadora-total').textContent = this.app.utils.formatearMoneda(totalARS, 'ars');
-        const elUSD = document.getElementById('calculadora-total-usd');
+        $('calculadora-total').textContent = this.app.utils.formatearMoneda(totalARS, 'ars');
+        const elUSD = $('calculadora-total-usd');
         if (totalUSD > 0) { elUSD.textContent = this.app.utils.formatearMoneda(totalUSD, 'usd'); elUSD.classList.add('visible'); }
         else { elUSD.classList.remove('visible'); }
-        document.getElementById('calculadora-contador').textContent =
+        $('calculadora-contador').textContent =
             `${contadorFacturas} ${contadorFacturas === 1 ? 'factura' : 'facturas'}`;
     }
 
     // ── Calculador de período ─────────────────────────────────
     calcularPeriodo() {
-        const selectServicio = document.getElementById('calculador-servicio');
-        const inputDesde = document.getElementById('calculador-desde');
-        const inputHasta = document.getElementById('calculador-hasta');
-        const resultadosContainer = document.getElementById('calculador-resultados');
+        const selectServicio = $('calculador-servicio');
+        const inputDesde = $('calculador-desde');
+        const inputHasta = $('calculador-hasta');
+        const resultadosContainer = $('calculador-resultados');
         if (!selectServicio || !inputDesde || !inputHasta || !resultadosContainer) return;
 
         const servicioId = selectServicio.value;

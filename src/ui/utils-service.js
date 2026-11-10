@@ -2,6 +2,7 @@ import { parseDate, fechaLocalISO } from '../core/fechas.js';
 import { formatearMoneda, formatearFecha, plural } from '../core/formato.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { Anim } from './animaciones.js';
+import { $ } from '../core/dom.js';
 
 // ============================================================
 // UTILS SERVICE — helpers puros, formateo, DOM liviano
@@ -86,8 +87,8 @@ export class UtilsService {
     }
 
     setMonedaBtn(hiddenId, btnId, moneda) {
-        const hidden = document.getElementById(hiddenId);
-        const btn = document.getElementById(btnId);
+        const hidden = $(hiddenId);
+        const btn = $(btnId);
         if (!hidden || !btn) return;
         const m = (moneda || 'ars').toLowerCase();
         hidden.value = m;
@@ -102,8 +103,8 @@ export class UtilsService {
     }
 
     limpiarBusqueda() {
-        const searchInput = document.getElementById('search-input');
-        const searchClear = document.getElementById('search-clear');
+        const searchInput = $('search-input');
+        const searchClear = $('search-clear');
         if (!searchInput) return;
         // Que un filtrado pendiente no reaplique el término viejo
         this.app._busquedaDebounced?.cancel();
@@ -119,8 +120,8 @@ export class UtilsService {
     }
 
     toggleMoneda(hiddenId, btnId) {
-        const hidden = document.getElementById(hiddenId);
-        const btn = document.getElementById(btnId);
+        const hidden = $(hiddenId);
+        const btn = $(btnId);
         if (!hidden || !btn) return;
         const nuevo = hidden.value === 'ars' ? 'usd' : 'ars';
         hidden.value = nuevo;

@@ -1,3 +1,4 @@
+import { $ } from '../core/dom.js';
 import { html, montar } from '../core/html.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { ModalManager } from './gestor-modales.js';
@@ -10,7 +11,6 @@ const ID_MODAL = 'modal-resumen-merge';
 let _resolver = null;
 let _modo = 'combinar';
 
-const $ = id => document.getElementById(id);
 const clon = obj => JSON.parse(JSON.stringify(obj));
 
 function _seleccionar(modo) {

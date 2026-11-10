@@ -1,6 +1,7 @@
 import { terminosDeBusqueda, textoCoincide, rangosCoincidencia, teclaIniciaBusqueda } from '../core/busqueda-texto.js';
 import { Motion } from '../core/movimiento.js';
 import { debounce } from '../core/debounce.js';
+import { $ } from '../core/dom.js';
 
 // ====================================================================
 // BUSCADOR DE LA AYUDA — filtra las secciones del modal y resalta las coincidencias
@@ -68,9 +69,9 @@ function buscar(consulta) {
     });
     _marcas = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(`#modal-ayuda mark.${CLASE_MARCA}`)]);
     _activa = -1;
-    const vacio = document.getElementById('ayuda-sin-resultados');
+    const vacio = $('ayuda-sin-resultados');
     if (vacio) vacio.hidden = !buscando || coinciden > 0;
-    document.getElementById('btn-ayuda-buscar-limpiar')?.toggleAttribute('hidden', !consulta);
+    $('btn-ayuda-buscar-limpiar')?.toggleAttribute('hidden', !consulta);
     const cuerpo = document.querySelector('#modal-ayuda .ayuda-cuerpo');
     if (cuerpo) cuerpo.scrollTop = 0;
     if (_marcas.length) _activar(0);
@@ -79,7 +80,7 @@ function buscar(consulta) {
 
 /** @param {string} texto */
 function _escribirContador(texto) {
-    const cuenta = document.getElementById('ayuda-resultados');
+    const cuenta = $('ayuda-resultados');
     if (cuenta) cuenta.textContent = texto;
 }
 
@@ -101,13 +102,13 @@ function _recorrer(sentido) {
 
 /** Vacía la búsqueda y muestra todas las secciones (se usa al abrir la ayuda). */
 function limpiar() {
-    const input = /** @type {HTMLInputElement | null} */ (document.getElementById('ayuda-buscar'));
+    const input = /** @type {HTMLInputElement | null} */ ($('ayuda-buscar'));
     if (input) input.value = '';
     buscar('');
 }
 
 function bindEventos() {
-    const input = /** @type {HTMLInputElement | null} */ (document.getElementById('ayuda-buscar'));
+    const input = /** @type {HTMLInputElement | null} */ ($('ayuda-buscar'));
     if (!input) return;
     const filtrar = debounce(() => buscar(input.value), 120);
     input.addEventListener('input', filtrar);
@@ -123,17 +124,17 @@ function bindEventos() {
             _recorrer(e.shiftKey ? -1 : 1);
         }
     });
-    document.getElementById('btn-ayuda-buscar-limpiar')?.addEventListener('click', () => { limpiar(); input.focus(); });
-    document.getElementById('ayuda-indice')?.addEventListener('click', (e) => {
+    $('btn-ayuda-buscar-limpiar')?.addEventListener('click', () => { limpiar(); input.focus(); });
+    $('ayuda-indice')?.addEventListener('click', (e) => {
         const btn = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.ayuda-indice-item'));
         if (!btn) return;
-        document.getElementById(btn.dataset.target ?? '')?.scrollIntoView({ block: 'start', behavior: Motion.reducido() ? 'auto' : 'smooth' });
+        $(btn.dataset.target ?? '')?.scrollIntoView({ block: 'start', behavior: Motion.reducido() ? 'auto' : 'smooth' });
     });
 
     // En PC, con la ayuda abierta, escribir una letra empieza la búsqueda: el foco pasa al campo y la tecla se escribe ahí
     const hayPuntero = window.matchMedia('(hover: hover) and (pointer: fine)');
     document.addEventListener('keydown', (e) => {
-        if (!hayPuntero.matches || !(document.getElementById('modal-ayuda')?.classList.contains('show') || document.getElementById('modal-ayuda')?.classList.contains('active'))) return;
+        if (!hayPuntero.matches || !($('modal-ayuda')?.classList.contains('show') || $('modal-ayuda')?.classList.contains('active'))) return;
         const activo = document.activeElement;
         const focoEnCampo = !!activo && (activo.matches('input, textarea, select') || /** @type {HTMLElement} */ (activo).isContentEditable);
         if (teclaIniciaBusqueda(e, focoEnCampo)) input.focus();

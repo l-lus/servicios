@@ -1,5 +1,6 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
+import { $ } from '../core/dom.js';
 // ============================================================
 // SERVICIOSERVICE
 // ============================================================
@@ -15,13 +16,13 @@ export class ServicioService {
             // Modo editar - usar modal separado
             const servicio = EstadoApp.servicios.find(s => s.id === servicioId);
             if (servicio) {
-                document.getElementById('editar-servicio-nombre').value = servicio.nombre;
+                $('editar-servicio-nombre').value = servicio.nombre;
                 this.app.categoria.poblarSelect('editar-servicio-categoria', servicio.categoria || '');
             }
             this.app.ui.abrirModal('modal-editar-servicio');
         } else {
             // Modo nuevo
-            document.getElementById('form-servicio').reset();
+            $('form-servicio').reset();
             this.app.categoria.poblarSelect('servicio-categoria', '');
             this.app.ui.abrirModal('modal-agregar-servicio');
         }
@@ -31,13 +32,13 @@ export class ServicioService {
         e.preventDefault();
 
         // Detectar si estamos en modo agregar o editar
-        const esEditar = document.getElementById('modal-editar-servicio').classList.contains('active');
+        const esEditar = $('modal-editar-servicio').classList.contains('active');
         const nombre = esEditar
-            ? document.getElementById('editar-servicio-nombre').value.trim()
-            : document.getElementById('servicio-nombre').value.trim();
+            ? $('editar-servicio-nombre').value.trim()
+            : $('servicio-nombre').value.trim();
         const categoria = esEditar
-            ? document.getElementById('editar-servicio-categoria').value
-            : document.getElementById('servicio-categoria').value;
+            ? $('editar-servicio-categoria').value
+            : $('servicio-categoria').value;
 
         if (!nombre) {
             this.app.mostrarToast('El nombre del servicio es obligatorio', 'error');
@@ -101,7 +102,7 @@ export class ServicioService {
     }
 
     editarServicioDesdeModal() {
-        const modal = document.getElementById('modal-facturas-servicio');
+        const modal = $('modal-facturas-servicio');
         const servicioId = modal.dataset.servicioId;
         if (servicioId) {
             this.app.ui.cerrarModal('modal-facturas-servicio');
@@ -141,8 +142,8 @@ export class ServicioService {
     }
 
     actualizarEstadoBotonToggle(inputId, btnId) {
-        const input = document.getElementById(inputId);
-        const btn = document.getElementById(btnId);
+        const input = $(inputId);
+        const btn = $(btnId);
 
         if (!input || !btn) return;
 
@@ -165,7 +166,7 @@ export class ServicioService {
         const factura = servicio.facturas.find(f => f.id === facturaId);
         if (!factura) return;
 
-        const modal = document.getElementById('modal-facturas-servicio');
+        const modal = $('modal-facturas-servicio');
         if (modal?.classList.contains('active')) {
             const sid = modal.dataset.servicioId;
             const item = document.querySelector(`.factura-item[data-id="${CSS.escape(facturaId)}"]`);

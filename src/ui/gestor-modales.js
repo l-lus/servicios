@@ -1,35 +1,36 @@
 import { EventosApp } from '../core/eventos.js';
+import { $ } from '../core/dom.js';
 // ============================================================
 // MODAL MANAGER & HISTORIAL (Popstate, jerarquía y confirmación)
 // ============================================================
 export const ModalManager = (function () {
     const _padres = {};
     const _accionesVolver = {
-        'modal-confirmar': () => document.getElementById('modal-confirmar-cancel')?.click(),
-        'modal-agregar-servicio': () => document.getElementById('modal-servicio-close')?.click(),
-        'modal-editar-servicio': () => document.getElementById('modal-editar-servicio-close')?.click(),
-        'modal-agregar-factura': () => document.getElementById('modal-factura-close')?.click(),
-        'modal-editar-factura': () => document.getElementById('modal-factura-close-en-grid')?.click(),
-        'modal-facturas-servicio': () => document.getElementById('btn-cerrar-modal-facturas-servicio')?.click(),
-        'modal-ingresos-lista': () => document.getElementById('btn-cerrar-modal-ingresos-lista')?.click(),
-        'modal-agregar-ingreso': () => document.getElementById('modal-ingreso-close')?.click(),
-        'modal-editar-ingreso': () => document.getElementById('modal-ingreso-volver')?.click(),
-        'modal-ordenar': () => document.getElementById('btn-cerrar-modal-ordenar')?.click(),
-        'modal-nueva-categoria': () => document.getElementById('btn-cerrar-modal-categorias')?.click(),
-        'modal-selector-perfiles': () => document.getElementById('btn-cerrar-modal-perfiles')?.click(),
-        'modal-config': () => document.getElementById('btn-cerrar-config')?.click(),
-        'modal-borrar': () => document.getElementById('btn-cerrar-borrar')?.click(),
-        'modal-editar-perfil': () => document.getElementById('btn-cancelar-editar-perfil')?.click(),
-        'modal-ayuda': () => document.getElementById('modal-ayuda-close')?.click(),
-        'modal-info-resumen': () => document.getElementById('btn-cerrar-modal-info-resumen')?.click(),
-        'modal-gist': () => document.getElementById('btn-gist-cerrar')?.click(),
-        'modal-gist-novedades': () => document.getElementById('gist-novedades-ignorar-btn')?.click(),
-        'modal-resumen-merge': () => document.getElementById('btn-resumen-merge-cancelar')?.click(),
-        'modal-bienvenida': () => document.getElementById('btn-bienvenida-omitir')?.click(),
-        'modal-calendario-dia': () => document.getElementById('modal-calendario-dia-close')?.click(),
-        'modal-reporte': () => document.getElementById('btn-reporte-cancelar')?.click(),
-        'modal-respaldo': () => document.getElementById('btn-respaldo-cancelar')?.click(),
-        'modal-debug-estadisticas': () => document.getElementById('btn-cerrar-modal-debug')?.click(),
+        'modal-confirmar': () => $('modal-confirmar-cancel')?.click(),
+        'modal-agregar-servicio': () => $('modal-servicio-close')?.click(),
+        'modal-editar-servicio': () => $('modal-editar-servicio-close')?.click(),
+        'modal-agregar-factura': () => $('modal-factura-close')?.click(),
+        'modal-editar-factura': () => $('modal-factura-close-en-grid')?.click(),
+        'modal-facturas-servicio': () => $('btn-cerrar-modal-facturas-servicio')?.click(),
+        'modal-ingresos-lista': () => $('btn-cerrar-modal-ingresos-lista')?.click(),
+        'modal-agregar-ingreso': () => $('modal-ingreso-close')?.click(),
+        'modal-editar-ingreso': () => $('modal-ingreso-volver')?.click(),
+        'modal-ordenar': () => $('btn-cerrar-modal-ordenar')?.click(),
+        'modal-nueva-categoria': () => $('btn-cerrar-modal-categorias')?.click(),
+        'modal-selector-perfiles': () => $('btn-cerrar-modal-perfiles')?.click(),
+        'modal-config': () => $('btn-cerrar-config')?.click(),
+        'modal-borrar': () => $('btn-cerrar-borrar')?.click(),
+        'modal-editar-perfil': () => $('btn-cancelar-editar-perfil')?.click(),
+        'modal-ayuda': () => $('modal-ayuda-close')?.click(),
+        'modal-info-resumen': () => $('btn-cerrar-modal-info-resumen')?.click(),
+        'modal-gist': () => $('btn-gist-cerrar')?.click(),
+        'modal-gist-novedades': () => $('gist-novedades-ignorar-btn')?.click(),
+        'modal-resumen-merge': () => $('btn-resumen-merge-cancelar')?.click(),
+        'modal-bienvenida': () => $('btn-bienvenida-omitir')?.click(),
+        'modal-calendario-dia': () => $('modal-calendario-dia-close')?.click(),
+        'modal-reporte': () => $('btn-reporte-cancelar')?.click(),
+        'modal-respaldo': () => $('btn-respaldo-cancelar')?.click(),
+        'modal-debug-estadisticas': () => $('btn-cerrar-modal-debug')?.click(),
         // 'menu-agregar' lo registra la app con registrarAccionVolver
     };
 
@@ -134,7 +135,7 @@ export const ModalManager = (function () {
 
     function _limpiarOrigenDiferido(modalId) {
         setTimeout(() => {
-            const modal = document.getElementById(modalId);
+            const modal = $(modalId);
             if (modal && (modal.classList.contains('show') || modal.classList.contains('active'))) return;
             delete _origenesModal[modalId];
             delete _triggerInfoPorModal[modalId];
@@ -168,7 +169,7 @@ export const ModalManager = (function () {
         }
 
         // Fallback de seguridad: si el modal sigue abierto, forzar cierre limpio
-        const el = document.getElementById(modalId);
+        const el = $(modalId);
         if (el && (el.classList.contains('show') || el.classList.contains('active'))) {
             cerrar(modalId);
         }
@@ -184,7 +185,7 @@ export const ModalManager = (function () {
         _navegandoHaciaAtras = true;
 
         // Context menu abierto tiene prioridad máxima
-        const ctxMenu = document.getElementById('ctx-menu-servicio');
+        const ctxMenu = $('ctx-menu-servicio');
         if (ctxMenu && (ctxMenu.classList.contains('active') || ctxMenu.classList.contains('show'))) {
             _ejecutarAccionCierre('ctx-menu-servicio');
             setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
@@ -201,7 +202,7 @@ export const ModalManager = (function () {
         }
 
         // Paneles laterales
-        const menuAgregar = document.getElementById('menu-agregar');
+        const menuAgregar = $('menu-agregar');
         if (menuAgregar && (menuAgregar.classList.contains('active') || menuAgregar.classList.contains('show'))) {
             _ejecutarAccionCierre('menu-agregar');
             setTimeout(() => { _navegandoHaciaAtras = false; }, 50);
@@ -235,7 +236,7 @@ export const ModalManager = (function () {
 
     /** Con `sinHistorial` no agrega entrada al historial (se reutiliza la que dejó `cerrar` con sinHistorial). */
     function abrir(modalId, callback = null, { sinHistorial = false } = {}) {
-        const modal = document.getElementById(modalId);
+        const modal = $(modalId);
         if (!modal) return;
 
         if (modal.classList.contains('modal')) _aplicarOrigenAnimacion(modal, modalId);
@@ -262,7 +263,7 @@ export const ModalManager = (function () {
 
     /** Con `sinHistorial` el modal se oculta pero su entrada del historial queda, para reabrirlo enseguida sin empujar otra (Chrome salta las entradas agregadas sin gesto del usuario y Atrás cerraba la app). */
     function cerrar(modalId, callback = null, { sinHistorial = false } = {}) {
-        const modal = document.getElementById(modalId);
+        const modal = $(modalId);
         if (!modal) return;
 
         const estabaAbierto = modal.classList.contains('show') || modal.classList.contains('active');
@@ -310,7 +311,7 @@ export const ModalManager = (function () {
 
     /** Abre `modalId`; si `padreId` está abierto lo reemplaza y, al cerrar el hijo, se vuelve a él (como en Horarios). */
     function abrirConPadre(modalId, padreId) {
-        const padre = document.getElementById(padreId);
+        const padre = $(padreId);
         const abierto = padre && (padre.classList.contains('show') || padre.classList.contains('active'));
         if (abierto && modalId !== padreId) alternar(padreId, modalId);
         else abrir(modalId);
@@ -347,14 +348,14 @@ export const ModalManager = (function () {
 
     function confirmar(texto, labelOk = 'Confirmar', icono = '#icon-trash', opciones = {}) {
         return new Promise((resolve) => {
-            const elTexto = document.getElementById('modal-confirmar-texto');
-            const elLabel = document.getElementById('modal-confirmar-label-ok');
-            const elLabelCancel = document.getElementById('modal-confirmar-label-cancel');
-            const elTitulo = document.getElementById('modal-confirmar-titulo');
+            const elTexto = $('modal-confirmar-texto');
+            const elLabel = $('modal-confirmar-label-ok');
+            const elLabelCancel = $('modal-confirmar-label-cancel');
+            const elTitulo = $('modal-confirmar-titulo');
             const elIcono = document.querySelector('#modal-confirmar-ok svg use');
             const elIconoCancel = document.querySelector('#modal-confirmar-cancel svg use');
-            const btnOk = document.getElementById('modal-confirmar-ok');
-            const btnCancel = document.getElementById('modal-confirmar-cancel');
+            const btnOk = $('modal-confirmar-ok');
+            const btnCancel = $('modal-confirmar-cancel');
             if (!elTexto || !btnOk || !btnCancel) { resolve(false); return; }
 
             elTexto.textContent = texto;

@@ -1,4 +1,4 @@
-import { setColapsable } from '../core/dom.js';
+import { $, setColapsable } from '../core/dom.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { StorageHelper } from '../core/almacenamiento.js';
@@ -49,8 +49,8 @@ export class PerfilService {
 
     // ── UI — modal lista ──────────────────────────────────────
     togglePanelAgregar(forzar) {
-        const panel = document.getElementById('perfil-agregar-panel');
-        const btn = document.getElementById('btn-toggle-agregar-perfil');
+        const panel = $('perfil-agregar-panel');
+        const btn = $('btn-toggle-agregar-perfil');
         if (!panel || !btn) return;
         const antes = panel.classList.contains('expanded');
         const abierto = forzar !== undefined ? forzar : !antes;
@@ -61,7 +61,7 @@ export class PerfilService {
         setColapsable(panel, abierto);
         btn.setAttribute('aria-expanded', String(abierto));
         if (abierto) {
-            const input = document.getElementById('perfil-nuevo-nombre');
+            const input = $('perfil-nuevo-nombre');
             if (input && !input.disabled) setTimeout(() => input.focus(), 80);
         }
     }
@@ -73,15 +73,15 @@ export class PerfilService {
     }
 
     renderLista() {
-        const lista = document.getElementById('perfiles-lista');
+        const lista = $('perfiles-lista');
         const perfilesArray = Object.values(this.perfiles);
-        const inputNuevo = document.getElementById('perfil-nuevo-nombre');
+        const inputNuevo = $('perfil-nuevo-nombre');
         const maxAlcanzado = !GestorPerfiles.puedeCrear(this.perfiles);
         if (inputNuevo) {
             inputNuevo.disabled = maxAlcanzado;
             inputNuevo.placeholder = maxAlcanzado ? 'Máximo 4 perfiles' : 'Nombre del perfil...';
         }
-        const btnToggle = document.getElementById('btn-toggle-agregar-perfil');
+        const btnToggle = $('btn-toggle-agregar-perfil');
         if (btnToggle) {
             btnToggle.disabled = maxAlcanzado;
             if (maxAlcanzado) this.togglePanelAgregar(false);
@@ -104,7 +104,7 @@ export class PerfilService {
     }
 
     crearInline() {
-        const input = document.getElementById('perfil-nuevo-nombre');
+        const input = $('perfil-nuevo-nombre');
         const nombre = input.value.trim();
         const error = GestorPerfiles.validarNombre(this.perfiles, nombre);
         if (error === 'vacio') { this.app.ui.mostrarToast('Ingresá un nombre', 'error'); return; }
@@ -113,7 +113,7 @@ export class PerfilService {
         GestorPerfiles.crear(this.perfiles, nombre);
         input.value = '';
         this.app.ui.mostrarToast('Perfil creado', 'success');
-        const lista = document.getElementById('perfiles-lista');
+        const lista = $('perfiles-lista');
         Anim.alturaCambio(lista, () => this.renderLista());
         this.togglePanelAgregar(false);
     }
@@ -122,8 +122,8 @@ export class PerfilService {
     abrirModalEditar(perfilId) {
         this.app.perfilEditando = perfilId;
         const perfil = this.perfiles[perfilId];
-        document.getElementById('perfil-nombre').value = perfil.nombre;
-        document.getElementById('btn-eliminar-perfil-editor').hidden = perfilId === 'default';
+        $('perfil-nombre').value = perfil.nombre;
+        $('btn-eliminar-perfil-editor').hidden = perfilId === 'default';
         ModalManager.abrirConPadre('modal-editar-perfil', 'modal-selector-perfiles');
     }
 
@@ -134,7 +134,7 @@ export class PerfilService {
 
     guardarEdicion(e) {
         e.preventDefault();
-        const nombre = document.getElementById('perfil-nombre').value.trim();
+        const nombre = $('perfil-nombre').value.trim();
         const error = GestorPerfiles.validarNombre(this.perfiles, nombre, this.app.perfilEditando);
         if (error === 'vacio') { this.app.ui.mostrarToast('El nombre es requerido', 'error'); return; }
         if (error === 'duplicado') { this.app.ui.mostrarToast('Ya existe un perfil con ese nombre', 'error'); return; }
