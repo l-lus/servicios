@@ -26,7 +26,7 @@ El cifrado autentica el contenido pero no su antigüedad: quien pueda escribir e
 
 ## Arquitectura
 
-- **`GistService` está en `ui/` con `fetch` y la lógica de sincronización**, contra la regla «API externa → `services/`». Es el módulo más sensible y no tiene tests unitarios. Extraer un cliente a `services/` con `fetch` inyectado (subir, bajar, decidir si se acepta lo remoto) y dejar en `ui/` solo el modal y los avisos.
+- **`GistService`**: el cliente (`fetch`, límites, decidir si se acepta lo remoto, guarda de la subida automática) ya está en `services/cliente-gist.js` con tests. Queda en `ui/gist-service.js` la mezcla de modal, perfil y avisos; separar el estado de sincronización (sales, `gistCifrado`) si crece.
 - **Acoplamiento por `app`**: 20 clases de `ui/` reciben `app` entero (unos 720 usos de `this.app.`, 156 en `listeners-app.js`). Ir pasando a cada clase solo lo que usa, empezando por las más chicas.
 - **Diccionarios con claves de datos**: quedan objetos `{}` indexados por datos en `ui/` (por ejemplo `_anoExpandidoFacturas`). Revisarlos con `grep` y pasarlos a `Map` u `Object.create(null)`; la categoría «constructor» ya rompió dos de estos.
 - **CI**: el workflow corre `typecheck` y `test`, no `e2e`. Sumar Firefox headless al workflow, incluido `scripts/e2e/datos-guardados.mjs`.

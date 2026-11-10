@@ -398,9 +398,10 @@ test('DOM: la UI busca elementos con el helper $ de core/dom.js (sin document.ge
 test('Cifrado: el Gist solo se sube sellado con la frase y la frase no está en el respaldo ni en los logs', () => {
     const gist = fs.readFileSync('src/ui/gist-service.js', 'utf8');
     assert.match(gist, /RespaldoCifrado\.sellar\(/);
-    assert.match(gist, /content: sellado\.texto/);
-    assert.doesNotMatch(gist, /content: payload/, 'el Gist no debe subir el respaldo en claro');
-    assert.match(gist, /RespaldoCifrado\.abrir\([^;]*exigirCifrado: this\.getPerfil\(\)\.gistCifrado === true/, 'un Gist que ya se vio cifrado no se acepta en claro');
+    assert.match(gist, /texto: sellado\.texto/, 'a escribir() solo le llega el texto sellado');
+    assert.doesNotMatch(gist, /texto: (payload|respaldo)\b/, 'el Gist no debe subir el respaldo en claro');
+    assert.match(gist, /exigirCifrado: this\.getPerfil\(\)\.gistCifrado === true/, 'un Gist que ya se vio cifrado no se acepta en claro');
+    assert.match(fs.readFileSync('src/services/cliente-gist.js', 'utf8'), /RespaldoCifrado\.abrir\([^;]*\{ exigirCifrado \}/, 'el cliente pasa exigirCifrado al abrir');
     const sinComentarios = (f) => fs.readFileSync(f, 'utf8').replace(/\/\/.*$/gm, '');
     const filtran = srcFiles.filter(f => /console\.(log|warn|error|info)\([^)]*(FraseCifrado\.actual|FRASE_CIFRADO)/.test(sinComentarios(f)));
     assert.deepEqual(filtran, [], 'la frase no se escribe en logs');
