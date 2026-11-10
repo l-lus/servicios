@@ -1156,7 +1156,8 @@ body.vista-previa-activa .btn-add {
     pointer-events: auto;
 }
 
-body.vista-previa-sin-objetivo .vista-previa-velo {
+/* Tema: se ven los colores de toda la página, sin atenuarla (el velo queda solo para atrapar el toque de afuera y cerrar) */
+body.vista-previa-sin-velo .vista-previa-velo {
     background: transparent;
 }
 
@@ -1197,8 +1198,86 @@ body.vista-previa-sin-objetivo .vista-previa-velo {
     margin-bottom: var(--space-sm);
 }
 
+/* El título va centrado entre dos flechas: la de la izquierda pasa a la personalización anterior y la de la derecha, a la siguiente.
+   Sin otra a dónde ir, las flechas no se muestran */
 .vista-previa-titulo {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    min-width: 0;
     font-weight: var(--fw-semibold);
+}
+
+.vista-previa-nav {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-sm);
+    height: var(--control-sm);
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-full);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vista-previa-nav-anterior .icon {
+    transform: scaleX(-1);   /* la flecha de la izquierda es la de la derecha espejada */
+}
+
+.vista-previa-titulo:not(.con-otras) .vista-previa-nav {
+    display: none;
+}
+
+/* Deslizar el panel hacia los costados pasa a otra personalización: el navegador solo se ocupa del desplazamiento vertical */
+.vista-previa-panel {
+    touch-action: pan-y;
+}
+
+/* Tema: círculos de color en lugar de filas. Cada uno muestra el fondo (mitad) y el acento (otra mitad) del tema */
+.vista-previa-circulos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+}
+
+/* En pantallas angostas no entran los 8 en una fila: se reparten en dos filas parejas de 4 */
+@media (max-width: 519px) {
+    .vista-previa-circulos {
+        max-width: calc(4 * var(--touch-target) + 3 * var(--space-md));
+        margin-inline: auto;
+    }
+}
+
+.vista-previa-circulo {
+    flex: none;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--muestra-fondo) 50%, var(--muestra-acento) 50%);
+    cursor: pointer;
+    transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+}
+
+.vista-previa-circulo.activo {
+    box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-main);
+    transform: scale(1.06);
+}
+
+.vista-previa-circulos-nombre {
+    display: block;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    min-height: 1.2em;
 }
 
 .vista-previa-panel .settings-list-text {
@@ -1241,6 +1320,7 @@ body.vista-previa-sin-objetivo .vista-previa-velo {
 
 body.vista-previa-activa {
     padding-bottom: var(--vp-panel-h);
+    transition: padding-bottom var(--dur-collapse) ease-out;   /* al pasar de una vista a otra el panel cambia de alto: el espacio de abajo lo acompaña */
 }
 
 body.vista-previa-activa .mutacion-saliente {

@@ -50,7 +50,7 @@ src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-ht
 
 ## Funciones tomadas de Horarios
 Aviso de actualización con progreso · ayuda con buscador · búsqueda sin acentos · 8 temas de color · calendario de vencimientos con 7 estilos de días (`data-estilo-calendario`), popup flotante al pasar el mouse y cambio de mes con rueda ·
-vista previa en vivo (`VistaPrevia`) · fondos ilustrados SVG y estructura de estilo para la tarjeta de resumen · header flotante tipo píldora al hacer scroll en PC · pantalla de carga inicial (`html.cargando`) y gesto de recarga con fundido (`RecargaGesto`) ·
+vista previa en vivo (`VistaPrevia`, con vistas resumen ⇄ calendario ⇄ tema registradas con `registrarVista`/`definirOrden`; el tema se elige con círculos y sin velo) · fondos ilustrados SVG y estructura de estilo para la tarjeta de resumen · header flotante tipo píldora al hacer scroll en PC · pantalla de carga inicial (`html.cargando`) y gesto de recarga con fundido (`RecargaGesto`) ·
 íconos animados (`IconosAnimados`) y llamado de atención de instalación PWA · modal de perfiles con alta colapsable flotante ·
 reportes HTML · respaldo por rango, preferencias (`CONFIG_RESPALDO`) y resumen previo al merge · estadísticas anuales · bienvenida · disposición orgánica de 2 o 3 columnas en PC y orden independiente en móvil ·
 tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: [avisos push](PUSH-VENCIMIENTOS.md).

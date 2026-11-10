@@ -333,12 +333,23 @@ test('Temas: cada tema tiene su bloque de variables en tokens.css', async () => 
     }
 });
 
+test('Temas: el acento de la muestra coincide con --c-active del tema en tokens.css', async () => {
+    const css = fs.readFileSync('assets/styles/tokens.css', 'utf8');
+    const { TEMAS } = await import('../src/core/temas.js');
+    const azul = /--c-blue:\s*([^;]+);/.exec(css)[1].trim();
+    for (const { id, acento } of TEMAS) {
+        const bloque = id === 'light' || id === 'dark' ? '' : (new RegExp(`html\\[data-theme="${id}"\\] body,[^{]*\\{([^}]*)\\}`).exec(css)?.[1] ?? '');
+        const propio = /--c-active:\s*([^;]+);/.exec(bloque)?.[1].trim();
+        assert.equal(acento, propio ?? azul, `acento de ${id}`);
+    }
+});
+
 test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
     const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
     const usadas = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(m => m[1]));
     // Las asigna JS con style.setProperty (la CSP no admite style en línea)
-    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i', '--recarga-progreso', '--vp-panel-h', '--columnas', '--giro-plus', '--flash-color']);
+    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i', '--recarga-progreso', '--vp-panel-h', '--columnas', '--giro-plus', '--flash-color', '--muestra-fondo', '--muestra-acento']);
     const sinDefinir = [...usadas].filter(v => !definidas.has(v) && !dinamicas.has(v)).sort();
     assert.deepEqual(sinDefinir, [], 'Variables usadas sin definir');
 });

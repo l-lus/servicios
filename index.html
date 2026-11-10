@@ -1774,7 +1774,7 @@
                             <h4>Resumen</h4>
                             <p>La tarjeta de arriba muestra lo <strong>pendiente</strong> del mes. Tocala para ver lo <strong>pagado</strong>; la barra indica qué parte del total del mes ya se pagó. El color del borde es el de la factura más urgente.</p>
 <p>El botón <strong>i</strong> detalla qué facturas vencen este mes y cuáles se pagaron este mes aunque vencieran en otro.</p>
-<p>Mantené presionada la tarjeta (sin moverla) o entrá en Ajustes → <strong>Tarjeta de resumen</strong> para elegir un fondo ilustrado con vista previa en vivo.</p>
+<p>Mantené presionada la tarjeta (sin moverla) o entrá en Ajustes → <strong>Tarjeta de resumen</strong> para elegir un fondo ilustrado con vista previa en vivo. Desde el panel de vista previa pasás a Calendario o Tema con las flechas del título, deslizando (en el celular) o girando la rueda del mouse sobre el panel.</p>
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-calendario">
                             <h4>Calendario</h4>
@@ -1922,7 +1922,15 @@
     <div id="vista-previa-velo" class="vista-previa-velo" aria-hidden="true"></div>
     <section id="vista-previa-panel" class="vista-previa-panel" role="region" aria-label="Vista previa" inert>
         <div class="vista-previa-cabecera">
-            <span id="vista-previa-titulo" class="vista-previa-titulo"></span>
+            <div id="vista-previa-titulo" class="vista-previa-titulo">
+                <button type="button" id="vista-previa-anterior" class="vista-previa-nav vista-previa-nav-anterior" aria-label="Personalización anterior">
+                    <svg class="icon"><use href="#icon-chevron-right" /></svg>
+                </button>
+                <span id="vista-previa-titulo-texto"></span>
+                <button type="button" id="vista-previa-siguiente" class="vista-previa-nav" aria-label="Personalización siguiente">
+                    <svg class="icon"><use href="#icon-chevron-right" /></svg>
+                </button>
+            </div>
             <button type="button" id="vista-previa-listo" class="btn-edit">
                 <svg class="icon">
                     <use href="#icon-check" />

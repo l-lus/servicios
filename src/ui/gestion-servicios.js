@@ -176,6 +176,7 @@ export class GestionServicios {
         InstaladorPWA.init();
         InstaladorPWA.bindEventos();
         VistaPrevia.bindEventos();
+        this.ui.registrarVistasPrevias();
         RecargaGesto.bindEventos();
         this.tarjetas.init();
         this.calendario.init();

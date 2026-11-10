@@ -6,6 +6,7 @@ import { EstiloTarjeta } from '../core/estilo-tarjeta.js';
 import { Preferencias } from '../core/preferencias.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { GestorTemas } from './gestor-temas.js';
+import { TEMAS } from '../core/temas.js';
 import { Motion } from '../core/movimiento.js';
 import { ModalManager } from './gestor-modales.js';
 import { TarjetaFondos } from './tarjeta-fondos.js';
@@ -80,15 +81,22 @@ export class UIManager {
         set('calendario-estilo-indicator', EstiloCalendario.etiqueta());
     }
 
-    abrirVistaPreviaResumen({ desdeAjustes = false } = {}) {
-        VistaPrevia.abrir({
-            id: 'resumen',
-            titulo: 'Tarjeta de resumen',
-            idObjetivo: 'card-resumen',
+    /** Cómo se vuelve de la vista previa: con `desdeAjustes` se cierra Ajustes al abrir y se reabre al cerrar. */
+    _ciclo(desdeAjustes) {
+        return {
             antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
             alCerrar: desdeAjustes
                 ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
-                : () => this.actualizarIndicadoresConfig(),
+                : () => this.actualizarIndicadoresConfig()
+        };
+    }
+
+    _configResumen(desdeAjustes) {
+        return {
+            id: 'resumen',
+            titulo: 'Tarjeta de resumen',
+            idObjetivo: 'card-resumen',
+            ...this._ciclo(desdeAjustes),
             filas: [
                 {
                     etiqueta: 'Fondo ilustrado',
@@ -105,18 +113,15 @@ export class UIManager {
                     alTocar: () => { EstiloTarjeta.siguiente(); this.actualizarIndicadoresConfig(); }
                 }
             ]
-        });
+        };
     }
 
-    abrirVistaPreviaCalendario({ desdeAjustes = false } = {}) {
-        VistaPrevia.abrir({
+    _configCalendario(desdeAjustes) {
+        return {
             id: 'calendario',
             titulo: 'Calendario',
             idObjetivo: 'card-calendario',
-            antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
-            alCerrar: desdeAjustes
-                ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
-                : () => this.actualizarIndicadoresConfig(),
+            ...this._ciclo(desdeAjustes),
             filas: [
                 {
                     etiqueta: 'Estilo de los días',
@@ -126,28 +131,36 @@ export class UIManager {
                     alTocar: () => { EstiloCalendario.siguiente(); this.actualizarIndicadoresConfig(); }
                 }
             ]
-        });
+        };
     }
 
-    abrirVistaPreviaTema({ desdeAjustes = false } = {}) {
-        VistaPrevia.abrir({
+    // El tema no tiene tarjeta ni filas: se ve toda la página y se elige con círculos de color
+    _configTema(desdeAjustes) {
+        return {
             id: 'tema',
             titulo: 'Tema de color',
-            antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
-            alCerrar: desdeAjustes
-                ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
-                : () => this.actualizarIndicadoresConfig(),
-            filas: [
-                {
-                    etiqueta: 'Tema',
-                    descripcion: 'Claro, oscuro y colores suaves',
-                    icono: '#icon-sun',
-                    valor: () => GestorTemas.etiqueta(),
-                    alTocar: () => { GestorTemas.siguienteTema(); this.actualizarIndicadoresConfig(); }
-                }
-            ]
-        });
+            sinVelo: true,
+            ...this._ciclo(desdeAjustes),
+            filas: [],
+            circulos: {
+                opciones: TEMAS,
+                actual: () => GestorTemas.actual(),
+                alElegir: (id) => { GestorTemas.elegirTema(id); this.actualizarIndicadoresConfig(); }
+            }
+        };
     }
+
+    /** Las tres vistas previas están integradas: desde el panel se pasa de una a otra (ver VistaPrevia.cambiar). */
+    registrarVistasPrevias() {
+        VistaPrevia.registrarVista('resumen', () => this._configResumen(false));
+        VistaPrevia.registrarVista('calendario', () => this._configCalendario(false));
+        VistaPrevia.registrarVista('tema', () => this._configTema(false));
+        VistaPrevia.definirOrden(['resumen', 'calendario', 'tema']);
+    }
+
+    abrirVistaPreviaResumen({ desdeAjustes = false } = {}) { VistaPrevia.abrir(this._configResumen(desdeAjustes)); }
+    abrirVistaPreviaCalendario({ desdeAjustes = false } = {}) { VistaPrevia.abrir(this._configCalendario(desdeAjustes)); }
+    abrirVistaPreviaTema({ desdeAjustes = false } = {}) { VistaPrevia.abrir(this._configTema(desdeAjustes)); }
 
     // ── Ingresos ──────────────────────────────────────────────
     ingresosHabilitado() {
