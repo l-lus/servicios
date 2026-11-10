@@ -85,7 +85,7 @@ test('fusionarServicios: agrega servicios y facturas nuevas, actualiza las cambi
         srv(SERVICIO_INGRESOS_ID, [fac('i1'), fac('i2')]),
     ];
     const diff = IE.fusionarServicios(locales, remotos);
-    assert.deepEqual(diff, { serviciosAgregados: 1, facturasAgregadas: 3, facturasActualizadas: 1, ingresosAgregados: 1 });
+    assert.deepEqual(diff, { serviciosAgregados: 1, facturasAgregadas: 3, facturasActualizadas: 1, ingresosAgregados: 1, facturasEliminadas: 0, ingresosEliminados: 0, serviciosEliminados: 0 });
     assert.equal(locales.find(s => s.id === 'luz').facturas.length, 3);
     assert.equal(locales.find(s => s.id === 'luz').facturas[0].pagada, true);
     assert.equal(locales.length, 3);

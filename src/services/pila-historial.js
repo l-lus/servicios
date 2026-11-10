@@ -22,8 +22,8 @@ export function clonar(obj) {
 function entradaSaneada(e) {
     if (!e || typeof e !== 'object' || !e.estado || typeof e.estado !== 'object' || !Array.isArray(e.estado.categorias)) return null;
     try {
-        const estado = ImportarExportar.normalizarDatos(e.estado.servicios, e.estado.categorias);
-        return { estado, descripcion: typeof e.descripcion === 'string' ? SecurityAndUtils.limpiarTexto(e.descripcion) : null };
+        const { servicios, categorias } = ImportarExportar.normalizarDatos(e.estado.servicios, e.estado.categorias);
+        return { estado: { servicios, categorias }, descripcion: typeof e.descripcion === 'string' ? SecurityAndUtils.limpiarTexto(e.descripcion) : null };
     } catch {
         return null;
     }

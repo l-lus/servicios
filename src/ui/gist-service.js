@@ -308,13 +308,10 @@ export class GistService {
             const data = await this._leerRemoto(perfil.gistId, token);
             if ('error' in data) throw new Error(data.error);
 
-            // Hacemos un merge simulado para contar diferencias
-            const diff = ImportarExportar.simularFusion(this.servicios, data.servicios);
-            const diffCats = ImportarExportar.categoriasNuevas(this.app.categoria.getCategorias(), data.categorias).length;
-
-            const perdidas = ImportarExportar.perdidasAlReemplazar(this.servicios, data.servicios);
+            // Un merge simulado para contar diferencias
+            const { hayNovedades, perdidas } = this.app.storage.compararConRemoto(data);
             const hayPerdidas = perdidas.servicios + perdidas.facturas + perdidas.ingresos > 0;
-            if (!diff.serviciosAgregados && !diff.facturasAgregadas && !diff.facturasActualizadas && !diff.ingresosAgregados && !diffCats && !hayPerdidas) {
+            if (!hayNovedades && !hayPerdidas) {
                 this.setPerfil({ gistLastSync: new Date().toISOString() });
                 this.app.mostrarToast('Sin cambios', 'info');
                 return;
@@ -344,29 +341,34 @@ export class GistService {
             }
 
             // Simular merge para ver qué es nuevo
-            const diff = ImportarExportar.simularFusion(this.servicios, data.servicios);
-            const nuevasCats = ImportarExportar.categoriasNuevas(this.app.categoria.getCategorias(), data.categorias).length;
-
-            if (diff.serviciosAgregados || diff.facturasAgregadas || diff.facturasActualizadas || diff.ingresosAgregados || nuevasCats) {
-
-                // Mostrar chips de resumen
-                const detalle = $('gist-novedades-detalle');
-                if (detalle) {
-                    const chips = [];
-                    if (diff.serviciosAgregados) chips.push(html`<div class="gist-novedades-chip"><span>Servicios</span><span class="gist-novedades-chip-count">+${diff.serviciosAgregados}</span></div>`);
-                    if (diff.facturasAgregadas) chips.push(html`<div class="gist-novedades-chip"><span>Facturas nuevas</span><span class="gist-novedades-chip-count">+${diff.facturasAgregadas}</span></div>`);
-                    if (diff.facturasActualizadas) chips.push(html`<div class="gist-novedades-chip"><span>Actualizadas</span><span class="gist-novedades-chip-count">${diff.facturasActualizadas}</span></div>`);
-                    if (diff.ingresosAgregados) chips.push(html`<div class="gist-novedades-chip"><span>Ingresos</span><span class="gist-novedades-chip-count">+${diff.ingresosAgregados}</span></div>`);
-                    if (nuevasCats) chips.push(html`<div class="gist-novedades-chip"><span>Categorías</span><span class="gist-novedades-chip-count">+${nuevasCats}</span></div>`);
-                    montar(detalle, html`${chips}`);
-                }
-
-                this.app._gistDatosPendientes = data;
-                setTimeout(() => this.app.ui.abrirModal('modal-gist-novedades'), 600);
-            }
+            const analisis = this.app.storage.compararConRemoto(data);
+            if (analisis.hayNovedades) this._mostrarNovedades(data, analisis, 600);
         } finally {
             this._spinStop();
         }
+    }
+
+    /**
+     * Aviso de novedades del Gist (nada se aplica hasta que la persona lo confirme): chips con lo que cambiaría, incluido lo que se borró en otro dispositivo.
+     * @param {any} data lo leído del Gist @param {{ diff: any, categoriasNuevas: number }} analisis @param {number} [demoraMs]
+     */
+    _mostrarNovedades(data, { diff, categoriasNuevas }, demoraMs = 0) {
+        const detalle = $('gist-novedades-detalle');
+        if (detalle) {
+            const chip = (/** @type {string} */ nombre, /** @type {string} */ cuenta) => html`<div class="gist-novedades-chip"><span>${nombre}</span><span class="gist-novedades-chip-count">${cuenta}</span></div>`;
+            const chips = [];
+            if (diff.serviciosAgregados) chips.push(chip('Servicios', `+${diff.serviciosAgregados}`));
+            if (diff.facturasAgregadas) chips.push(chip('Facturas nuevas', `+${diff.facturasAgregadas}`));
+            if (diff.facturasActualizadas) chips.push(chip('Actualizadas', `${diff.facturasActualizadas}`));
+            if (diff.ingresosAgregados) chips.push(chip('Ingresos', `+${diff.ingresosAgregados}`));
+            if (categoriasNuevas) chips.push(chip('Categorías', `+${categoriasNuevas}`));
+            if (diff.facturasEliminadas) chips.push(chip('Facturas eliminadas', `−${diff.facturasEliminadas}`));
+            if (diff.ingresosEliminados) chips.push(chip('Ingresos eliminados', `−${diff.ingresosEliminados}`));
+            if (diff.serviciosEliminados) chips.push(chip('Servicios eliminados', `−${diff.serviciosEliminados}`));
+            montar(detalle, html`${chips}`);
+        }
+        this.app._gistDatosPendientes = data;
+        setTimeout(() => this.app.ui.abrirModal('modal-gist-novedades'), demoraMs);
     }
 
     /**
@@ -400,6 +402,7 @@ export class GistService {
             origen: 'Gist',
             locales: this.servicios, categoriasLocales: this.app.categoria.getCategorias(),
             remotos: data.servicios, categoriasRemotas: data.categorias,
+            borrados: this.app.storage.compararConRemoto(data).borrados,
         });
         if (!modo) return false;
         this.app.storage._aplicarImportacion(modo, data, data.crudo);

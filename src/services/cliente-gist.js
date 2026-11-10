@@ -15,7 +15,7 @@ const API = 'https://api.github.com/gists';
 export const CODIGOS_GIST_NO_CONFIABLE = ['descifrado', 'sin-frase', 'frase', 'sin-cifrar'];
 
 /** @typedef {{ error: string, codigo: 'sin-frase' | 'frase' | 'descifrado' | 'sin-cifrar' | 'formato' | 'red' }} ErrorGist */
-/** @typedef {{ servicios: any[], categorias: string[], crudo: any, cifrado: boolean, sal?: string | null }} LecturaGist */
+/** @typedef {{ servicios: any[], categorias: string[], borrados: import('./sincronizacion.js').Borrado[], crudo: any, cifrado: boolean, sal?: string | null }} LecturaGist */
 
 /** @param {string} error @returns {ErrorGist} */
 const _red = (error) => ({ error, codigo: 'red' });
@@ -83,7 +83,7 @@ export class ClienteGist {
         const abierto = await RespaldoCifrado.abrir(bajado.contenido, frase, { exigirCifrado });
         if ('error' in abierto) return abierto;
         try {
-            const datos = ImportarExportar.normalizarDatos(abierto.datos.servicios, abierto.datos.categorias);
+            const datos = ImportarExportar.normalizarDatos(abierto.datos.servicios, abierto.datos.categorias, abierto.datos.borrados);
             return { ...datos, crudo: abierto.datos, cifrado: abierto.cifrado, sal: abierto.sal };
         } catch (err) {
             return { error: err instanceof Error ? err.message : 'Respaldo inválido', codigo: 'formato' };

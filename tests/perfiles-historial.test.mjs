@@ -33,12 +33,14 @@ test('GestorPerfiles: perfil principal por defecto, alta, validación, renombre 
     assert.equal(GestorPerfiles.cargar()[p.id].nombre, 'Casa 2');
 
     store.set(STORAGE_KEYS.DATOS_RESCATE(p.id), '[]');
+    store.set(STORAGE_KEYS.BORRADOS(p.id), '[]');
     store.set(STORAGE_KEYS.DATOS_PERFIL(p.id), '{"no":"es una lista"}');
     assert.equal(GestorPerfiles.cantidadServicios(p.id), 0, 'datos guardados que no son una lista cuentan como cero');
     assert.equal(GestorPerfiles.eliminar(perfiles, PERFIL_PRINCIPAL), false);
     assert.equal(GestorPerfiles.eliminar(perfiles, p.id), true);
     assert.equal(store.has(STORAGE_KEYS.DATOS_PERFIL(p.id)), false);
     assert.equal(store.has(STORAGE_KEYS.DATOS_RESCATE(p.id)), false, 'la copia de rescate se va con el perfil');
+    assert.equal(store.has(STORAGE_KEYS.BORRADOS(p.id)), false, 'el registro de borrados se va con el perfil');
 });
 
 test('GestorPerfiles: los perfiles guardados se validan al cargar (campos conocidos, ids con formato, el principal siempre) y no heredan de Object.prototype', () => {

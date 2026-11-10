@@ -28,10 +28,11 @@ src/ui/     frase-cifrado, campo-frase, frase-modal (la frase de cifrado: guarda
             ui-manager, utils-service, perfil-service, calculador-service, gist-service,
             historial-manager, storage-service
 src/services/  respaldo-cifrado (RespaldoCifrado: sellar y abrir el respaldo cifrado; sin lanzar),
+               sincronizacion (Sincronizacion: `modificada` por factura y registro de borrados `{servicio, id, fecha}`; `sellarCambios` los deduce comparando con la última instantánea, así que cubre borrar, «Limpiar datos» y deshacer sin hooks; `sinBorrados`/`estaMuerta` los aplican; los borrados vencen a los 90 días; puro)
                cliente-gist (ClienteGist: descargar, leer y escribir el Gist con `fetch` inyectado; `evaluarSubidaAutomatica` decide si la subida automática puede pisar el Gist; sin lanzar), calendario-vencimientos, resumen-anual, reporte-datos, reporte-html, orden-cards (todos puros)
                estado-facturas (EstadoFacturas: estado, última factura, filtro y orden)
                resumen-mes (ResumenMes: resumen, borde, detalle y estadísticas mensuales)
-               importar-exportar (ImportarExportar: validación, respaldo con preferencias CONFIG_RESPALDO, hash, fusión y comparación)
+               importar-exportar (ImportarExportar: validación, respaldo con preferencias CONFIG_RESPALDO, hash, fusión —gana la `modificada` más nueva y aplica los borrados— y comparación con lo remoto: `compararConRemoto`)
                — puros: reciben `hoy` y los datos; probados en tests/*.test.mjs sin DOM
 ```
 
@@ -90,6 +91,14 @@ Lo que sale de la app (Gist y archivos exportados) puede llevar montos de factur
 - **Perfiles y perfil activo:** `GestorPerfiles.sanear` rearma cada perfil con sus campos conocidos (el resultado es un `Object.create(null)`: sus claves son datos) y `GestorPerfiles.activoValido` solo acepta un perfil activo que exista. `esIdDeGist` (mismo módulo) es la única validación del id de un Gist.
 - **Categorías y grupos colapsados:** `CategoriaService.getCategorias` pasa lo guardado por `ImportarExportar.normalizarCategorias`; los grupos colapsados (claves = nombres de categorías) se cargan y copian con `SecurityAndUtils.diccionarioDeBanderas`, un diccionario sin prototipo que se guarda como lista de claves.
 - **Historial de deshacer:** `PilaHistorial` valida cada entrada con `normalizarDatos`; con una inválida se descarta entero (es prescindible).
+
+## Sincronización: modificaciones y borrados
+Combinar solo agregaba, así que una factura borrada en un dispositivo reaparecía al sincronizar otro. Ahora (`services/sincronizacion.js`):
+- Cada factura lleva `modificada` (instante ISO, validado con `esInstanteISO`). Si está en los dos lados gana la más nueva; sin fecha en ninguno (datos de antes) gana la remota, como siempre.
+- Cada perfil guarda un registro de borrados `{ servicio, id, fecha }` (`id: null` = servicio entero) en `STORAGE_KEYS.BORRADOS(perfil)`, que viaja en el respaldo y el Gist (entra al hash solo si no está vacío). Vence a los 90 días y tiene tope (`MAX_BORRADOS`).
+- Nadie anota nada a mano: `StorageService.guardarDatosPerfilActivo` llama a `Sincronizacion.sellarCambios`, que compara con la instantánea del último guardado (`_base`), sella lo nuevo o cambiado y anota lo que falta. Por eso cubre borrar, «Limpiar datos», deshacer y rehacer. Lo que entra de afuera (combinar, reemplazar, cargar) llama a `adoptarEstado()` para no sellarse como cambio propio.
+- Combinar elimina lo anterior a un borrado y conserva lo modificado después. Nada se elimina sin confirmar: el aviso de novedades del Gist y el resumen previo (`Elimina N facturas…`) lo muestran antes de aplicar.
+- Un dispositivo que estuvo más de 90 días sin sincronizar puede revivir lo que se borró mientras tanto. Las fechas son las del reloj de cada dispositivo.
 
 ## Contrato de errores
 Los servicios no lanzan excepciones por casos esperados (datos vacíos, fechas repetidas…): devuelven un resultado que la UI interpreta. La única excepción es la validación de datos externos (`ImportarExportar.normalizarDatos`, por medio de `fallar`), que lanza un `Error` con mensaje legible y lo captura quien importa. Lo vigila `tests/architecture.test.mjs`.

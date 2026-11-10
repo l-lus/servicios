@@ -15,6 +15,16 @@ export function esFechaISO(v) {
     return dia <= (mes === 2 && bisiesto ? 29 : DIAS_POR_MES[mes - 1]);
 }
 
+/**
+ * ¿Es un instante en el formato exacto de `Date.toISOString()` ('2026-11-10T15:30:00.000Z') y existe en el calendario?
+ * Con ese formato fijo, comparar dos instantes como texto equivale a compararlos en el tiempo. Para validar instantes que vienen de afuera.
+ * @param {unknown} v
+ */
+export function esInstanteISO(v) {
+    const m = typeof v === 'string' ? /^(\d{4}-\d{2}-\d{2})T([01]\d|2[0-3]):[0-5]\d:[0-5]\d\.\d{3}Z$/.exec(v) : null;
+    return !!m && esFechaISO(m[1]);
+}
+
 /** 'YYYY-MM-DD' → Date a medianoche local. */
 export function parseDate(str) {
     return new Date(str + 'T00:00:00');

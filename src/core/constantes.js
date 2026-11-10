@@ -40,6 +40,8 @@ export const STORAGE_KEYS = Object.freeze({
 
     DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
     HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,
+    // registro de lo que se borró en este perfil (para que el borrado llegue a los otros dispositivos al sincronizar; ver services/sincronizacion.js)
+    BORRADOS: (perfilId) => `gestion_servicios_borrados_${perfilId}`,
     // copia sin tocar de los datos de un perfil cuando al cargarlos hubo que descartar algo inválido (para no perderlo al próximo guardado)
     DATOS_RESCATE: (perfilId) => `gestion_servicios_rescate_${perfilId}`,
 });

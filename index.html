@@ -778,10 +778,10 @@
                 </h3>
             </div>
             <div class="modal-body">
-                <p class="gist-novedades-desc text-muted mb-3">Se encontraron registros en la nube que no están en este
-                    dispositivo:</p>
+                <p class="gist-novedades-desc text-muted mb-3">Se encontraron cambios en la nube que no están en este
+                    dispositivo (registros nuevos o actualizados, o borrados en otro dispositivo):</p>
                 <div id="gist-novedades-detalle" class="gist-novedades-detalle d-flex flex-column gap-2 mb-3"></div>
-                <p class="gist-novedades-pregunta font-weight-bold">¿Querés combinarlos con tus datos locales?</p>
+                <p class="gist-novedades-pregunta font-weight-bold">¿Querés combinarlos con tus datos locales? Antes vas a ver el resumen de lo que se agrega y lo que se elimina.</p>
             </div>
             <div class="modal-footer d-grid grid-cols-2 gap-2 mt-2">
                 <button type="button" id="gist-novedades-ok">
@@ -1895,7 +1895,7 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-respaldo">
                             <h4>Respaldo y sincronización</h4>
-                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad: de <strong>todo</strong>, de <strong>un mes</strong> o de un <strong>rango de fechas</strong> (un respaldo parcial solo incluye las facturas de ese período). Con <strong>Cifrar con la frase</strong> el archivo (<code>.cifrado.json</code>) no muestra montos ni nombres y se abre con la misma frase del Gist: al restaurarlo la app usa la frase guardada o te la pide (no se guarda). <strong>Restaurar</strong> muestra primero un <strong>resumen</strong> de lo que haría <strong>Combinar</strong> (agrega lo nuevo y actualiza las facturas que cambiaron) y de lo que haría <strong>Reemplazar</strong>, con aviso de lo que se perdería. Lo mismo ocurre al bajar del Gist.</p>
+                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad: de <strong>todo</strong>, de <strong>un mes</strong> o de un <strong>rango de fechas</strong> (un respaldo parcial solo incluye las facturas de ese período). Con <strong>Cifrar con la frase</strong> el archivo (<code>.cifrado.json</code>) no muestra montos ni nombres y se abre con la misma frase del Gist: al restaurarlo la app usa la frase guardada o te la pide (no se guarda). <strong>Restaurar</strong> muestra primero un <strong>resumen</strong> de lo que haría <strong>Combinar</strong> (agrega lo nuevo, actualiza las facturas que cambiaron —gana la modificación más reciente— y <strong>elimina lo que borraste en otro dispositivo</strong>) y de lo que haría <strong>Reemplazar</strong>, con aviso de lo que se perdería. Lo mismo ocurre al bajar del Gist. Los borrados se recuerdan 90 días: un dispositivo que estuvo más tiempo sin sincronizar puede volver a traer lo que se borró.</p>
 <p><strong>Sincronización</strong> guarda el respaldo en un Gist de GitHub, siempre <strong>cifrado</strong> con tu <strong>frase de cifrado</strong> (mínimo 20 caracteres; el botón de la chispa genera una): GitHub no ve montos ni ingresos. La frase vale hasta cerrar la pestaña, salvo que marques <em>Recordar en este navegador</em>. Si la perdés, el Gist no se puede recuperar (tus datos locales siguen). Un Gist de antes de cifrar se lee igual y se cifra la próxima vez que subas; sus versiones viejas quedan en el historial de GitHub, así que conviene crear un Gist nuevo y borrar el anterior. Con la sincronización automática la app avisa si hay novedades al abrirla.</p>
 <p>Deshacer y rehacer (botones de la barra) guardan hasta 20 cambios durante 24 horas.</p>
                         </section>

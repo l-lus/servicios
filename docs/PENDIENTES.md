@@ -34,6 +34,6 @@ El cifrado autentica el contenido pero no su antigüedad: quien pueda escribir e
 
 ## Escalabilidad
 
-- **Sincronización sin registro de borrados**: se sube y baja el archivo entero y «combinar» solo agrega. Una factura borrada en un dispositivo reaparece cuando otro, desactualizado, sube. Hace falta marcar borrados (id + fecha) y una fecha de modificación por factura para resolver conflictos; hoy gana siempre lo remoto.
+- **Sincronización con borrados** (hecho: `modificada` por factura y registro de borrados, ver «Sincronización: modificaciones y borrados» en ARQUITECTURA.md). Queda que la subida automática no baja ni fusiona antes de subir: si otro dispositivo agregó algo que acá no se bajó, se pisa en el Gist.
 - **Almacenamiento**: todo el perfil se serializa en cada guardado, más hasta 20 copias del historial, dentro de los ~5 MB de `localStorage` que además se comparten con las otras apps del origen. Alcanza para años de uso personal. Si hiciera falta más: IndexedDB detrás de `StorageHelper` (hoy su API es síncrona, es un cambio grande).
 - **Cada guardado con sincronización automática** hace una lectura y una escritura del Gist completo. Con muchos datos conviene comparar antes un hash local y saltear la subida si no cambió nada.

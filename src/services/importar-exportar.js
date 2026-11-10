@@ -1,6 +1,6 @@
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { plural } from '../core/formato.js';
-import { esFechaISO } from '../core/fechas.js';
+import { esFechaISO, esInstanteISO } from '../core/fechas.js';
 import { STORAGE_KEYS, CARDS, FONDO_CARD_POR_DEFECTO } from '../core/constantes.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { Preferencias } from '../core/preferencias.js';
@@ -12,6 +12,7 @@ import { FONDOS_SVG } from '../data/fondos.js';
 import { EventosApp } from '../core/eventos.js';
 import { normalizarOrdenCards, leerLayout, columnasDesdeOrden, tamanosDeColumnas, esTamanosColumnasValidos } from './orden-cards.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
+import { Sincronizacion, claveBorrado } from './sincronizacion.js';
 
 // ====================================================================
 // IMPORTAR / EXPORTAR — validación, respaldo, fusión y comparación (sin DOM)
@@ -232,7 +233,7 @@ export const ImportarExportar = {
     // Todo lo que entra desde un archivo o un Gist pasa por acá: valida tipos, formatos y rangos,
     // y reconstruye cada objeto solo con los campos conocidos (descarta propiedades extra en vez de
     // rechazar el archivo, para no romper backups viejos). Lanza Error con un mensaje legible.
-    normalizarDatos(servicios, categorias = []) {
+    normalizarDatos(servicios, categorias = [], borrados = undefined) {
         const L = SecurityAndUtils.SECURITY_LIMITS;
         const R = SecurityAndUtils.REGEX_PATTERNS;
         const TIPOS = ['mensual', 'bimestral', 'semestral', 'anual', 'regular', 'complementario', 'transferencia'];
@@ -276,11 +277,13 @@ export const ImportarExportar = {
                 if (f.tipo !== undefined && !TIPOS.includes(f.tipo)) fallar(`${dondeF}: tipo inválido`);
                 if (f.moneda !== undefined && f.moneda !== null && !MONEDAS.includes(f.moneda)) fallar(`${dondeF}: moneda inválida`);
                 if (f.conCredito !== undefined && typeof f.conCredito !== 'boolean') fallar(`${dondeF}: crédito inválido`);
+                if (f.modificada !== undefined && !esInstanteISO(f.modificada)) fallar(`${dondeF}: fecha de modificación inválida`);
 
                 const limpia = { id: f.id, monto: f.monto, fecha: f.fecha, pagada: f.pagada, fechaPago: f.fechaPago ?? null };
                 if (f.tipo !== undefined) limpia.tipo = f.tipo;
                 if (f.moneda) limpia.moneda = f.moneda;
                 if (f.conCredito !== undefined) limpia.conCredito = f.conCredito;
+                if (f.modificada !== undefined) limpia.modificada = f.modificada;
                 return limpia;
             });
 
@@ -297,7 +300,8 @@ export const ImportarExportar = {
 
         const categoriasOk = ImportarExportar.normalizarCategorias(categorias || []);
         if (categoriasOk.length > L.MAX_CATEGORIAS) fallar(`Máximo ${L.MAX_CATEGORIAS} categorías`);
-        return { servicios: serviciosOk, categorias: categoriasOk };
+        // el registro de borrados no rechaza el archivo: lo inválido se descarta (ver Sincronizacion.sanearBorrados)
+        return { servicios: serviciosOk, categorias: categoriasOk, borrados: Sincronizacion.sanearBorrados(borrados) };
     },
 
     /**
@@ -352,9 +356,9 @@ export const ImportarExportar = {
 
     // ── Respaldo ──────────────────────────────────────────────
     /** Archivo de exportación: versión de esquema + hash de integridad + configuración actual. */
-    /** @param {any} servicios @param {any} categorias @param {Date} [ahora] @param {{ desde?: string, hasta?: string } | null} [rango] */
-    async armarRespaldo(servicios, categorias, ahora = new Date(), rango = null) {
-        const contenido = { servicios, categorias };
+    /** @param {any} servicios @param {any} categorias @param {Date} [ahora] @param {{ desde?: string, hasta?: string } | null} [rango] @param {import('./sincronizacion.js').Borrado[]} [borrados] el registro de borrados (un respaldo parcial no lo lleva) */
+    async armarRespaldo(servicios, categorias, ahora = new Date(), rango = null, borrados = []) {
+        const contenido = { servicios, categorias, ...(borrados.length ? { borrados } : {}) };
         return {
             version: SecurityAndUtils.SECURITY_LIMITS.SCHEMA_VERSION,
             fecha: ahora.toISOString(),
@@ -442,40 +446,86 @@ export const ImportarExportar = {
     /** true si el hash coincide o no hay hash (versión 1); false si el archivo fue modificado o está dañado. */
     async hashCoincide(datos) {
         if (datos.hash === undefined) return true;
-        const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: datos.servicios, categorias: datos.categorias });
+        const conBorrados = Array.isArray(datos.borrados) && datos.borrados.length > 0;
+        const hash = await SecurityAndUtils.calcularHashSHA256({ servicios: datos.servicios, categorias: datos.categorias, ...(conBorrados ? { borrados: datos.borrados } : {}) });
         return hash === datos.hash;
     },
 
     // ── Fusión ────────────────────────────────────────────────
-    /** Fusiona `remotos` dentro de `locales` (MUTA `locales`) y cuenta lo agregado/actualizado. */
-    fusionarServicios(locales, remotos) {
-        let serviciosAgregados = 0, facturasAgregadas = 0, facturasActualizadas = 0, ingresosAgregados = 0;
-        remotos.forEach(servicioRemoto => {
+    /**
+     * Fusiona `remotos` dentro de `locales` (MUTA `locales`) y cuenta lo agregado, actualizado y eliminado.
+     * - Una factura en los dos lados se reemplaza por la remota si esta tiene `modificada` más nueva (sin `modificada` en ninguna: si cambió, gana la remota).
+     * - `borrados` (el registro de los dos lados, ya unido): una factura anterior a su borrado no se agrega y, si está en `locales`, se elimina;
+     *   un servicio borrado que se queda sin facturas también. Una factura modificada después del borrado se conserva.
+     */
+    fusionarServicios(locales, remotos, borrados = []) {
+        const cuenta = { serviciosAgregados: 0, facturasAgregadas: 0, facturasActualizadas: 0, ingresosAgregados: 0, facturasEliminadas: 0, ingresosEliminados: 0, serviciosEliminados: 0 };
+        const idx = Sincronizacion.indice(borrados);
+        Sincronizacion.sinBorrados(remotos, borrados).forEach(servicioRemoto => {
             const esIngresos = servicioRemoto.id === SERVICIO_INGRESOS_ID;
             const servicioLocal = locales.find(s => s.id === servicioRemoto.id);
             if (!servicioLocal) {
                 locales.push(servicioRemoto);
-                if (esIngresos) ingresosAgregados += servicioRemoto.facturas.length;
-                else { serviciosAgregados++; facturasAgregadas += servicioRemoto.facturas.length; }
+                if (esIngresos) cuenta.ingresosAgregados += servicioRemoto.facturas.length;
+                else { cuenta.serviciosAgregados++; cuenta.facturasAgregadas += servicioRemoto.facturas.length; }
             } else {
                 servicioRemoto.facturas.forEach(f => {
-                    const idx = servicioLocal.facturas.findIndex(fl => fl.id === f.id);
-                    if (idx === -1) {
+                    const idxLocal = servicioLocal.facturas.findIndex(fl => fl.id === f.id);
+                    if (idxLocal === -1) {
                         servicioLocal.facturas.push(f);
-                        if (esIngresos) ingresosAgregados++; else facturasAgregadas++;
-                    } else if (cambioFactura(servicioLocal.facturas[idx], f)) {
-                        servicioLocal.facturas[idx] = f;
-                        if (!esIngresos) facturasActualizadas++;
+                        if (esIngresos) cuenta.ingresosAgregados++; else cuenta.facturasAgregadas++;
+                        return;
+                    }
+                    const local = servicioLocal.facturas[idxLocal];
+                    // con fecha en alguno de los dos lados gana la más nueva; sin fecha en ninguno, la remota
+                    const remotaGana = (local.modificada || f.modificada) ? (f.modificada || '') > (local.modificada || '') : true;
+                    if (remotaGana && cambioFactura(local, f)) {
+                        servicioLocal.facturas[idxLocal] = f;
+                        if (!esIngresos) cuenta.facturasActualizadas++;
                     }
                 });
             }
         });
-        return { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados };
+        // lo borrado en otro dispositivo que acá sigue estando (aunque lo remoto ya no lo traiga)
+        for (let i = locales.length - 1; i >= 0; i--) {
+            const servicio = locales[i];
+            const esIngresos = servicio.id === SERVICIO_INGRESOS_ID;
+            const vivas = servicio.facturas.filter(f => !Sincronizacion.estaMuerta(idx, servicio.id, f));
+            const eliminadas = servicio.facturas.length - vivas.length;
+            if (eliminadas) {
+                servicio.facturas = vivas;
+                if (esIngresos) cuenta.ingresosEliminados += eliminadas; else cuenta.facturasEliminadas += eliminadas;
+            }
+            if (!esIngresos && !vivas.length && idx.has(claveBorrado(servicio.id))) {
+                locales.splice(i, 1);
+                cuenta.serviciosEliminados++;
+            }
+        }
+        return cuenta;
     },
 
     /** Lo que cambiaría fusionar `remotos` en `locales`, sin tocar `locales`. */
-    simularFusion(locales, remotos) {
-        return ImportarExportar.fusionarServicios(JSON.parse(JSON.stringify(locales)), JSON.parse(JSON.stringify(remotos)));
+    simularFusion(locales, remotos, borrados = []) {
+        return ImportarExportar.fusionarServicios(JSON.parse(JSON.stringify(locales)), JSON.parse(JSON.stringify(remotos)), borrados);
+    },
+
+    /** ¿La cuenta de una fusión (o de su simulación) tiene algo distinto de cero? */
+    hayCambios(diff) {
+        return Object.values(diff).some(n => n > 0);
+    },
+
+    /**
+     * Qué traería lo remoto frente a lo local: unión de los borrados de los dos lados (la que se guarda al combinar), la simulación de la fusión,
+     * las categorías nuevas y lo que se perdería al reemplazar. `hayNovedades` = combinar cambiaría algo acá.
+     * @param {{ servicios: any[], categorias: string[], borrados: import('./sincronizacion.js').Borrado[] }} local
+     * @param {{ servicios: any[], categorias: string[], borrados?: import('./sincronizacion.js').Borrado[] }} remoto @param {Date} ahora
+     */
+    compararConRemoto(local, remoto, ahora) {
+        const borrados = Sincronizacion.unirBorrados(local.borrados, remoto.borrados, ahora);
+        const diff = ImportarExportar.simularFusion(local.servicios, remoto.servicios, borrados);
+        const categoriasNuevas = ImportarExportar.categoriasNuevas(local.categorias, remoto.categorias).length;
+        const perdidas = ImportarExportar.perdidasAlReemplazar(local.servicios, remoto.servicios);
+        return { borrados, diff, categoriasNuevas, perdidas, hayNovedades: ImportarExportar.hayCambios(diff) || categoriasNuevas > 0 };
     },
 
     categoriasNuevas(actuales, remotas) {
@@ -503,23 +553,21 @@ export const ImportarExportar = {
     },
 
     /** Resume qué haría Combinar y qué haría Reemplazar al aplicar `remotos` sobre `locales`. */
-    compararRespaldo(locales, remotos, categoriasActuales, categoriasRemotas) {
+    compararRespaldo(locales, remotos, categoriasActuales, categoriasRemotas, borrados = []) {
+        // lo que combinar agregaría no incluye lo que un borrado deja muerto
+        const vivos = Sincronizacion.sinBorrados(remotos, borrados);
         const idsLocales = new Set(locales.map(s => s.id));
-        const soloEnRemoto = sinIngresos(remotos).filter(s => !idsLocales.has(s.id));
-        const enAmbos = sinIngresos(remotos).filter(s => idsLocales.has(s.id));
-        const ingRem = remotos.find(s => s.id === SERVICIO_INGRESOS_ID);
+        const soloEnRemoto = sinIngresos(vivos).filter(s => !idsLocales.has(s.id));
+        const enAmbos = sinIngresos(vivos).filter(s => idsLocales.has(s.id));
+        const ingRem = vivos.find(s => s.id === SERVICIO_INGRESOS_ID);
         const ingLoc = locales.find(s => s.id === SERVICIO_INGRESOS_ID);
 
-        let facturasNuevas = 0, facturasConflicto = 0;
+        let facturasNuevas = 0;
         enAmbos.forEach(sRem => {
             const sLoc = locales.find(s => s.id === sRem.id);
             const idsLoc = new Set(sLoc.facturas.map(f => f.id));
             sRem.facturas.forEach(f => {
                 if (!idsLoc.has(f.id)) facturasNuevas++;
-                else {
-                    const fLoc = sLoc.facturas.find(fl => fl.id === f.id);
-                    if (fLoc && cambioFactura(fLoc, f)) facturasConflicto++;
-                }
             });
         });
         const idsIngLoc = new Set((ingLoc?.facturas || []).map(f => f.id));
@@ -534,12 +582,19 @@ export const ImportarExportar = {
         if (ingresosNuevos > 0) agregar.push(plural(ingresosNuevos, 'ingreso nuevo', 'ingresos nuevos'));
         if (catsNuevas.length > 0) agregar.push(plural(catsNuevas.length, 'categoría nueva', 'categorías nuevas'));
 
+        const sim = ImportarExportar.simularFusion(locales, remotos, borrados);
+        const eliminar = [];
+        if (sim.serviciosEliminados > 0) eliminar.push(plural(sim.serviciosEliminados, 'servicio', 'servicios'));
+        if (sim.facturasEliminadas > 0) eliminar.push(plural(sim.facturasEliminadas, 'factura', 'facturas'));
+        if (sim.ingresosEliminados > 0) eliminar.push(plural(sim.ingresosEliminados, 'ingreso', 'ingresos'));
+
         const partes = [];
         if (agregar.length > 0) partes.push(`Agrega ${agregar.join(', ')}`);
-        if (facturasConflicto > 0) partes.push(facturasConflicto === 1 ? 'Se actualiza 1 factura' : `Se actualizan ${facturasConflicto} facturas`);
+        if (sim.facturasActualizadas > 0) partes.push(sim.facturasActualizadas === 1 ? 'Se actualiza 1 factura' : `Se actualizan ${sim.facturasActualizadas} facturas`);
+        if (eliminar.length > 0) partes.push(`Elimina ${eliminar.join(', ')} (borrados en el otro dispositivo)`);
 
         const contenido = ImportarExportar.describirContenido(remotos, categoriasRemotas);
-        const hayAlgo = sinIngresos(remotos).length > 0 || categoriasRemotas.length > 0 || !!ingRem?.facturas.length;
+        const hayAlgo = sinIngresos(remotos).length > 0 || categoriasRemotas.length > 0 || !!remotos.find(s => s.id === SERVICIO_INGRESOS_ID)?.facturas.length;
         return {
             combinar: partes.length > 0 ? partes.join('. ') : 'No modifica nada',
             reemplazar: hayAlgo ? `Carga ${contenido}` : 'No modifica nada',

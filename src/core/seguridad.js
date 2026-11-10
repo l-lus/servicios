@@ -13,6 +13,7 @@ export const SecurityAndUtils = (function () {
         MAX_SERVICIOS: 2000,
         MAX_FACTURAS_POR_SERVICIO: 20000,
         MAX_MONTO: 99999999,
+        MAX_BORRADOS: 5000,
         // v1 = '1.0' (sin hash); v2 agrega hash SHA-256 de { servicios, categorias }
         SCHEMA_VERSION: 2,
     };

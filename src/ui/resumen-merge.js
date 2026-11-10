@@ -43,14 +43,14 @@ export function describirPerdidas({ servicios, facturas, ingresos }) {
 
 /**
  * Abre el modal y devuelve 'combinar', 'reemplazar' o null (canceló).
- * @param {{ origen: string, locales: any[], categoriasLocales: string[], remotos: any[], categoriasRemotas: string[], modoInicial?: string, rango?: {desde: string, hasta: string} | null }} p
+ * @param {{ origen: string, locales: any[], categoriasLocales: string[], remotos: any[], categoriasRemotas: string[], borrados?: import('../services/sincronizacion.js').Borrado[], modoInicial?: string, rango?: {desde: string, hasta: string} | null }} p
  */
-export function preguntarMerge({ origen, locales, categoriasLocales, remotos, categoriasRemotas, modoInicial = 'combinar', rango = null }) {
-    const { combinar, reemplazar } = ImportarExportar.compararRespaldo(locales, remotos, categoriasLocales, categoriasRemotas);
+export function preguntarMerge({ origen, locales, categoriasLocales, remotos, categoriasRemotas, borrados = [], modoInicial = 'combinar', rango = null }) {
+    const { combinar, reemplazar } = ImportarExportar.compararRespaldo(locales, remotos, categoriasLocales, categoriasRemotas, borrados);
 
     // Cómo quedarían los datos con cada opción
     const fusion = clon(locales);
-    ImportarExportar.fusionarServicios(fusion, clon(remotos));
+    ImportarExportar.fusionarServicios(fusion, clon(remotos), borrados);
     const { lista: catsFusion } = ImportarExportar.fusionarCategorias(categoriasLocales, categoriasRemotas);
     const quedaCombinar = ImportarExportar.describirContenido(fusion, catsFusion);
     const quedaReemplazar = ImportarExportar.describirContenido(remotos, categoriasRemotas);

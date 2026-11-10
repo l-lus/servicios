@@ -4,6 +4,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
+import { Sincronizacion } from '../services/sincronizacion.js';
 import { ModalManager } from './gestor-modales.js';
 import { RespaldoCifrado } from '../services/respaldo-cifrado.js';
 import { FraseCifrado } from './frase-cifrado.js';
@@ -15,12 +16,16 @@ import { FraseModal } from './frase-modal.js';
 export class StorageService {
     constructor(app) {
         this.app = app;
+        /** La instantánea de los datos al último guardado (ver Sincronizacion.sellarCambios). */
+        this._base = Sincronizacion.instantanea([]);
     }
 
     // ── Getters de conveniencia ───────────────────────────────
     get servicios() { return EstadoApp.servicios; }
     set servicios(v) { EstadoApp.servicios = v; }
     get perfilActivo() { return EstadoApp.perfilActivo; }
+    get borrados() { return EstadoApp.borrados; }
+    set borrados(v) { EstadoApp.borrados = v; }
     get INGRESOS_ID() { return this.app.SERVICIO_INGRESOS_ID; }
 
     // ── Carga / guardado por perfil ───────────────────────────
@@ -33,14 +38,23 @@ export class StorageService {
             const crudo = StorageHelper.getObject(key, null);
             const { servicios, descartados } = ImportarExportar.sanearGuardados(crudo);
             this.servicios = servicios;
+            this.borrados = Sincronizacion.sanearBorrados(StorageHelper.getObject(STORAGE_KEYS.BORRADOS(this.perfilActivo), []));
+            this.adoptarEstado();
             const ilegible = !!texto && crudo === null;
             if (descartados > 0 || ilegible) this._avisarDatosDescartados(texto, ilegible ? 0 : descartados);
             this.app.historial_mgr.inicializarHistorial();
         } catch (error) {
             console.error('Error al cargar datos del perfil:', error);
             this.servicios = [];
+            this.borrados = [];
+            this.adoptarEstado();
             this.app.historial_mgr.inicializarHistorial();
         }
+    }
+
+    /** Lo que hay ahora pasa a ser la referencia para detectar cambios propios: lo que viene de afuera (combinar, reemplazar) ya trae sus fechas y no se vuelve a sellar. */
+    adoptarEstado() {
+        this._base = Sincronizacion.instantanea(this.servicios);
     }
 
     /** @param {string} texto lo guardado, tal cual estaba @param {number} descartados 0 = no se pudo leer nada */
@@ -56,8 +70,13 @@ export class StorageService {
 
     guardarDatosPerfilActivo() {
         try {
+            // Fecha de modificación de lo cambiado y registro de lo borrado desde el último guardado
+            const sellado = Sincronizacion.sellarCambios(this._base, this.servicios, this.borrados, new Date());
+            this.borrados = sellado.borrados;
+            this._base = sellado.base;
             const key = STORAGE_KEYS.DATOS_PERFIL(this.perfilActivo);
             const ok = StorageHelper.setItem(key, this.servicios);
+            if (ok) StorageHelper.setItem(STORAGE_KEYS.BORRADOS(this.perfilActivo), this.borrados);
             // Auto-subida a Gist (si está habilitada)
             if (ok && this.app.gist) this.app.gist.subirAuto();
         } catch (error) {
@@ -90,7 +109,7 @@ export class StorageService {
 
     // Archivo de exportación: versión de esquema + hash de integridad.
     async _construirExportacion() {
-        return ImportarExportar.armarRespaldo(this.servicios, this.app.categoria.getCategorias());
+        return ImportarExportar.armarRespaldo(this.servicios, this.app.categoria.getCategorias(), new Date(), null, this.borrados);
     }
 
     // Verifica versión y hash de un archivo importado. Devuelve false si el
@@ -122,7 +141,7 @@ export class StorageService {
         try {
             let servicios = this.servicios, categorias = this.app.categoria.getCategorias();
             if (rango) ({ servicios, categorias } = ImportarExportar.recortarPorRango(servicios, categorias, rango.desde, rango.hasta));
-            const datos = await ImportarExportar.armarRespaldo(servicios, categorias, new Date(), rango);
+            const datos = await ImportarExportar.armarRespaldo(servicios, categorias, new Date(), rango, rango ? [] : this.borrados);
             const sufijo = !rango ? this.app.utils.obtenerFechaLocal()
                 : (rango.desde && rango.hasta ? `${rango.desde}_${rango.hasta}` : (rango.desde ? `desde_${rango.desde}` : `hasta_${rango.hasta}`));
             let contenido = JSON.stringify(datos, null, 2);
@@ -163,12 +182,12 @@ export class StorageService {
                     const crudo = await this._leerArchivo(/** @type {string} */ (reader.result));
                     if (!crudo) return;
                     if (!(await this._verificarArchivo(crudo))) return;
-                    const datos = ImportarExportar.normalizarDatos(crudo.servicios, crudo.categorias);
+                    const datos = ImportarExportar.normalizarDatos(crudo.servicios, crudo.categorias, crudo.borrados);
 
                     const elegido = await preguntarMerge({
                         origen: file.name,
                         locales: this.servicios, categoriasLocales: this.app.categoria.getCategorias(),
-                        remotos: datos.servicios, categoriasRemotas: datos.categorias,
+                        remotos: datos.servicios, categoriasRemotas: datos.categorias, borrados: this.compararConRemoto(datos).borrados,
                         modoInicial: modo, rango: crudo.rango && typeof crudo.rango === 'object' ? crudo.rango : null,
                     });
                     if (elegido) this._aplicarImportacion(elegido, datos, crudo);
@@ -204,16 +223,22 @@ export class StorageService {
     }
 
     // ── Merge helpers ─────────────────────────────────────────
-    _mergeServicios(serviciosRemoto) {
-        return ImportarExportar.fusionarServicios(this.servicios, serviciosRemoto);
+    /** Qué traería lo remoto (`{ servicios, categorias, borrados }`) frente a lo que hay acá: ver ImportarExportar.compararConRemoto. */
+    compararConRemoto(remoto) {
+        return ImportarExportar.compararConRemoto({ servicios: this.servicios, categorias: this.app.categoria.getCategorias(), borrados: this.borrados }, remoto, new Date());
     }
 
     _aplicarImportacion(modo, datos, crudo = null) {
         const cats = Array.isArray(datos.categorias) ? datos.categorias : [];
         if (modo === 'combinar') {
-            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados } = this._mergeServicios(datos.servicios);
+            const { borrados } = this.compararConRemoto(datos);
+            const cuenta = ImportarExportar.fusionarServicios(this.servicios, datos.servicios, borrados);
+            const { serviciosAgregados, facturasAgregadas, facturasActualizadas, ingresosAgregados, facturasEliminadas, ingresosEliminados, serviciosEliminados } = cuenta;
             const categoriasAgregadas = this.app.gist.mergeCategorias(datos.categorias);
-            if (!serviciosAgregados && !facturasAgregadas && !facturasActualizadas && !ingresosAgregados && !categoriasAgregadas) {
+            this.borrados = borrados;
+            // lo fusionado ya trae sus fechas: no se vuelve a sellar como cambio propio
+            this.adoptarEstado();
+            if (!ImportarExportar.hayCambios(cuenta) && !categoriasAgregadas) {
                 this.app.ui.mostrarToast('No hay datos nuevos para agregar', 'info'); return;
             }
             const partes = [];
@@ -222,10 +247,16 @@ export class StorageService {
             if (facturasActualizadas > 0) partes.push(this.app.utils.plural(facturasActualizadas, 'actualizada', 'actualizadas'));
             if (ingresosAgregados > 0) partes.push(this.app.utils.plural(ingresosAgregados, 'ingreso nuevo', 'ingresos nuevos'));
             if (categoriasAgregadas > 0) partes.push(this.app.utils.plural(categoriasAgregadas, 'categoría', 'categorías'));
+            if (facturasEliminadas > 0) partes.push(this.app.utils.plural(facturasEliminadas, 'factura eliminada', 'facturas eliminadas'));
+            if (ingresosEliminados > 0) partes.push(this.app.utils.plural(ingresosEliminados, 'ingreso eliminado', 'ingresos eliminados'));
+            if (serviciosEliminados > 0) partes.push(this.app.utils.plural(serviciosEliminados, 'servicio eliminado', 'servicios eliminados'));
             this.app.utils.postGuardado('importar (combinar)');
             this.app.ui.mostrarToast(`Importado: ${partes.join(', ')}`, 'success');
         } else {
             this.servicios = datos.servicios;
+            // queda igual que lo remoto: también su registro de borrados, y lo que se pierde acá no cuenta como borrado propio
+            this.borrados = datos.borrados ?? [];
+            this.adoptarEstado();
             this.app.categoria.saveCategorias(cats);
             if (crudo) ImportarExportar.aplicarConfigImportada(crudo);
             this.app.utils.postGuardado('importar (reemplazar)');

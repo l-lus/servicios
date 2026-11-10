@@ -100,6 +100,7 @@ export const GestorPerfiles = {
         if (id === PERFIL_PRINCIPAL || !perfiles[id]) return false;
         StorageHelper.removeItem(STORAGE_KEYS.DATOS_PERFIL(id));
         StorageHelper.removeItem(STORAGE_KEYS.DATOS_RESCATE(id));
+        StorageHelper.removeItem(STORAGE_KEYS.BORRADOS(id));
         delete perfiles[id];
         GestorPerfiles.guardar(perfiles);
         return true;
