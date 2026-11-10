@@ -30,6 +30,17 @@ test('abrir lee también un respaldo viejo en claro y avisa que no estaba cifrad
     assert.equal(abierto.datos.servicios[0].id, 'luz');
 });
 
+test('abrir con exigirCifrado rechaza el contenido en claro (un Gist ya cifrado no se puede degradar a JSON plano con el hash recalculado) y sigue abriendo el cifrado', async () => {
+    const respaldo = await ImportarExportar.armarRespaldo(servicios, []);
+    const enClaro = await RespaldoCifrado.abrir(JSON.stringify(respaldo), FRASE, { exigirCifrado: true });
+    assert.equal(enClaro.codigo, 'sin-cifrar');
+    assert.equal('datos' in enClaro, false);
+    const { texto } = /** @type {{ texto: string }} */ (await RespaldoCifrado.sellar(respaldo, FRASE));
+    const cifrado = await RespaldoCifrado.abrir(texto, FRASE, { exigirCifrado: true });
+    assert.equal(/** @type {any} */ (cifrado).cifrado, true);
+    assert.equal((await RespaldoCifrado.abrir('no es json', FRASE, { exigirCifrado: true })).codigo, 'formato');
+});
+
 test('abrir distingue: falta la frase, frase inválida, frase incorrecta y contenido alterado', async () => {
     const { texto } = /** @type {{ texto: string }} */ (await RespaldoCifrado.sellar({ servicios, categorias: [] }, FRASE));
     assert.equal((await RespaldoCifrado.abrir(texto, '')).codigo, 'sin-frase');

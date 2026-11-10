@@ -13,6 +13,9 @@ import { ModalManager } from './gestor-modales.js';
 import { IconosAnimados } from './iconos-animados.js';
 import { $, valorDe } from '../core/dom.js';
 
+/** Errores al abrir el Gist que impiden darlo por bueno: no se usa ni se pisa sin que la persona lo confirme. */
+const CODIGOS_GIST_NO_CONFIABLE = ['descifrado', 'sin-frase', 'frase', 'sin-cifrar'];
+
 // ============================================================
 // GIST SERVICE — sincronización con GitHub Gist (Adaptado)
 // ============================================================
@@ -38,8 +41,11 @@ export class GistService {
     getPerfil() { return EstadoApp.perfiles[this.perfilActivo] || {}; }
 
     setPerfil(campos) {
-        if (!EstadoApp.perfiles[this.perfilActivo]) return;
-        Object.assign(EstadoApp.perfiles[this.perfilActivo], campos);
+        const perfil = EstadoApp.perfiles[this.perfilActivo];
+        if (!perfil) return;
+        // `gistCifrado` vale para un Gist en particular: al cambiar de Gist se vuelve a empezar (el nuevo puede ser uno viejo, todavía en claro)
+        const cambiaDeGist = 'gistId' in campos && (campos.gistId || '') !== (perfil.gistId || '') && !('gistCifrado' in campos);
+        Object.assign(perfil, campos, cambiaDeGist ? { gistCifrado: false } : {});
         this.app.perfil.guardar();
     }
 
@@ -64,6 +70,13 @@ export class GistService {
             this._avisoFraseMostrado = true;
         }
         this.app.ui.mostrarToast('Falta la frase de cifrado (Ajustes → GitHub Gist). La sincronización con el Gist está en pausa', 'error', 6000);
+    }
+
+    /** La sincronización automática no pisa ni usa un Gist que no se puede dar por bueno. @param {string} codigo */
+    _avisarAutoFrenada(codigo) {
+        this.app.ui.mostrarToast(codigo === 'sin-cifrar'
+            ? 'Sincronización automática frenada: el Gist estaba cifrado y ahora está en claro (alguien lo cambió). Para reemplazarlo con tus datos, subí a mano'
+            : 'Sincronización automática frenada: la frase no abre el Gist actual. Revisá la frase o subí a mano para reemplazarlo', 'error', 8000);
     }
 
     abrirModal() {
@@ -250,14 +263,18 @@ export class GistService {
             return true;
         } catch (err) {
             const codigo = /** @type {any} */ (err).codigo;
-            if (codigo !== 'descifrado' && codigo !== 'sin-frase' && codigo !== 'frase') return true;
+            if (!CODIGOS_GIST_NO_CONFIABLE.includes(codigo)) return true;
             if (silencioso) {
-                this.app.ui.mostrarToast('Sincronización automática frenada: la frase no abre el Gist actual. Revisá la frase o subí a mano para reemplazarlo', 'error', 8000);
+                this._avisarAutoFrenada(codigo);
                 return false;
             }
-            return ModalManager.confirmar(
-                'La frase no abre el contenido actual del Gist (otra frase, o el Gist fue alterado). Si seguís, el Gist se reemplaza con tus datos locales y su contenido actual se pierde. ¿Subir igual?',
-                'Reemplazar', '#icon-cloud-sync', { titulo: 'La frase no abre el Gist' });
+            return codigo === 'sin-cifrar'
+                ? ModalManager.confirmar(
+                    'El Gist estaba cifrado y ahora su contenido está en claro: alguien lo cambió. Si seguís, se reemplaza con tus datos locales, cifrados. ¿Subir igual?',
+                    'Reemplazar', '#icon-cloud-sync', { titulo: 'El Gist fue alterado' })
+                : ModalManager.confirmar(
+                    'La frase no abre el contenido actual del Gist (otra frase, o el Gist fue alterado). Si seguís, el Gist se reemplaza con tus datos locales y su contenido actual se pierde. ¿Subir igual?',
+                    'Reemplazar', '#icon-cloud-sync', { titulo: 'La frase no abre el Gist' });
         }
     }
 
@@ -288,12 +305,9 @@ export class GistService {
                         }
                     }
                 } catch (e) {
-                    // Una frase que no abre el Gist frena la subida (pisaría lo que los otros dispositivos leen); si no se puede comparar por otro motivo (sin internet, etc.), se deja pasar
+                    // Una frase que no abre el Gist (o un Gist cifrado que aparece en claro) frena la subida (pisaría lo que los otros dispositivos leen); si no se puede comparar por otro motivo (sin internet, etc.), se deja pasar
                     const codigo = /** @type {any} */ (e).codigo;
-                    if (codigo === 'descifrado' || codigo === 'sin-frase' || codigo === 'frase') {
-                        this.app.ui.mostrarToast('Sincronización automática frenada: la frase no abre el Gist actual. Revisá la frase o subí a mano para reemplazarlo', 'error', 8000);
-                        return;
-                    }
+                    if (CODIGOS_GIST_NO_CONFIABLE.includes(codigo)) { this._avisarAutoFrenada(codigo); return; }
                     console.warn('AutoSync guard: no se pudo comparar con remoto, se permite la subida.', e);
                 }
             }
@@ -371,6 +385,7 @@ export class GistService {
             }
         } catch (e) {
             console.error("AutoSync error:", e);
+            if (/** @type {any} */ (e).codigo === 'sin-cifrar') this._avisarAutoFrenada('sin-cifrar');
         } finally {
             this._spinStop();
         }
@@ -402,7 +417,8 @@ export class GistService {
         }
         if (typeof content !== 'string' || content.length > maxBytes) throw new Error('Archivo del Gist demasiado grande');
 
-        const abierto = await RespaldoCifrado.abrir(content, FraseCifrado.actual());
+        // Un Gist que ya se vio cifrado no se acepta en claro (ver RespaldoCifrado.abrir)
+        const abierto = await RespaldoCifrado.abrir(content, FraseCifrado.actual(), { exigirCifrado: this.getPerfil().gistCifrado === true });
         if ('error' in abierto) {
             const error = new Error(abierto.error);
             /** @type {any} */ (error).codigo = abierto.codigo;
@@ -413,6 +429,8 @@ export class GistService {
         if (abierto.cifrado) {
             // AES-GCM ya garantiza que no fue alterado; la sal se guarda para reutilizarla en la próxima subida
             if (abierto.sal) this._sales[gistId] = abierto.sal;
+            // desde ahora este Gist no se acepta en claro (también en un dispositivo que solo baja)
+            if (!this.getPerfil().gistCifrado) this.setPerfil({ gistCifrado: true });
         } else {
             // Un Gist de antes de cifrar: se lee igual (con la verificación de integridad de siempre) y se avisa que se cifra al subir
             await this.app.storage.advertirIntegridad(parsed, 'El archivo del Gist');

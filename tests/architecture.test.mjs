@@ -388,6 +388,7 @@ test('Cifrado: el Gist solo se sube sellado con la frase y la frase no está en 
     assert.match(gist, /RespaldoCifrado\.sellar\(/);
     assert.match(gist, /content: sellado\.texto/);
     assert.doesNotMatch(gist, /content: payload/, 'el Gist no debe subir el respaldo en claro');
+    assert.match(gist, /RespaldoCifrado\.abrir\([^;]*exigirCifrado: this\.getPerfil\(\)\.gistCifrado === true/, 'un Gist que ya se vio cifrado no se acepta en claro');
     const sinComentarios = (f) => fs.readFileSync(f, 'utf8').replace(/\/\/.*$/gm, '');
     const filtran = srcFiles.filter(f => /console\.(log|warn|error|info)\([^)]*(FraseCifrado\.actual|FRASE_CIFRADO)/.test(sinComentarios(f)));
     assert.deepEqual(filtran, [], 'la frase no se escribe en logs');
