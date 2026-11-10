@@ -88,7 +88,7 @@ export class StorageService {
     async _verificarArchivo(datos) {
         if (ImportarExportar.esVersionMasNueva(datos)) {
             const continuar = await ModalManager.confirmar(
-                `El archivo es de una versión más nueva (${SecurityAndUtils.sanitizeString(String(datos.version), 20)}). Puede haber incompatibilidades. ¿Continuar?`,
+                `El archivo es de una versión más nueva (${SecurityAndUtils.limpiarTexto(String(datos.version), 20)}). Puede haber incompatibilidades. ¿Continuar?`,
                 'Continuar', '#icon-help', { titulo: 'Versión detectada' }
             );
             if (!continuar) return false;

@@ -254,7 +254,9 @@ export const ImportarExportar = {
             if (typeof s.id !== 'string' || !R.ID.test(s.id)) fallar(`${donde}: id inválido`);
             if (idsServicios.has(s.id)) fallar(`${donde}: id duplicado`);
             idsServicios.add(s.id);
-            if (typeof s.nombre !== 'string' || !s.nombre.trim() || s.nombre.length > L.MAX_NOMBRE_LENGTH) fallar(`${donde}: nombre inválido`);
+            if (typeof s.nombre !== 'string' || s.nombre.length > L.MAX_NOMBRE_LENGTH) fallar(`${donde}: nombre inválido`);
+            const nombre = SecurityAndUtils.limpiarTexto(s.nombre, L.MAX_NOMBRE_LENGTH);
+            if (!nombre) fallar(`${donde}: nombre inválido`);
             if (!Array.isArray(s.facturas)) fallar(`${donde}: facturas no es una lista`);
 
             const idsFacturas = new Set();
@@ -279,7 +281,10 @@ export const ImportarExportar = {
                 return limpia;
             });
 
-            const limpio = { id: s.id, nombre: s.nombre, categoria: textoOpcional(s.categoria, L.MAX_NOMBRE_LENGTH, `${donde}: categoría`), facturas };
+            // nombre y categoría pasan por la misma limpieza que la lista de categorías: así una categoría importada sigue coincidiendo con la de sus servicios
+            const categoria = SecurityAndUtils.limpiarTexto(textoOpcional(s.categoria, L.MAX_NOMBRE_LENGTH, `${donde}: categoría`), L.MAX_NOMBRE_LENGTH);
+            /** @type {any} */
+            const limpio = { id: s.id, nombre, categoria, facturas };
             if (s.activo !== undefined) {
                 if (typeof s.activo !== 'boolean') fallar(`${donde}: activo inválido`);
                 limpio.activo = s.activo;
@@ -292,14 +297,14 @@ export const ImportarExportar = {
         return { servicios: serviciosOk, categorias: categoriasOk };
     },
 
-    // Categorías: solo strings, saneadas, sin vacías ni duplicadas
+    // Categorías: solo strings, limpias (ver limpiarTexto), sin vacías ni duplicadas
     // (sin distinguir mayúsculas).
     normalizarCategorias(categorias) {
         const L = SecurityAndUtils.SECURITY_LIMITS;
         const vistas = new Set();
         return categorias
             .filter(c => typeof c === 'string')
-            .map(c => SecurityAndUtils.sanitizeString(c, L.MAX_NOMBRE_LENGTH))
+            .map(c => SecurityAndUtils.limpiarTexto(c, L.MAX_NOMBRE_LENGTH))
             .filter(c => {
                 const clave = c.toLowerCase();
                 if (!c || vistas.has(clave)) return false;

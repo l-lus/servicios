@@ -30,7 +30,7 @@ export const ToastManager = (function () {
     /** @param {string} mensaje @param {string} [tipo] @param {number} [duracion] @param {string | null} [detalle] @param {{ label: string, fn: () => void } | (() => void) | null} [accion] */
     function mostrarToast(mensaje, tipo = 'info', duracion = 3000, detalle = null, accion = null) {
         const texto = detalle ? `${mensaje}, ${detalle}` : mensaje;
-        const textoLimpio = SecurityAndUtils.sanitizeString(texto, 200);
+        const textoLimpio = SecurityAndUtils.limpiarTexto(texto, 200);
         const ultimo = _toastQueue[_toastQueue.length - 1];
         const actual = _toastRunning ? _mensajeActual : null;
         if ((ultimo && ultimo.mensaje === textoLimpio) || actual === textoLimpio) return;
@@ -147,7 +147,7 @@ export const ToastManager = (function () {
 
     /** Muestra un toast con barra de progreso (indeterminada hasta que se informe un porcentaje). */
     function iniciarProgreso(mensaje) {
-        _progreso = { mensaje: SecurityAndUtils.sanitizeString(mensaje, 200), porcentaje: null };
+        _progreso = { mensaje: SecurityAndUtils.limpiarTexto(mensaje, 200), porcentaje: null };
         if (!_toastRunning) _mostrarProgreso();
     }
 

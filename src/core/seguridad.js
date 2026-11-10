@@ -1,5 +1,5 @@
 // ============================================================
-// SEGURIDAD Y UTILIDADES (Sanitización, XSS, IDs, Hash)
+// SEGURIDAD Y UTILIDADES (límites, limpieza de texto, IDs, hash)
 // ============================================================
 export const SecurityAndUtils = (function () {
     'use strict';
@@ -19,20 +19,14 @@ export const SecurityAndUtils = (function () {
         FECHA: /^\d{4}-\d{2}-\d{2}$/,
     };
 
-    function sanitizeString(str, maxLength = SECURITY_LIMITS.MAX_STRING_LENGTH) {
+    /**
+     * Texto que viene de afuera (formulario, respaldo, Gist) listo para guardar: sin caracteres de control, sin espacios en los extremos y con un largo máximo.
+     * No quita ni escapa símbolos (comillas, <, &…): son datos válidos y el escape lo hace html`...` al mostrarlos.
+     * @param {unknown} str @param {number} [maxLength]
+     */
+    function limpiarTexto(str, maxLength = SECURITY_LIMITS.MAX_STRING_LENGTH) {
         if (typeof str !== 'string') return '';
-        return str
-            .replace(/[<>"'`]/g, '')
-            .replace(/javascript:/gi, '')
-            .replace(/data:/gi, '')
-            .replace(/vbscript:/gi, '')
-            .replace(/on\w+\s*=/gi, '')
-            .replace(/[\x00-\x1F\x7F]/g, '')
-            .replace(/&lt;/gi, '')
-            .replace(/&gt;/gi, '')
-            .replace(/&#/g, '')
-            .trim()
-            .substring(0, maxLength);
+        return str.replace(/[\x00-\x1F\x7F]/g, '').trim().substring(0, maxLength);
     }
 
     function escapeHtml(s) {
@@ -69,7 +63,7 @@ export const SecurityAndUtils = (function () {
     return {
         SECURITY_LIMITS,
         REGEX_PATTERNS,
-        sanitizeString,
+        limpiarTexto,
         escapeHtml,
         reviverJSONSeguro,
         generarIDSeguro,

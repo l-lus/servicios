@@ -12,6 +12,14 @@ test('normalizarDatos: acepta datos válidos y descarta propiedades extra', () =
     assert.deepEqual(r.categorias, ['Casa'], 'sin duplicados (sin distinguir mayúsculas) ni vacías');
 });
 
+test('normalizarDatos: nombres y categorías conservan sus símbolos (apóstrofes, <, &, «data:»); solo se quitan los caracteres de control y los espacios de los extremos', () => {
+    const r = IE.normalizarDatos([srv('a', [], { nombre: " O'Higgins <luz> & gas\u0000 ", categoria: "D'Elía\n" })], ["D'Elía", 'Metadata: casa', ' d\'elía ']);
+    assert.equal(r.servicios[0].nombre, "O'Higgins <luz> & gas");
+    assert.equal(r.servicios[0].categoria, "D'Elía", 'la categoría del servicio queda igual que la de la lista');
+    assert.deepEqual(r.categorias, ["D'Elía", 'Metadata: casa']);
+    assert.throws(() => IE.normalizarDatos([srv('a', [], { nombre: ' \u0001 ' })]), /nombre inválido/, 'un nombre que queda vacío no vale');
+});
+
 test('normalizarDatos: rechaza estructuras inválidas con un mensaje legible', () => {
     assert.throws(() => IE.normalizarDatos('nada'), /falta "servicios"/);
     assert.throws(() => IE.normalizarDatos([srv('a bc')]), /id inválido/);

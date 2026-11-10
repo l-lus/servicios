@@ -93,8 +93,8 @@ export class CategoriaService {
     }
 
     guardarNueva() {
-        // Mismo saneamiento que las categorías importadas (ver StorageService._normalizarCategorias)
-        const nombre = SecurityAndUtils.sanitizeString($('nueva-categoria-nombre').value,
+        // Misma limpieza que las categorías importadas (ver ImportarExportar.normalizarCategorias)
+        const nombre = SecurityAndUtils.limpiarTexto($('nueva-categoria-nombre').value,
             SecurityAndUtils.SECURITY_LIMITS.MAX_NOMBRE_LENGTH);
         if (!nombre) { this.app.mostrarToast('El nombre es requerido', 'error'); return; }
         const cats = this.getCategorias();

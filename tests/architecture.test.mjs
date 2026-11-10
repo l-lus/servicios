@@ -315,6 +315,11 @@ test('HTML seguro: no quedan escapes manuales (escaparHTML / escapeHtml) fuera d
     assert.deepEqual(violaciones, [], 'Usá html`...`: escapa cada interpolación');
 });
 
+test('HTML seguro: no vuelve el saneador por lista negra (sanitizeString); el texto se limpia con limpiarTexto y se escapa al mostrarlo', () => {
+    const violaciones = srcFiles.filter(f => /sanitizeString/.test(fs.readFileSync(f, 'utf8')));
+    assert.deepEqual(violaciones, [], 'Quitar símbolos de un texto no es seguridad y rompe datos válidos');
+});
+
 test('tema-inicial.js: sus listas coinciden con core/temas.js, core/estilo-calendario.js y core/posicion-header.js', async () => {
     const codigo = fs.readFileSync('src/core/tema-inicial.js', 'utf8');
     const listaTemas = JSON.parse(/var TEMAS_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
