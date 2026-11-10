@@ -5,6 +5,9 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
+import { RespaldoCifrado } from '../services/respaldo-cifrado.js';
+import { FraseCifrado } from './frase-cifrado.js';
+import { ModalManager } from './gestor-modales.js';
 import { IconosAnimados } from './iconos-animados.js';
 import { $, valorDe } from '../core/dom.js';
 
@@ -17,6 +20,9 @@ export class GistService {
         this.DEBOUNCE_MS = 3000;
         this._debounceTimer = undefined;
         this._subiendo = false;
+        /** La sal del último sobre visto de cada Gist: al volver a subir se reutiliza y no hay que derivar la clave de nuevo. @type {Record<string, string>} */
+        this._sales = {};
+        this._avisoFraseMostrado = false;
     }
 
     get servicios() { return EstadoApp.servicios; }
@@ -46,6 +52,53 @@ export class GistService {
         if (toggle) toggle.classList.toggle('on');
     }
 
+    toggleFrase() {
+        const inp = $('gist-frase');
+        if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    toggleRecordarFrase() {
+        $('gist-recordar-frase-toggle')?.classList.toggle('on');
+    }
+
+    /** Pone en el campo una frase nueva al azar, a la vista para poder anotarla. */
+    generarFrase() {
+        const inp = $('gist-frase');
+        if (!inp) return;
+        inp.value = FraseCifrado.generar();
+        inp.type = 'text';
+        this.app.ui.mostrarToast('Frase generada: anotala en un lugar seguro. Sin ella no se puede recuperar el Gist', 'info', 7000);
+    }
+
+    /**
+     * Lee la frase del modal y la guarda (en la sesión o, con «Recordar», en este navegador). Vacía la olvida. Con `avisar` muestra por qué no sirve una frase corta.
+     * Devuelve false solo si la frase escrita no es válida.
+     */
+    _guardarFraseDesdeModal(avisar = true) {
+        const campo = $('gist-frase');
+        if (!campo) return true;
+        const frase = campo.value;
+        const recordar = !!$('gist-recordar-frase-toggle')?.classList.contains('on');
+        if (!frase.trim()) { FraseCifrado.olvidar(); return true; }
+        const evaluada = FraseCifrado.evaluar(frase);
+        if (!evaluada.ok) {
+            if (avisar) this.app.mostrarToast(evaluada.motivo, 'error');
+            return false;
+        }
+        if (!FraseCifrado.guardar(frase, recordar) && avisar) this.app.mostrarToast('No se pudo guardar la frase en este navegador', 'warning');
+        if (evaluada.debil && avisar) this.app.ui.mostrarToast(evaluada.motivo, 'warning', 5000);
+        return true;
+    }
+
+    /** Falta la frase: avisa una sola vez por sesión (la sincronización automática no debe insistir). */
+    _avisarFraseFaltante(silencioso) {
+        if (silencioso) {
+            if (this._avisoFraseMostrado) return;
+            this._avisoFraseMostrado = true;
+        }
+        this.app.ui.mostrarToast('Falta la frase de cifrado (Ajustes → GitHub Gist). La sincronización con el Gist está en pausa', 'error', 6000);
+    }
+
     abrirModal() {
         const perfil = this.getPerfil();
         $('gist-token').value = this.getToken();
@@ -55,6 +108,10 @@ export class GistService {
 
         const toggle = $('gist-autosync-toggle');
         if (toggle) toggle.classList.toggle('on', !!perfil.gistAuto);
+
+        $('gist-frase').value = FraseCifrado.actual();
+        $('gist-frase').type = 'password';
+        $('gist-recordar-frase-toggle')?.classList.toggle('on', FraseCifrado.recordada());
 
         const elSync = $('gist-sync-status');
         if (perfil.gistLastSync) {
@@ -85,6 +142,7 @@ export class GistService {
             this.app.mostrarToast('El Gist ID tiene un formato inválido', 'error');
             return;
         }
+        if (!this._guardarFraseDesdeModal()) return;
 
         if (token) StorageHelper.setItem(STORAGE_KEYS.GIST_TOKEN, token);
         else StorageHelper.removeItem(STORAGE_KEYS.GIST_TOKEN);
@@ -149,32 +207,46 @@ export class GistService {
         this._setBusy(true);
         if (!silencioso) this.app.mostrarToast('Subiendo...', 'info');
 
-        const payload = JSON.stringify(await this.app.storage._construirExportacion(), null, 2);
-        const filename = `deltaF_${this.perfilActivo}.json`;
-
-        const url = this.esIdValido(perfil.gistId) ? `https://api.github.com/gists/${perfil.gistId}` : 'https://api.github.com/gists';
-        const method = this.esIdValido(perfil.gistId) ? 'PATCH' : 'POST';
-
+        const existente = this.esIdValido(perfil.gistId);
         try {
+            // El Gist solo se sube cifrado: sin una frase válida no se sube nada
+            const frase = FraseCifrado.actual();
+            if (!FraseCifrado.disponible()) { this._avisarFraseFaltante(silencioso); return; }
+            // Subir con una frase que no abre el Gist actual lo dejaría ilegible para los otros dispositivos: se pide confirmación (a mano) o se frena (automática)
+            if (existente && !(await this._fraseAbreElRemoto(perfil.gistId, token, silencioso))) return;
+
+            const respaldo = await this.app.storage._construirExportacion();
+            const sellado = await RespaldoCifrado.sellar(respaldo, frase, { sal: this._sales[perfil.gistId] ?? null });
+            if ('error' in sellado) throw new Error(sellado.error);
+
+            const filename = `deltaF_${this.perfilActivo}.json`;
+            const url = existente ? `https://api.github.com/gists/${perfil.gistId}` : 'https://api.github.com/gists';
             const res = await fetch(url, {
-                method,
+                method: existente ? 'PATCH' : 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    description: `DeltaF backup — ${perfil.nombre || this.perfilActivo}`,
+                    // sin el nombre del perfil: la descripción de un Gist es visible para quien tenga el enlace
+                    description: 'Servicios — respaldo cifrado',
                     public: false,
-                    files: { [filename]: { content: payload } }
+                    files: { [filename]: { content: sellado.texto } }
                 })
             });
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
 
-            this.setPerfil({ gistId: data.id, gistLastSync: new Date().toISOString() });
+            this._sales[data.id] = sellado.sal;
+            // Un Gist que ya existía puede tener versiones anteriores en claro: GitHub las conserva en el historial del Gist
+            const avisarHistorial = existente && !perfil.gistCifrado;
+            this.setPerfil({ gistId: data.id, gistLastSync: new Date().toISOString(), gistCifrado: true });
 
             const elId = $('gist-id');
             if (elId) elId.value = data.id;
 
             if (!silencioso) this.app.mostrarToast('Subida exitosa ✓', 'success');
+            if (avisarHistorial) {
+                this.app.ui.mostrarToast('Este Gist ya existía: sus versiones anteriores siguen en claro en el historial de GitHub. Para borrarlas, creá un Gist nuevo (dejá el ID vacío) y eliminá el viejo', 'warning', 12000);
+            }
         } catch (err) {
             console.error(err);
             if (!silencioso) this.app.mostrarToast(`Error al subir: ${err.message}`, 'error');
@@ -197,8 +269,30 @@ export class GistService {
         if (token) StorageHelper.setItem(STORAGE_KEYS.GIST_TOKEN, token);
         else if (tokenInput) StorageHelper.removeItem(STORAGE_KEYS.GIST_TOKEN);
 
+        this._guardarFraseDesdeModal(false);
         this.setPerfil({ gistId, gistAuto: auto });
         this.actualizarBotones();
+    }
+
+    /**
+     * ¿La frase actual abre el contenido del Gist? true si abre, si el Gist está vacío, en claro o no se pudo consultar (sin red: no se bloquea nada);
+     * false si no abre: a mano se pregunta si reemplazarlo igual; en la subida automática se frena y se avisa.
+     */
+    async _fraseAbreElRemoto(gistId, token, silencioso) {
+        try {
+            await this._fetchGist(gistId, token, { avisarSinCifrar: false });
+            return true;
+        } catch (err) {
+            const codigo = /** @type {any} */ (err).codigo;
+            if (codigo !== 'descifrado' && codigo !== 'sin-frase' && codigo !== 'frase') return true;
+            if (silencioso) {
+                this.app.ui.mostrarToast('Sincronización automática frenada: la frase no abre el Gist actual. Revisá la frase o subí a mano para reemplazarlo', 'error', 8000);
+                return false;
+            }
+            return ModalManager.confirmar(
+                'La frase no abre el contenido actual del Gist (otra frase, o el Gist fue alterado). Si seguís, el Gist se reemplaza con tus datos locales y su contenido actual se pierde. ¿Subir igual?',
+                'Reemplazar', '#icon-cloud-sync', { titulo: 'La frase no abre el Gist' });
+        }
     }
 
     subir() {
@@ -210,6 +304,7 @@ export class GistService {
     subirAuto() {
         const perfil = this.getPerfil();
         if (!perfil.gistAuto || !this.getToken()) return;
+        if (!FraseCifrado.disponible()) { this._avisarFraseFaltante(true); return; }
         clearTimeout(this._debounceTimer);
         this._debounceTimer = setTimeout(async () => {
             if (this._subiendo) return;
@@ -230,7 +325,12 @@ export class GistService {
                         }
                     }
                 } catch (e) {
-                    // Si no se puede comparar, dejar pasar (sin internet, etc.)
+                    // Una frase que no abre el Gist frena la subida (pisaría lo que los otros dispositivos leen); si no se puede comparar por otro motivo (sin internet, etc.), se deja pasar
+                    const codigo = /** @type {any} */ (e).codigo;
+                    if (codigo === 'descifrado' || codigo === 'sin-frase' || codigo === 'frase') {
+                        this.app.ui.mostrarToast('Sincronización automática frenada: la frase no abre el Gist actual. Revisá la frase o subí a mano para reemplazarlo', 'error', 8000);
+                        return;
+                    }
                     console.warn('AutoSync guard: no se pudo comparar con remoto, se permite la subida.', e);
                 }
             }
@@ -278,6 +378,7 @@ export class GistService {
     async autoSyncInit() {
         const perfil = this.getPerfil();
         if (!perfil.gistAuto || !this.getToken() || !this.esIdValido(perfil.gistId)) return;
+        if (!FraseCifrado.disponible()) { this._avisarFraseFaltante(true); return; }
 
         this._spinStart();
         try {
@@ -312,7 +413,8 @@ export class GistService {
         }
     }
 
-    async _fetchGist(gistId, token) {
+    /** @param {string} gistId @param {string} token @param {{ avisarSinCifrar?: boolean }} [opciones] */
+    async _fetchGist(gistId, token, { avisarSinCifrar = true } = {}) {
         /** @type {Record<string, string>} */
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
@@ -337,10 +439,22 @@ export class GistService {
         }
         if (typeof content !== 'string' || content.length > maxBytes) throw new Error('Archivo del Gist demasiado grande');
 
-        const parsed = JSON.parse(content, SecurityAndUtils.reviverJSONSeguro);
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato inválido');
+        const abierto = await RespaldoCifrado.abrir(content, FraseCifrado.actual());
+        if ('error' in abierto) {
+            const error = new Error(abierto.error);
+            /** @type {any} */ (error).codigo = abierto.codigo;
+            throw error;
+        }
+        const parsed = abierto.datos;
         const datos = ImportarExportar.normalizarDatos(parsed.servicios, parsed.categorias);
-        await this.app.storage.advertirIntegridad(parsed, 'El archivo del Gist');
+        if (abierto.cifrado) {
+            // AES-GCM ya garantiza que no fue alterado; la sal se guarda para reutilizarla en la próxima subida
+            if (abierto.sal) this._sales[gistId] = abierto.sal;
+        } else {
+            // Un Gist de antes de cifrar: se lee igual (con la verificación de integridad de siempre) y se avisa que se cifra al subir
+            await this.app.storage.advertirIntegridad(parsed, 'El archivo del Gist');
+            if (avisarSinCifrar) this.app.ui.mostrarToast('Este Gist está sin cifrar. Se cifra la próxima vez que subas', 'warning', 6000);
+        }
         return { ...datos, crudo: parsed };
     }
 

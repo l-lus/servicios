@@ -36,6 +36,7 @@ export const STORAGE_KEYS = Object.freeze({
     CARD_VISIBLE: (cual) => `tarjeta-visible-${cual}`,
     SERVICIOS_COLLAPSE: 'servicios-collapse-state',
     GIST_TOKEN: 'gist_token',
+    FRASE_CIFRADO: 'frase_cifrado',   // la frase con que se cifran el Gist y los respaldos: solo en la sesión o, con «recordar», en el navegador (ver core/secretos.js); nunca va al respaldo
 
     DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
     HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,

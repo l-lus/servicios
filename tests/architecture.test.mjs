@@ -378,6 +378,18 @@ test('DOM: la UI busca elementos con el helper $ de core/dom.js (sin document.ge
     assert.deepEqual(violaciones, []);
 });
 
+test('Cifrado: el Gist solo se sube sellado con la frase y la frase no está en el respaldo ni en los logs', () => {
+    const gist = fs.readFileSync('src/ui/gist-service.js', 'utf8');
+    assert.match(gist, /RespaldoCifrado\.sellar\(/);
+    assert.match(gist, /content: sellado\.texto/);
+    assert.doesNotMatch(gist, /content: payload/, 'el Gist no debe subir el respaldo en claro');
+    const sinComentarios = (f) => fs.readFileSync(f, 'utf8').replace(/\/\/.*$/gm, '');
+    const filtran = srcFiles.filter(f => /console\.(log|warn|error|info)\([^)]*(FraseCifrado\.actual|FRASE_CIFRADO)/.test(sinComentarios(f)));
+    assert.deepEqual(filtran, [], 'la frase no se escribe en logs');
+    const respaldo = sinComentarios('src/services/importar-exportar.js');
+    assert.doesNotMatch(respaldo, /FRASE_CIFRADO|GIST_TOKEN/);
+});
+
 test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
     const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));

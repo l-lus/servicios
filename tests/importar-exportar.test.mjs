@@ -115,6 +115,8 @@ test('contar y perdidasAlReemplazar: lo local que no está en el respaldo', () =
 test('config exportable en respaldos: valida, exporta y detecta cambios de preferencias', async () => {
     const exportable = IE.obtenerConfigExportable();
     assert.equal('gestion_servicios_theme' in exportable, false, 'el tema es de cada dispositivo: no viaja en el respaldo');
+    assert.equal(JSON.stringify(exportable).includes('frase'), false, 'la frase de cifrado y el token nunca viajan en el respaldo');
+    assert.equal('gist_token' in exportable || 'frase_cifrado' in exportable, false);
     assert.equal(typeof exportable['estilo-calendario'], 'string');
     assert.equal(typeof exportable['estilo-tarjeta'], 'string');
     assert.equal(typeof exportable['posicion-header'], 'string');
