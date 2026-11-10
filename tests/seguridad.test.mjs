@@ -20,7 +20,11 @@ test('diccionarioDeBanderas: copia sin prototipo que solo conserva las claves en
 
     const vacio = diccionarioDeBanderas({});
     for (const clave of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) assert.equal(vacio[clave], undefined, clave);
-    for (const malo of [null, undefined, 'texto', 7, ['a'], true]) assert.deepEqual(Object.keys(diccionarioDeBanderas(malo)), [], String(malo));
+    for (const malo of [null, undefined, 'texto', 7, true]) assert.deepEqual(Object.keys(diccionarioDeBanderas(malo)), [], String(malo));
+
+    const guardado = JSON.parse(JSON.stringify(Object.keys(d)), SecurityAndUtils.reviverJSONSeguro);
+    assert.deepEqual(Object.keys(diccionarioDeBanderas(guardado)), ['Casa', 'constructor'], 'guardado como lista de claves, «constructor» sobrevive a la lectura');
+    assert.deepEqual(Object.keys(diccionarioDeBanderas(['a', 7, null, 'b', 'x'.repeat(200)])), ['a', 'b'], 'de una lista solo valen los textos');
 
     const copia = diccionarioDeBanderas(d);
     delete copia.Casa;

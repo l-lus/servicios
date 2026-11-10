@@ -47,15 +47,17 @@ export const SecurityAndUtils = (function () {
 
     /**
      * Diccionario de banderas cuyas claves son datos (nombres de categorías, ids…): una copia que no hereda de Object.prototype (una clave como
-     * «constructor» o «toString» no existe hasta que se la marca) y que solo conserva las claves en `true`. Sirve para validar uno guardado y para copiarlo.
+     * «constructor» o «toString» no existe hasta que se la marca) y que solo conserva las claves en `true`. Sirve para validar uno guardado (lista de claves u objeto) y para copiarlo; para guardarlo: `Object.keys(d)`.
      * @param {unknown} crudo @param {number} [maxClaves] @param {number} [maxLargo]
      * @returns {Record<string, true>}
      */
     function diccionarioDeBanderas(crudo, maxClaves = 500, maxLargo = SECURITY_LIMITS.MAX_STRING_LENGTH) {
         const limpio = Object.create(null);
-        if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) return limpio;
-        Object.keys(crudo).slice(0, maxClaves).forEach(clave => {
-            if (crudo[clave] === true && clave.length <= maxLargo) limpio[clave] = true;
+        if (!crudo || typeof crudo !== 'object') return limpio;
+        // Se guarda como lista de claves (un objeto guardado perdería «constructor» al leerlo: reviverJSONSeguro descarta esa clave); el objeto es el formato viejo
+        const claves = Array.isArray(crudo) ? crudo : Object.keys(crudo).filter(clave => crudo[clave] === true);
+        claves.slice(0, maxClaves).forEach(clave => {
+            if (typeof clave === 'string' && clave.length <= maxLargo) limpio[clave] = true;
         });
         return limpio;
     }

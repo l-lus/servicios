@@ -37,7 +37,8 @@ export default async (b) => {
 
     // categorías guardadas con basura y una categoría llamada «constructor» (clave heredada en un objeto común): se listan solo las válidas y el grupo se puede colapsar y expandir
     await sembrar({
-        [CLAVE]: JSON.stringify([{ id: 'tel', nombre: 'Tel', categoria: 'constructor', facturas: [] }]),
+        // (dos categorías: con una sola la lista no se agrupa)
+        [CLAVE]: JSON.stringify([{ id: 'tel', nombre: 'Tel', categoria: 'constructor', facturas: [] }, { id: 'luz', nombre: 'Luz', categoria: 'Casa', facturas: [] }]),
         'categorias-servicios': JSON.stringify(['constructor', 7, null, { a: 1 }, 'Casa', 'casa', '  ']),
         'cat-agrupacion': 'on',
         'cat-colapsadas': JSON.stringify({ Casa: 'si', toString: 1 }),

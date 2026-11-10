@@ -87,7 +87,7 @@ Lo que sale de la app (Gist y archivos exportados) puede llevar montos de factur
 `localStorage` es un dato de afuera más: en GitHub Pages el origen (`usuario.github.io`) se comparte con las otras apps de la cuenta, que pueden leer y escribir las mismas claves. Por eso lo guardado se valida al cargar, igual que un respaldo:
 - **Servicios y facturas:** `ImportarExportar.sanearGuardados` (usa `normalizarDatos`, pero conserva lo válido y cuenta lo descartado en vez de rechazar todo). Si descarta algo, `StorageService` deja el texto original en `STORAGE_KEYS.DATOS_RESCATE(perfil)` y ofrece descargarlo, porque el próximo guardado pisa los datos.
 - **Perfiles y perfil activo:** `GestorPerfiles.sanear` rearma cada perfil con sus campos conocidos (el resultado es un `Object.create(null)`: sus claves son datos) y `GestorPerfiles.activoValido` solo acepta un perfil activo que exista. `esIdDeGist` (mismo módulo) es la única validación del id de un Gist.
-- **Categorías y grupos colapsados:** `CategoriaService.getCategorias` pasa lo guardado por `ImportarExportar.normalizarCategorias`; los grupos colapsados (claves = nombres de categorías) se cargan y copian con `SecurityAndUtils.diccionarioDeBanderas`, un diccionario sin prototipo.
+- **Categorías y grupos colapsados:** `CategoriaService.getCategorias` pasa lo guardado por `ImportarExportar.normalizarCategorias`; los grupos colapsados (claves = nombres de categorías) se cargan y copian con `SecurityAndUtils.diccionarioDeBanderas`, un diccionario sin prototipo que se guarda como lista de claves.
 - **Historial de deshacer:** `PilaHistorial` valida cada entrada con `normalizarDatos`; con una inválida se descarta entero (es prescindible).
 
 ## Contrato de errores

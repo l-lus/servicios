@@ -370,7 +370,7 @@ export class VistaServicios {
             contenido.classList.add('collapsed');
             this.app._catColapsadas[cat] = true;
         }
-        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, this.app._catColapsadas);
+        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, Object.keys(this.app._catColapsadas));
     }
 
     _lpStart(event, headerElement) {
@@ -408,7 +408,7 @@ export class VistaServicios {
                 this.app._catColapsadas[cat] = true;
             }
         });
-        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, this.app._catColapsadas);
+        StorageHelper.setItem(STORAGE_KEYS.CAT_COLAPSADAS, Object.keys(this.app._catColapsadas));
         this.app.mostrarToast(estaColapsado ? 'Categorías expandidas' : 'Categorías colapsadas', 'info');
     }
 
