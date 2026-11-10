@@ -155,13 +155,14 @@ export class OrdenTarjetas {
         const lista = $('lista-orden-cards');
         if (!lista) return;
         const ordenDeseado = esEscritorio() ? this.obtenerOrdenPC() : this.obtenerOrdenMovil();
-        const ordenActual = Array.from(lista.children).map(item => item.id.replace('orden-item-', ''));
-        if (ordenActual.join() !== ordenDeseado.join()) {
-            ordenDeseado.forEach(cual => {
-                const item = $('orden-item-' + cual);
-                if (item) lista.appendChild(item);
-            });
-        }
+        // Solo se mueve lo que cambia de lugar: volver a insertar un ítem que ya está en su posición reinicia sus transiciones (el interruptor saltaba sin animarse)
+        let i = 0;
+        ordenDeseado.forEach(cual => {
+            const item = $('orden-item-' + cual);
+            if (!item) return;
+            if (lista.children[i] !== item) lista.insertBefore(item, lista.children[i] ?? null);
+            i++;
+        });
     }
 
     alternarVisibilidad(cual) {
