@@ -15,7 +15,7 @@ index.html  sw.js  package.json  tsconfig.json  scripts/{release.mjs,servidor.py
 assets/{manifest.json, icons/, fonts/, styles/{tokens,base,vistas,menus-modales,utilidades-responsivo}.css}
 src/main.js
 src/data/   fondos (catálogo de ilustraciones SVG para la tarjeta de resumen)
-src/core/   dom ($, $$, formulario, selectPorId, delegado, valorDe, alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
+src/core/   cifrado (sobre AES-GCM con frase: PBKDF2-SHA-256 y sal propia de cada destino; sin DOM, `crypto` inyectable), dom ($, $$, formulario, selectPorId, delegado, valorDe, alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
             busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp),
             seguridad (SecurityAndUtils), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
