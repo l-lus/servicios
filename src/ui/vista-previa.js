@@ -28,6 +28,8 @@ const TOLERANCIA_ALINEAR_PX = 40;
 /** Deslizamiento del contenido del panel al pasar de una vista a otra, y lo que hay que arrastrar (px) para que cuente como deslizar. */
 const DESLIZ_MS = 130;
 const DESLIZ_PX = 36;
+/** Duración del desplazamiento que devuelve la página a su lugar al cerrar la vista previa. */
+const DESLIZ_SALIDA_MS = 300;
 const UMBRAL_DESLIZAR_PX = 50;
 /** Rueda sobre el panel: lo que hay que girar para pasar de vista, y la pausa después de pasar (una vuelta rápida o la inercia del trackpad no saltan varias). */
 const UMBRAL_RUEDA = 40;
@@ -278,6 +280,7 @@ function abrir(cfg) {
     if (_activa) return;
     const objetivo = cfg.idObjetivo ? $(cfg.idObjetivo) : null;
     if (cfg.idObjetivo && !objetivo) return;
+    cancelAnimationFrame(_animSalida);
     _activa = { cfg, objetivo, restaurar: null, filas: [], circulos: null, observer: null, timer: null };
     _cerrando = false;
     cfg.antes?.();
@@ -390,6 +393,36 @@ function cerrar() {
     setTimeout(() => { if (_activa && _cerrando) _finalizar(); }, 600);
 }
 
+/** Animación en curso del desplazamiento de salida (ver `_soltarEspacioInferior`). */
+let _animSalida = 0;
+
+function _quitarEspacioInferior() {
+    document.body.classList.remove('vista-previa-activa');
+    document.body.style.removeProperty('--vp-panel-h');
+}
+
+/**
+ * Al cerrar, el espacio que se reservó abajo para el panel se quita; si la página estaba desplazada hacia ese espacio, el navegador la acomoda de golpe (salta arriba).
+ * Para que sea suave se lleva primero el desplazamiento hasta donde queda sin ese espacio y recién entonces se lo quita.
+ */
+function _soltarEspacioInferior() {
+    cancelAnimationFrame(_animSalida);
+    const reservado = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    const maximo = Math.max(0, document.documentElement.scrollHeight - reservado - window.innerHeight);
+    const desde = window.scrollY;
+    if (desde <= maximo + 1 || Movimiento.reducido()) { _quitarEspacioInferior(); return; }
+    const inicio = performance.now();
+    const paso = (/** @type {number} */ ahora) => {
+        // otra vista previa abierta mientras tanto se queda con el espacio
+        if (_activa) return;
+        const t = Math.min(1, (ahora - inicio) / DESLIZ_SALIDA_MS);
+        window.scrollTo(0, desde + (maximo - desde) * (1 - Math.pow(1 - t, 3)));
+        if (t < 1) _animSalida = requestAnimationFrame(paso);
+        else _quitarEspacioInferior();
+    };
+    _animSalida = requestAnimationFrame(paso);
+}
+
 function _finalizar() {
     const activa = _activa;
     if (!activa) return;
@@ -398,8 +431,8 @@ function _finalizar() {
     clearTimeout(activa.timer);
     activa.observer?.disconnect();
     if (activa.objetivo) activa.objetivo.classList.remove('vista-previa-objetivo');
-    document.body.classList.remove('vista-previa-activa', 'vista-previa-sin-velo');
-    document.body.style.removeProperty('--vp-panel-h');
+    document.body.classList.remove('vista-previa-sin-velo');
+    _soltarEspacioInferior();
     $('vista-previa-velo')?.classList.remove('show');
     const panel = $('vista-previa-panel');
     if (panel && document.activeElement instanceof HTMLElement && panel.contains(document.activeElement)) document.activeElement.blur();

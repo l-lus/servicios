@@ -1320,7 +1320,6 @@ body.vista-previa-sin-velo .vista-previa-velo {
 
 body.vista-previa-activa {
     padding-bottom: var(--vp-panel-h);
-    transition: padding-bottom var(--dur-collapse) ease-out;   /* al pasar de una vista a otra el panel cambia de alto: el espacio de abajo lo acompaña */
 }
 
 body.vista-previa-activa .mutacion-saliente {

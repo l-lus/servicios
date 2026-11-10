@@ -22,7 +22,8 @@ body {
     overflow-anchor: none;
     overflow-y: auto;
     touch-action: pan-y;
-    transition: background var(--transition-ui), color var(--transition-ui);
+    /* padding-bottom: el espacio de la vista previa se anima también al cerrarla (la clase vista-previa-activa ya no está) y al pasar de una vista a otra */
+    transition: background var(--transition-ui), color var(--transition-ui), padding-bottom var(--dur-collapse) ease-out;
 }
 
 /* Pantalla de carga inicial: oculta el body y muestra un aro girando hasta
