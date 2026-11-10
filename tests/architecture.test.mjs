@@ -277,6 +277,18 @@ test('HTML seguro: innerHTML, outerHTML= e insertAdjacentHTML solo dentro de cor
     assert.deepEqual(violaciones, [], 'Usá montar(el, html`...`) o replaceChildren() para limpiar');
 });
 
+test('CSP: sin comodines de red (cada origen externo se nombra) y sin encabezados que como <meta> no hacen nada', () => {
+    const htmlIndex = fs.readFileSync('index.html', 'utf8');
+    const csp = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(htmlIndex)?.[1] ?? '';
+    const directivas = csp.split(';').map(d => d.trim().split(/\s+/)).filter(d => d[0]);
+    const comodines = directivas.filter(([, ...fuentes]) => fuentes.some(f => ['https:', 'http:', '*', "'unsafe-inline'", "'unsafe-eval'"].includes(f)));
+    assert.deepEqual(comodines, [], 'una fuente como https: deja sacar datos hacia cualquier servidor (p. ej. con una imagen)');
+    assert.deepEqual(directivas.find(d => d[0] === 'img-src'), ['img-src', "'self'", 'data:']);
+    assert.deepEqual(directivas.find(d => d[0] === 'connect-src')?.slice(1).sort(),
+        ["'self'", 'https://api.github.com', 'https://dolarapi.com', 'https://gist.githubusercontent.com']);
+    assert.doesNotMatch(htmlIndex, /http-equiv="(X-Content-Type-Options|X-XSS-Protection|X-Frame-Options)"/i, 'los navegadores ignoran estos encabezados en un <meta>');
+});
+
 test('CSP: index.html exige Trusted Types con la única política de core/html.js', () => {
     const htmlIndex = fs.readFileSync('index.html', 'utf8');
     const csp = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(htmlIndex)?.[1] ?? '';
