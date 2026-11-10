@@ -2,7 +2,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS, CARDS, CORTES_LAYOUT } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
 import {
-    normalizarOrdenCards, columnasDesdeOrden, prepararColumnas, moverCard, tamanosDeColumnas, MAX_COLUMNAS,
+    clavesDeLayout, leerLayout, columnasDesdeOrden, prepararColumnas, moverCard, tamanosDeColumnas,
 } from '../services/orden-cards.js';
 import { uiAnimarReubicacion, uiArrastreLargo, REUBICACION_MS } from './arrastre.js';
 import { VistaPrevia, VENTANA_PERSONALIZAR_MS, AVISO_PERSONALIZAR_MS } from './vista-previa.js';
@@ -15,7 +15,8 @@ const $ = id => document.getElementById(id);
 const consultaEscritorio = window.matchMedia(CORTES_LAYOUT.ESCRITORIO);
 const consultaAncho = window.matchMedia(CORTES_LAYOUT.ANCHO);
 const esEscritorio = () => consultaEscritorio.matches;
-const maxColumnas = () => (!esEscritorio() ? 1 : consultaAncho.matches ? MAX_COLUMNAS : 2);
+const modoColumnas = () => (!esEscritorio() ? 1 : consultaAncho.matches ? 3 : 2);
+const maxColumnas = modoColumnas;
 
 const SELECTOR_ENCABEZADOS = '#card-resumen, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
 const SELECTOR_CARDS = '#card-resumen, #card-estadisticas, #card-calendario, #card-servicios';
@@ -39,47 +40,33 @@ export class OrdenTarjetas {
         return new Set(CARDS.filter(c => this.esVisible(c)));
     }
 
-    obtenerOrdenPC() {
-        return normalizarOrdenCards(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null));
+    // Cada cantidad de columnas (1 celular, 2 y 3 en escritorio) tiene su propio orden y tamaños (ver clavesDeLayout / leerLayout en services/orden-cards.js)
+    _leerLayout() {
+        return leerLayout(modoColumnas(), (clave) => StorageHelper.getObject(clave, null));
     }
 
-    guardarOrdenPC(orden) {
-        StorageHelper.setItem(STORAGE_KEYS.ORDEN_CARDS, orden);
+    obtenerOrden() {
+        return this._leerLayout().orden;
     }
 
-    obtenerTamanosPC() {
-        return StorageHelper.getObject(STORAGE_KEYS.COLUMNAS_CARDS, null);
+    guardarOrden(orden) {
+        StorageHelper.setItem(clavesDeLayout(modoColumnas()).orden, orden);
     }
 
-    guardarColumnasPC(columnas) {
-        this.guardarOrdenPC(columnas.flat());
-        StorageHelper.setItem(STORAGE_KEYS.COLUMNAS_CARDS, tamanosDeColumnas(columnas));
-    }
-
-    obtenerColumnasPC(max = maxColumnas()) {
-        const orden = this.obtenerOrdenPC();
-        const tamanos = this.obtenerTamanosPC();
-        return prepararColumnas(columnasDesdeOrden(orden, tamanos), max, this._tarjetasVisibles());
-    }
-
-    obtenerOrdenMovil() {
-        const guardado = StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS_MOVIL, null)
-            ?? StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null);
-        return normalizarOrdenCards(guardado);
-    }
-
-    guardarOrdenMovil(lista) {
-        StorageHelper.setItem(STORAGE_KEYS.ORDEN_CARDS_MOVIL, lista);
+    guardarColumnas(columnas) {
+        this.guardarOrden(columnas.flat());
+        const claveTamanos = clavesDeLayout(modoColumnas()).columnas;
+        if (claveTamanos) StorageHelper.setItem(claveTamanos, tamanosDeColumnas(columnas));
     }
 
     _columnasActuales() {
-        if (!esEscritorio()) return [this.obtenerOrdenMovil()];
-        return this.obtenerColumnasPC(maxColumnas());
+        const { orden, tamanos } = this._leerLayout();
+        if (!esEscritorio()) return [orden];
+        return prepararColumnas(columnasDesdeOrden(orden, tamanos), maxColumnas(), this._tarjetasVisibles());
     }
 
     _guardarColumnasActuales(columnas) {
-        if (esEscritorio()) this.guardarColumnasPC(columnas);
-        else this.guardarOrdenMovil(columnas.flat());
+        this.guardarColumnas(columnas);
     }
 
     // ── Aplicar al DOM ───────────────────────────────────────
@@ -151,10 +138,10 @@ export class OrdenTarjetas {
     // ── Lista en Ajustes ─────────────────────────────────────
     renderLista() {
         const etiqueta = $('label-orden-cards');
-        if (etiqueta) etiqueta.textContent = `Tarjetas y posición (${esEscritorio() ? 'PC' : 'celular'})`;
+        if (etiqueta) etiqueta.textContent = `Tarjetas y posición (${!esEscritorio() ? 'celular' : modoColumnas() === 3 ? 'PC, 3 columnas' : 'PC, 2 columnas'})`;
         const lista = $('lista-orden-cards');
         if (!lista) return;
-        const ordenDeseado = esEscritorio() ? this.obtenerOrdenPC() : this.obtenerOrdenMovil();
+        const ordenDeseado = this.obtenerOrden();
         // Solo se mueve lo que cambia de lugar: volver a insertar un ítem que ya está en su posición reinicia sus transiciones (el interruptor saltaba sin animarse)
         let i = 0;
         ordenDeseado.forEach(cual => {
@@ -244,8 +231,7 @@ export class OrdenTarjetas {
 
             const itemsDOM = Array.from(lista.querySelectorAll('.orden-card-item'));
             const nuevoOrden = itemsDOM.map(i => getCardFromItem(i)).filter(Boolean);
-            if (esEscritorio()) this.guardarOrdenPC(nuevoOrden);
-            else this.guardarOrdenMovil(nuevoOrden);
+            this.guardarOrden(nuevoOrden);
             this.aplicar();
 
             draggingEl = null;

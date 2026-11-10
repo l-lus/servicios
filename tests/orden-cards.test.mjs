@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    normalizarOrdenCards, columnasDesdeOrden, tamanosDeColumnas, prepararColumnas, moverCard, esTamanosColumnasValidos, MAX_COLUMNAS
+    normalizarOrdenCards, columnasDesdeOrden, tamanosDeColumnas, prepararColumnas, moverCard, esTamanosColumnasValidos, MAX_COLUMNAS, leerLayout, clavesDeLayout
 } from '../src/services/orden-cards.js';
 import { CARDS } from '../src/core/constantes.js';
 
@@ -90,4 +90,27 @@ test('Columnas: en escritorio un movimiento nunca deja una sola columna', () => 
     assert.deepEqual(moverCard([['resumen', 'estadisticas']], 'estadisticas', 0, 'resumen', opc), [['estadisticas', 'resumen']]);
     // sin la restricción (móvil) se permite
     assert.deepEqual(moverCard([['resumen', 'estadisticas'], ['servicios']], 'servicios', 0), [['resumen', 'estadisticas', 'servicios']]);
+});
+
+test('leerLayout: cada modo tiene su orden; sin orden propio, celular y 3 columnas parten del de 2 (con sus tamaños)', () => {
+    const guardado = { 'orden-tarjetas': ['servicios', 'resumen', 'estadisticas', 'calendario'], 'columnas-tarjetas': [3, 1] };
+    const leer = (clave) => guardado[clave] ?? null;
+    const dos = leerLayout(2, leer);
+    assert.deepEqual(dos.orden, ['servicios', 'resumen', 'estadisticas', 'calendario']);
+    assert.deepEqual(dos.tamanos, [3, 1]);
+    assert.deepEqual(leerLayout(1, leer), { orden: dos.orden, tamanos: null });
+    assert.deepEqual(leerLayout(3, leer), dos, 'sin orden propio usa el de 2 columnas y sus tamaños');
+
+    guardado['orden-tarjetas-3'] = ['calendario', 'resumen', 'estadisticas', 'servicios'];
+    guardado['columnas-tarjetas-3'] = [1, 1, 2];
+    const tres = leerLayout(3, leer);
+    assert.deepEqual(tres.orden, ['calendario', 'resumen', 'estadisticas', 'servicios']);
+    assert.deepEqual(tres.tamanos, [1, 1, 2], 'con orden propio, sus propios tamaños');
+    assert.deepEqual(leerLayout(2, leer).orden, dos.orden, 'el de 2 columnas no cambia');
+});
+
+test('clavesDeLayout: el celular no guarda tamaños y 2 y 3 columnas usan claves distintas', () => {
+    assert.equal(clavesDeLayout(1).columnas, null);
+    assert.notEqual(clavesDeLayout(2).orden, clavesDeLayout(3).orden);
+    assert.notEqual(clavesDeLayout(2).columnas, clavesDeLayout(3).columnas);
 });

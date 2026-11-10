@@ -10,7 +10,7 @@ import { EstiloTarjeta, ESTILOS_TARJETA } from '../core/estilo-tarjeta.js';
 import { FONDOS_SVG } from '../data/fondos.js';
 import { EventosApp } from '../core/eventos.js';
 import { TEMAS } from '../core/temas.js';
-import { normalizarOrdenCards, columnasDesdeOrden, tamanosDeColumnas, esTamanosColumnasValidos } from './orden-cards.js';
+import { normalizarOrdenCards, leerLayout, columnasDesdeOrden, tamanosDeColumnas, esTamanosColumnasValidos } from './orden-cards.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
 
 // ====================================================================
@@ -27,9 +27,15 @@ const MAX_LARGO_ID_UI = 40;
 const _esListaDeIds = (v) => Array.isArray(v) && v.length <= MAX_ITEMS_LISTA_UI && v.every(x => typeof x === 'string' && x.length > 0 && x.length <= MAX_LARGO_ID_UI);
 const _esMapaDeBooleanos = (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length <= MAX_ITEMS_LISTA_UI && Object.values(v).every(x => typeof x === 'boolean');
 
-const _ordenActual = () => normalizarOrdenCards(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null));
-const _ordenMovilActual = () => normalizarOrdenCards(StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS_MOVIL, null) ?? StorageHelper.getObject(STORAGE_KEYS.ORDEN_CARDS, null));
-const _columnasActuales = () => tamanosDeColumnas(columnasDesdeOrden(_ordenActual(), StorageHelper.getObject(STORAGE_KEYS.COLUMNAS_CARDS, null)));
+const _leer = (clave) => StorageHelper.getObject(clave, null);
+// Sin orden propio para celular o para 3 columnas se usa el de 2 columnas (con sus tamaños): ver leerLayout
+const _ordenActual = () => leerLayout(2, _leer).orden;
+const _ordenMovilActual = () => leerLayout(1, _leer).orden;
+const _orden3Actual = () => leerLayout(3, _leer).orden;
+// Tamaños de las columnas de escritorio (sin tamaños guardados, el reparto por defecto)
+const _tamanosActuales = (modo) => { const { orden, tamanos } = leerLayout(modo, _leer); return tamanosDeColumnas(columnasDesdeOrden(orden, tamanos)); };
+const _columnasActuales = () => _tamanosActuales(2);
+const _columnas3Actuales = () => _tamanosActuales(3);
 const _visiblesActuales = () => Object.fromEntries(CARDS.map(c => [c, StorageHelper.getBoolean(STORAGE_KEYS.CARD_VISIBLE(c), true)]));
 
 /** @param {any} pref @param {string} etiqueta @param {any} [alAplicar] */
@@ -116,6 +122,9 @@ export const CONFIG_RESPALDO = [
         if (!Array.isArray(data[STORAGE_KEYS.COLUMNAS_CARDS])) StorageHelper.removeItem(STORAGE_KEYS.COLUMNAS_CARDS);
     }),
     _ordenDeTarjetas(STORAGE_KEYS.ORDEN_CARDS_MOVIL, 'orden de tarjetas (móvil)', _ordenMovilActual),
+    _ordenDeTarjetas(STORAGE_KEYS.ORDEN_CARDS_3, 'orden de tarjetas (3 columnas)', _orden3Actual, (data) => {
+        if (!Array.isArray(data[STORAGE_KEYS.COLUMNAS_CARDS_3])) StorageHelper.removeItem(STORAGE_KEYS.COLUMNAS_CARDS_3);
+    }),
     {
         clave: STORAGE_KEYS.COLUMNAS_CARDS,
         etiqueta: 'columnas de tarjetas',
@@ -124,6 +133,15 @@ export const CONFIG_RESPALDO = [
         actual: _columnasActuales,
         distinto: (v) => v.join() !== _columnasActuales().join(),
         aplicar: (v) => StorageHelper.setItem(STORAGE_KEYS.COLUMNAS_CARDS, v),
+    },
+    {
+        clave: STORAGE_KEYS.COLUMNAS_CARDS_3,
+        etiqueta: 'columnas de tarjetas (3 columnas)',
+        tarjetas: true,
+        esValido: (v) => esTamanosColumnasValidos(v),
+        actual: _columnas3Actuales,
+        distinto: (v) => v.join() !== _columnas3Actuales().join(),
+        aplicar: (v) => StorageHelper.setItem(STORAGE_KEYS.COLUMNAS_CARDS_3, v),
     },
     {
         clave: CLAVE_TARJETAS_VISIBLES,

@@ -1,4 +1,4 @@
-import { CARDS } from '../core/constantes.js';
+import { CARDS, STORAGE_KEYS } from '../core/constantes.js';
 
 // ====================================================================
 // ORDEN Y COLUMNAS DE LAS TARJETAS (sin DOM)
@@ -7,6 +7,33 @@ import { CARDS } from '../core/constantes.js';
 // (ej. [4, 1] = 4 tarjetas en la primera columna y 1 en la segunda); en móvil se muestra apilada.
 export const CARDS_EN_DERECHA = 1;   // reparto por defecto: solo la última (Servicios) va a la segunda columna
 export const MAX_COLUMNAS = 3;
+
+/**
+ * Qué se guarda para cada modo de columnas (1 = celular apilado, 2 y 3 = escritorio): cada uno tiene su propio orden, y los de 2 y 3 también sus tamaños.
+ * @typedef {1 | 2 | 3} ModoColumnas
+ * @param {ModoColumnas} modo
+ * @returns {{ orden: string, columnas: string | null }}
+ */
+export function clavesDeLayout(modo) {
+    if (modo === 1) return { orden: STORAGE_KEYS.ORDEN_CARDS_MOVIL, columnas: null };
+    if (modo === 3) return { orden: STORAGE_KEYS.ORDEN_CARDS_3, columnas: STORAGE_KEYS.COLUMNAS_CARDS_3 };
+    return { orden: STORAGE_KEYS.ORDEN_CARDS, columnas: STORAGE_KEYS.COLUMNAS_CARDS };
+}
+
+/**
+ * Orden y tamaños de columna de un modo, tal como están guardados. Un modo sin orden propio parte del de 2 columnas (celular y 3 columnas);
+ * los tamaños van con el orden, así que con 3 columnas sin orden propio se usan también los de 2.
+ * @param {ModoColumnas} modo
+ * @param {(clave: string) => unknown} leer lee una clave guardada (null si no existe)
+ * @returns {{ orden: string[], tamanos: unknown }}
+ */
+export function leerLayout(modo, leer) {
+    const propio = clavesDeLayout(modo);
+    const base = clavesDeLayout(2);
+    const guardado = leer(propio.orden);
+    const claveTamanos = modo === 3 && !guardado ? base.columnas : propio.columnas;
+    return { orden: normalizarOrdenCards(guardado ?? leer(base.orden)), tamanos: claveTamanos ? leer(claveTamanos) : null };
+}
 
 /**
  * Orden guardado → orden válido. Descarta lo desconocido y repetido; una tarjeta que no estaba cuando se guardó (agregada en una versión posterior)

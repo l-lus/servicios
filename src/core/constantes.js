@@ -30,7 +30,9 @@ export const STORAGE_KEYS = Object.freeze({
     BIENVENIDA_VISTA: 'bienvenida-vista',
     ORDEN_CARDS: 'orden-tarjetas',
     ORDEN_CARDS_MOVIL: 'orden-tarjetas-movil',
-    COLUMNAS_CARDS: 'columnas-tarjetas',
+    COLUMNAS_CARDS: 'columnas-tarjetas',   // tamaños de las columnas con 2 columnas (se corta el orden de ORDEN_CARDS)
+    ORDEN_CARDS_3: 'orden-tarjetas-3',   // orden propio con 3 columnas (sin él se parte del de 2 columnas)
+    COLUMNAS_CARDS_3: 'columnas-tarjetas-3',   // tamaños de las columnas con 3 columnas (se corta el orden de ORDEN_CARDS_3)
     CARD_VISIBLE: (cual) => `tarjeta-visible-${cual}`,
     SERVICIOS_COLLAPSE: 'servicios-collapse-state',
     GIST_TOKEN: 'gist_token',

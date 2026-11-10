@@ -71,7 +71,7 @@ tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: 
 Header (perfil) → modal Perfiles → modal Ajustes → cada opción. `ModalManager.abrirConPadre/cerrarConRetorno` (y `alternar`) recuerdan el modal padre: cerrar un hijo vuelve al anterior, como en Horarios. `UIManager.abrirModal/cerrarModal` aplican esa regla cuando Ajustes está abierto.
 
 ## Disposición de tarjetas
-PC: 2 o 3 columnas orgánicas (`COLUMNAS_CARDS` guarda los tamaños; arrastrar una tarjeta al borde derecho en pantallas `>= 1100px` abre la tercera columna y cualquier columna vacía se cierra sola). Celular: una lista independiente (`ORDEN_CARDS_MOVIL`). Lógica pura en `services/orden-cards.js`; UI en `ui/orden-tarjetas.js`.
+PC: 2 o 3 columnas orgánicas. Cada cantidad de columnas (1 celular, 2 y 3 en PC) tiene su propio orden y tamaños (`clavesDeLayout`/`leerLayout` en `services/orden-cards.js`; sin orden propio, el celular y las 3 columnas parten del de 2). `COLUMNAS_CARDS` y `COLUMNAS_CARDS_3` guardan los tamaños; arrastrar una tarjeta al borde derecho en pantallas `>= 1100px` abre la tercera columna y cualquier columna vacía se cierra sola). Celular: una lista independiente (`ORDEN_CARDS_MOVIL`); la lista de Ajustes indica de qué diseño se trata («PC, 2 columnas», «PC, 3 columnas» o «celular»). Lógica pura en `services/orden-cards.js`; UI en `ui/orden-tarjetas.js`.
 
 ## Tokens de diseño (CSS)
 Todo valor visual sale de `assets/styles/tokens.css`; lo vigilan los tests `Tokens:` de `tests/architecture.test.mjs`.

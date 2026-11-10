@@ -132,6 +132,8 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
     assert.equal(typeof exportable['resumen-mostrar-pagado'], 'string');
     assert.equal(Array.isArray(exportable['orden-tarjetas']), true);
     assert.equal(Array.isArray(exportable['columnas-tarjetas']), true);
+    assert.equal(Array.isArray(exportable['orden-tarjetas-3']), true);
+    assert.equal(Array.isArray(exportable['columnas-tarjetas-3']), true);
 
     assert.equal(IE.validarCamposConfigImport({
         'gestion_servicios_theme': 'crema',
@@ -145,6 +147,8 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
         'calendario-abierto': true,
         'orden-tarjetas': ['servicios', 'resumen'],
         'columnas-tarjetas': [2, 3],
+        'orden-tarjetas-3': ['calendario', 'resumen'],
+        'columnas-tarjetas-3': [1, 1, 2],
         'gestion_servicios_orden': 'vencimiento',
         'cat-agrupacion': 'on',
         'vista-estados': 'true',
