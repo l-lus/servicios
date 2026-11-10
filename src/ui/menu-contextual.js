@@ -14,7 +14,7 @@ export class ContextMenuService {
         const menu = $('ctx-menu-servicio');
 
         document.addEventListener('pointerdown', (e) => {
-            if (!menu.contains(e.target)) this.cerrar();
+            if (!menu.contains(/** @type {Node} */ (e.target))) this.cerrar();
         }, true);
 
         document.addEventListener('scroll', () => this.cerrar(), true);

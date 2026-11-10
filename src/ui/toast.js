@@ -26,6 +26,8 @@ export const ToastManager = (function () {
     // accion (opcional): { label, fn } muestra un botón dentro del toast (p. ej. "Deshacer").
     // Si accion es una función, al tocar el toast se ejecuta esa acción.
     // Tocar el resto del toast cuando hay un botón solo lo cierra.
+    /** @param {string} mensaje @param {string} [tipo] @param {number} [duracion] @param {string | null} [detalle] @param {{ label: string, fn: () => void } | (() => void) | null} [accion] */
+    /** @param {string} mensaje @param {string} [tipo] @param {number} [duracion] @param {string | null} [detalle] @param {{ label: string, fn: () => void } | (() => void) | null} [accion] */
     function mostrarToast(mensaje, tipo = 'info', duracion = 3000, detalle = null, accion = null) {
         const texto = detalle ? `${mensaje}, ${detalle}` : mensaje;
         const textoLimpio = SecurityAndUtils.sanitizeString(texto, 200);

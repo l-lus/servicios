@@ -4,7 +4,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EstadoFacturas } from '../services/estado-facturas.js';
 import { Anim } from './animaciones.js';
-import { $ } from '../core/dom.js';
+import { $, delegado, $$ } from '../core/dom.js';
 // ============================================================
 // VISTASERVICIOS
 // ============================================================
@@ -281,13 +281,13 @@ export class VistaServicios {
         pintar(html`${partes}`);
 
         // Eventos de click en servicios
-        lista.querySelectorAll('.servicio-item').forEach(item => {
+        $$('.servicio-item', lista).forEach(item => {
             const servicioId = item.dataset.id;
             const esIngresos = servicioId === this.app.SERVICIO_INGRESOS_ID;
 
             item.addEventListener('click', (e) => {
                 // Evitar que se dispare si se hace click en un botón
-                if (e.target.closest('button')) return;
+                if (delegado(e, 'button')) return;
 
                 // Si está en modo calculadora, toggle selección
                 if (this.app.modoCalculadora) {
@@ -393,9 +393,9 @@ export class VistaServicios {
         // Seleccionar todos los grupos visibles
         const todosHeaders = document.querySelectorAll('.servicios-grupo-cat-header');
         todosHeaders.forEach(header => {
-            const chevron = header.querySelector('.servicios-grupo-cat-chevron');
-            const contenido = header.nextElementSibling;
-            const cat = header.closest('.servicios-grupo-cat')?.dataset.cat ?? '';
+            const chevron = /** @type {Element} */ (header.querySelector('.servicios-grupo-cat-chevron'));
+            const contenido = /** @type {Element} */ (header.nextElementSibling);
+            const cat = /** @type {HTMLElement | null} */ (header.closest('.servicios-grupo-cat'))?.dataset.cat ?? '';
             if (estaColapsado) {
                 // Expandir todos
                 chevron.classList.remove('collapsed');
@@ -456,8 +456,8 @@ export class VistaServicios {
 
         headers.forEach(header => {
             const textoAno = header.querySelector('.facturas-grupo-ano-texto')?.textContent;
-            const chevron = header.querySelector('.facturas-grupo-chevron');
-            const contenido = header.nextElementSibling;
+            const chevron = /** @type {Element} */ (header.querySelector('.facturas-grupo-chevron'));
+            const contenido = /** @type {Element} */ (header.nextElementSibling);
             if (textoAno === anoObjetivo) {
                 chevron.classList.remove('collapsed');
                 contenido.classList.remove('collapsed');

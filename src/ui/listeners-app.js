@@ -6,7 +6,7 @@ import { STORAGE_KEYS } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
 import { ModalManager } from './gestor-modales.js';
 import { IconosAnimados } from './iconos-animados.js';
-import { $ } from '../core/dom.js';
+import { $, delegado, valorDe } from '../core/dom.js';
 // ============================================================
 // LISTENERSAPP
 // ============================================================
@@ -120,7 +120,7 @@ export class ListenersApp {
 
         // Listener para toggle de resumen (solo una vez)
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#resumen-toggle')) {
+            if (delegado(e, '#resumen-toggle')) {
                 this.app.estadisticas.toggleResumen();
             }
         });
@@ -213,8 +213,8 @@ export class ListenersApp {
 
         // Selector de tipo de estadística
         $('estadisticas-tipo').addEventListener('change', (e) => {
-            this.app.tipoEstadisticaActual = e.target.value;
-            StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, e.target.value);
+            this.app.tipoEstadisticaActual = valorDe(e);
+            StorageHelper.setItem(STORAGE_KEYS.ESTADISTICAS_TIPO, valorDe(e));
             this.app.estadisticas.cambiarTipoEstadistica();
         });
 
@@ -271,7 +271,8 @@ export class ListenersApp {
             if (window.innerWidth < 768) return;
             if (document.querySelector('.modal.active')) return;
             if ($('menu-agregar').classList.contains('active')) return;
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+            const destino = /** @type {HTMLElement} */ (e.target);
+            if (destino.tagName === 'INPUT' || destino.tagName === 'TEXTAREA' || destino.isContentEditable) return;
             if (e.altKey) return;
 
             if (/^[a-zA-Z]$/.test(e.key)) {
@@ -321,7 +322,7 @@ export class ListenersApp {
         // btn-info-resumen: delegado en el contenedor estático para evitar
         // acumulación de listeners en cada llamada a _renderResumen (memory leak)
         $('resumen-mes').addEventListener('click', (e) => {
-            if (e.target.closest('#btn-info-resumen')) {
+            if (delegado(e, '#btn-info-resumen')) {
                 e.stopPropagation();
                 this.app.estadisticas.abrirModalInfoResumen();
             }
@@ -459,15 +460,15 @@ export class ListenersApp {
 
         // Perfiles: cambiar / eliminar / editar
         $('perfiles-lista')?.addEventListener('click', (e) => {
-            const card = e.target.closest('[data-action="cambiar-perfil"]');
-            const btnEditar = e.target.closest('[data-action="editar-perfil"]');
+            const card = delegado(e, '[data-action="cambiar-perfil"]');
+            const btnEditar = delegado(e, '[data-action="editar-perfil"]');
             if (btnEditar) { e.stopPropagation(); this.app.perfil.abrirModalEditar(btnEditar.dataset.perfilId); return; }
             if (card) this.app.perfil.cambiar(card.dataset.perfilId);
         });
 
         // Estadísticas mensuales: abrir debug al clickear un item
         $('estadisticas-mensual-container')?.addEventListener('click', (e) => {
-            const item = e.target.closest('[data-action="debug-estadisticas"]');
+            const item = delegado(e, '[data-action="debug-estadisticas"]');
             if (item) this.app.estadisticas.abrirDebugEstadisticas(item.dataset.tipo);
         });
 
@@ -496,11 +497,11 @@ export class ListenersApp {
 
             listaSvc.addEventListener('click', (e) => {
                 if (_scrolled) return;
-                const header = e.target.closest('[data-action="toggle-grupo-cat"]');
+                const header = delegado(e, '[data-action="toggle-grupo-cat"]');
                 if (header) this.app.vista.toggleGrupoCat(header);
             });
             listaSvc.addEventListener('pointerdown', (e) => {
-                const header = e.target.closest('[data-lp="true"]');
+                const header = delegado(e, '[data-lp="true"]');
                 if (header) this.app.vista._lpStart(e, header);
             });
             // pointerup y pointerleave cancelan el LP sin importar el target actual
@@ -508,7 +509,7 @@ export class ListenersApp {
             listaSvc.addEventListener('pointerup', () => this.app.vista._lpCancel());
             listaSvc.addEventListener('pointerleave', () => this.app.vista._lpCancel());
             listaSvc.addEventListener('contextmenu', (e) => {
-                if (e.target.closest('[data-lp="true"]') || this.app._lpFired) {
+                if (delegado(e, '[data-lp="true"]') || this.app._lpFired) {
                     e.preventDefault();
                     this.app._lpFired = false;
                 }
@@ -517,9 +518,9 @@ export class ListenersApp {
 
         // Modal facturas servicio: toggle grupos por año + editar factura al click
         $('lista-facturas-modal')?.addEventListener('click', (e) => {
-            const headerAno = e.target.closest('[data-action="toggle-grupo-ano"]');
+            const headerAno = delegado(e, '[data-action="toggle-grupo-ano"]');
             if (headerAno) { this.app.vista.toggleGrupoAno(headerAno); return; }
-            const facturaInfo = e.target.closest('[data-action="factura-click"]');
+            const facturaInfo = delegado(e, '[data-action="factura-click"]');
             if (facturaInfo && facturaInfo.dataset.facturaAccion === 'editar-factura') {
                 this.app.servicio.editarFactura(facturaInfo.dataset.facturaId);
             }
@@ -527,15 +528,15 @@ export class ListenersApp {
 
         // Modal ingresos lista: toggle grupos por año + abrir ingreso al click
         $('lista-ingresos-modal')?.addEventListener('click', (e) => {
-            const headerAno = e.target.closest('[data-action="toggle-grupo-ano"]');
+            const headerAno = delegado(e, '[data-action="toggle-grupo-ano"]');
             if (headerAno) { this.app.vista.toggleGrupoAno(headerAno); return; }
-            const ingresoInfo = e.target.closest('[data-action="abrir-ingreso"]');
+            const ingresoInfo = delegado(e, '[data-action="abrir-ingreso"]');
             if (ingresoInfo) this.app.ingreso.abrirModal(ingresoInfo.dataset.ingresoId);
         });
 
         // Modal categorías: eliminar categoría
         $('categorias-lista')?.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-action="eliminar-categoria"]');
+            const btn = delegado(e, '[data-action="eliminar-categoria"]');
             if (btn) this.app.categoria.eliminar(btn.dataset.cat);
         });
 

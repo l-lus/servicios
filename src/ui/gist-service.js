@@ -6,7 +6,7 @@ import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { IconosAnimados } from './iconos-animados.js';
-import { $ } from '../core/dom.js';
+import { $, valorDe } from '../core/dom.js';
 
 // ============================================================
 // GIST SERVICE — sincronización con GitHub Gist (Adaptado)
@@ -15,7 +15,7 @@ export class GistService {
     constructor(app) {
         this.app = app;
         this.DEBOUNCE_MS = 3000;
-        this._debounceTimer = null;
+        this._debounceTimer = undefined;
         this._subiendo = false;
     }
 
@@ -70,7 +70,7 @@ export class GistService {
 
         // Listener en vivo para el input de Gist ID
         elId.oninput = (e) => {
-            if (btnIr) btnIr.disabled = !this.esIdValido(e.target.value.trim());
+            if (btnIr) btnIr.disabled = !this.esIdValido(valorDe(e).trim());
         };
 
         this.app.ui.abrirModal('modal-gist');
@@ -313,6 +313,7 @@ export class GistService {
     }
 
     async _fetchGist(gistId, token) {
+        /** @type {Record<string, string>} */
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

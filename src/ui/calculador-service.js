@@ -93,7 +93,11 @@ export class CalculadorService {
 
         const servicioId = selectServicio.value;
         const desde = inputDesde.value, hasta = inputHasta.value;
-        let totalRegistros = 0, variacionTexto = '0%', variacionUSDTexto = null;
+        /** @type {string | null} */
+        let variacionTexto = '0%';
+        /** @type {string | null} */
+        let variacionUSDTexto = null;
+        let totalRegistros = 0;
         let _arsTotal = 0, _usdTotal = 0, _arsCount = 0, _usdCount = 0;
 
         const servicio = servicioId ? this.servicios.find(s => s.id === servicioId) : null;

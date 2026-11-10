@@ -1,4 +1,4 @@
-import { $ } from '../core/dom.js';
+import { $, delegado } from '../core/dom.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS, CARDS, CORTES_LAYOUT } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
@@ -98,13 +98,15 @@ export class OrdenTarjetas {
             if (!vacia) n++;
         });
         document.querySelector('.main-grid')?.classList.toggle('cols-3', n === 3);
-        const raiz = document.querySelector('.container');
+        const raiz = /** @type {HTMLElement | null} */ (document.querySelector('.container'));
         if (raiz) {
             raiz.dataset.columnas = String(n);
             raiz.style.setProperty('--columnas', String(n));
         }
     }
 
+    /** @param {string[][] | null} [columnas] */
+    /** @param {string[][] | null} [columnas] */
     aplicar(columnas = null) {
         const contenedores = this._contenedores();
         if (contenedores.some(c => !c)) return;
@@ -240,8 +242,8 @@ export class OrdenTarjetas {
         };
 
         const bindStart = (eventType, getY, opts) => lista.addEventListener(eventType, (e) => {
-            if (e.target.closest('.toggle-switch')) return;
-            const item = e.target.closest('.drag-handle')?.closest('.orden-card-item');
+            if (delegado(e, '.toggle-switch')) return;
+            const item = delegado(e, '.drag-handle')?.closest('.orden-card-item');
             if (!item) return;
             startY = getY(e);
             dragTimer = setTimeout(() => initDrag(item, startY), DRAG_DELAY);
@@ -384,7 +386,7 @@ export class OrdenTarjetas {
         document.addEventListener('keydown', (e) => {
             if (!e.altKey || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
             if (VistaPrevia.activa()) return;
-            const header = e.target instanceof Element ? e.target.closest(SELECTOR_ENCABEZADOS) : null;
+            const header = e.target instanceof Element ? delegado(e, SELECTOR_ENCABEZADOS) : null;
             const card = header?.closest(SELECTOR_CARDS);
             if (!card) return;
             const nuevas = this._columnasTrasTecla(_idDeCard(card), e.key);
@@ -393,7 +395,7 @@ export class OrdenTarjetas {
             reubicar(nuevas, card);
             this._guardarColumnasActuales(nuevas);
             columnasEnCurso = null;
-            (header ?? card).focus();
+            /** @type {HTMLElement} */ (header ?? card).focus();
         });
     }
 

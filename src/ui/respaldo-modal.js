@@ -1,4 +1,4 @@
-import { $ } from '../core/dom.js';
+import { $, $$ } from '../core/dom.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { EstadoApp } from '../services/estado-app.js';
 
@@ -30,7 +30,7 @@ export class RespaldoModal {
 
     seleccionarTipo(tipo) {
         this.tipo = tipo;
-        document.querySelectorAll('#modal-respaldo .respaldo-tipo').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tipo === tipo)));
+        $$('#modal-respaldo .respaldo-tipo').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tipo === tipo)));
         $('respaldo-campos-mes').hidden = tipo !== 'mes';
         $('respaldo-campos-rango').hidden = tipo !== 'rango';
         this.actualizarResumen();
@@ -41,7 +41,7 @@ export class RespaldoModal {
         const error = this._error(rango);
         const texto = $('respaldo-contenido');
         const boton = $('btn-respaldo-exportar');
-        if (error) { texto.textContent = error; boton.disabled = true; return; }
+        if (error || !rango) { texto.textContent = error; boton.disabled = true; return; }
         const categorias = this.app.categoria.getCategorias();
         const datos = ImportarExportar.recortarPorRango(EstadoApp.servicios, categorias, rango.desde, rango.hasta);
         const hayAlgo = datos.servicios.length > 0;
@@ -69,7 +69,7 @@ export class RespaldoModal {
     }
 
     bindEventos() {
-        document.querySelectorAll('#modal-respaldo .respaldo-tipo').forEach(b => {
+        $$('#modal-respaldo .respaldo-tipo').forEach(b => {
             b.addEventListener('click', () => this.seleccionarTipo(b.dataset.tipo));
         });
         ['respaldo-mes', 'respaldo-desde', 'respaldo-hasta'].forEach(id => {

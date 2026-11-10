@@ -1,6 +1,6 @@
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
-import { $ } from '../core/dom.js';
+import { $, formulario } from '../core/dom.js';
 // ============================================================
 // SERVICIOSERVICE
 // ============================================================
@@ -22,7 +22,7 @@ export class ServicioService {
             this.app.ui.abrirModal('modal-editar-servicio');
         } else {
             // Modo nuevo
-            $('form-servicio').reset();
+            formulario('form-servicio').reset();
             this.app.categoria.poblarSelect('servicio-categoria', '');
             this.app.ui.abrirModal('modal-agregar-servicio');
         }
@@ -172,7 +172,7 @@ export class ServicioService {
             const item = document.querySelector(`.factura-item[data-id="${CSS.escape(facturaId)}"]`);
             const grupo = item?.closest('.facturas-grupo-ano');
             const ano = grupo?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
-            this.app._anoExpandidoFacturas[sid] = ano;
+            if (sid) this.app._anoExpandidoFacturas[sid] = ano;
         }
 
         this.app.ui.cerrarModal('modal-facturas-servicio');

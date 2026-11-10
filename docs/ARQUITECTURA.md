@@ -15,7 +15,7 @@ index.html  sw.js  package.json  tsconfig.json  scripts/{release.mjs,servidor.py
 assets/{manifest.json, icons/, fonts/, styles/{tokens,base,vistas,menus-modales,utilidades-responsivo}.css}
 src/main.js
 src/data/   fondos (catálogo de ilustraciones SVG para la tarjeta de resumen)
-src/core/   dom ($/$$/alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
+src/core/   dom ($, $$, formulario, selectPorId, delegado, valorDe, alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
             busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp),
             seguridad (SecurityAndUtils), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
@@ -55,7 +55,15 @@ vista previa en vivo (`VistaPrevia`, con vistas resumen ⇄ calendario ⇄ tema 
 reportes HTML · respaldo por rango, preferencias (`CONFIG_RESPALDO`) y resumen previo al merge · estadísticas anuales · bienvenida · disposición orgánica de 2 o 3 columnas en PC y orden independiente en móvil ·
 tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: [avisos push](PUSH-VENCIMIENTOS.md).
 
+## Tipos
+`npm run typecheck` ejecuta `tsc` (`checkJs`, `strictNullChecks`, `noImplicitReturns`, `noUnusedLocals`, ver `tsconfig.json`) sobre todo `src/`, sin emitir nada, y corre también en el CI. Convenciones que mantienen el chequeo en cero:
+- Elementos del DOM: `$` (campo), `$$` (lista), `formulario`, `selectPorId`, `delegado` (delegación de eventos) y `valorDe` (valor del campo de un evento), todos de `core/dom.js`. Nada de `document.getElementById` ni `e.target.closest` sueltos en `ui/` (lo vigila un test).
+- Fechas: `restaFechas` y `diasHasta` de `core/fechas.js` en lugar de restar `Date`.
+- Dominio: `Servicio` y `Factura` (typedefs en `services/estado-app.js`).
+- Parámetros con valor por defecto `null`: anotarlos con `@param` para que no se infiera `null` como único tipo.
+
 ## Verificación
+- `npm run typecheck`: tipos con `tsc` (sin errores).
 - `npm test`: arquitectura (capas, ciclos, precache, CSP/Trusted Types, CSS, IDs del DOM), service worker (instalación, limpieza de cachés propias, modo sin conexión; `tests/service-worker.test.mjs` ejecuta `sw.js` en un contexto simulado), servidor de desarrollo y dominio sin DOM.
 - `npm run e2e`: Firefox headless por WebDriver BiDi; recorre menús, modales, altas, búsqueda, orden, calculadora y undo/redo y falla si hay errores en consola. Sirve para comparar contra otra versión (`node scripts/e2e/navegador.mjs <carpeta> scripts/e2e/flujos.mjs` y `diff`).
 

@@ -1,7 +1,7 @@
 import { restaFechas } from '../core/fechas.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
-import { $ } from '../core/dom.js';
+import { $, formulario } from '../core/dom.js';
 // ============================================================
 // INGRESO SERVICE — ciclo de vida de ingresos
 // ============================================================
@@ -13,7 +13,7 @@ export class IngresoService {
     get servicios() { return EstadoApp.servicios; }
 
     crearServicio() {
-        this.servicios.push({ id: this.app.SERVICIO_INGRESOS_ID, nombre: 'Ingresos', facturas: [], activo: false });
+        this.servicios.push({ id: this.app.SERVICIO_INGRESOS_ID, nombre: 'Ingresos', categoria: '', facturas: [], activo: false });
         this.app.storage.guardarDatos();
     }
 
@@ -57,7 +57,7 @@ export class IngresoService {
                 const sid  = modal.dataset.servicioId;
                 const item = document.querySelector(`.factura-item[data-id="${CSS.escape(ingresoId)}"]`);
                 const ano  = item?.closest('.facturas-grupo-ano')?.querySelector('.facturas-grupo-ano-texto')?.textContent || null;
-                this.app._anoExpandidoIngresos[sid] = ano;
+                if (sid) this.app._anoExpandidoIngresos[sid] = ano;
             }
         }
         this.app.ui.cerrarModal('modal-ingresos-lista');
@@ -67,7 +67,7 @@ export class IngresoService {
             const servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
             const ingreso  = servicio?.facturas.find(f => f.id === ingresoId);
             if (ingreso) {
-                $('editar-ingreso-monto').value = ingreso.monto;
+                $('editar-ingreso-monto').value = String(ingreso.monto);
                 $('editar-ingreso-tipo').value  = ingreso.tipo || 'regular';
                 $('editar-ingreso-fecha').value = ingreso.fecha;
                 this.app.utils.setMonedaBtn('editar-ingreso-moneda', 'btn-editar-ingreso-moneda', ingreso.moneda || 'ars');
@@ -77,7 +77,7 @@ export class IngresoService {
             }
             this.app.ui.abrirModal('modal-editar-ingreso');
         } else {
-            $('form-ingreso').reset();
+            formulario('form-ingreso').reset();
             this.app.utils.setMonedaBtn('ingreso-moneda', 'btn-ingreso-moneda', 'ars');
             // Refrescar CustomSelect ingreso-tipo (reset puede haber alterado la opción visible)
             const csdTipo = $('ingreso-tipo-csd');
@@ -97,6 +97,7 @@ export class IngresoService {
         if (!this.app.factura.validarFecha(fecha)) return;
         let servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID);
         if (!servicio) { this.crearServicio(); servicio = this.servicios.find(s => s.id === this.app.SERVICIO_INGRESOS_ID); }
+        if (!servicio) return;
         let ingresoId = this.app.ingresoActual;
         if (this.app.ingresoActual) {
             const ingreso = servicio.facturas.find(f => f.id === this.app.ingresoActual);

@@ -1,5 +1,4 @@
 import { html, montar } from '../core/html.js';
-import { SecurityAndUtils } from '../core/seguridad.js';
 
 // ============================================================
 // CUSTOM SELECT — dropdown con scroll, sincroniza select oculto
@@ -156,7 +155,7 @@ export class CustomSelect {
         this.wrapper.classList.remove('open');
         document.removeEventListener('pointerdown', this._boundClose, true);
         document.removeEventListener('keydown', this._boundEsc, true);
-        window.removeEventListener('scroll', this._boundScroll, { capture: true, passive: true });
+        window.removeEventListener('scroll', this._boundScroll, { capture: true });
         window.removeEventListener('resize', this._boundResize);
     }
 

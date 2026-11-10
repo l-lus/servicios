@@ -1,4 +1,4 @@
-import { $ } from '../core/dom.js';
+import { $, $$ } from '../core/dom.js';
 import { html, montar } from '../core/html.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { ModalManager } from './gestor-modales.js';
@@ -15,7 +15,7 @@ const clon = obj => JSON.parse(JSON.stringify(obj));
 
 function _seleccionar(modo) {
     _modo = modo;
-    document.querySelectorAll('#modal-resumen-merge .merge-opcion').forEach(b => {
+    $$('#modal-resumen-merge .merge-opcion').forEach(b => {
         b.setAttribute('aria-pressed', String(b.dataset.modo === modo));
     });
     const alerta = $('merge-alerta');
@@ -79,7 +79,7 @@ export function preguntarMerge({ origen, locales, categoriasLocales, remotos, ca
 export const ResumenMerge = {
     preguntar: preguntarMerge,
     bindEventos() {
-        document.querySelectorAll('#modal-resumen-merge .merge-opcion').forEach(b => {
+        $$('#modal-resumen-merge .merge-opcion').forEach(b => {
             b.addEventListener('click', () => _seleccionar(b.dataset.modo));
         });
         $('btn-resumen-merge-aplicar')?.addEventListener('click', () => _cerrar(_modo));

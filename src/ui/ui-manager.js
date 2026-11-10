@@ -93,6 +93,8 @@ export class UIManager {
         };
     }
 
+    /** @returns {import('./vista-previa.js').ConfigVistaPrevia} */
+    /** @returns {import('./vista-previa.js').ConfigVistaPrevia} */
     _configResumen(desdeModal) {
         return {
             id: 'resumen',
@@ -118,6 +120,8 @@ export class UIManager {
         };
     }
 
+    /** @returns {import('./vista-previa.js').ConfigVistaPrevia} */
+    /** @returns {import('./vista-previa.js').ConfigVistaPrevia} */
     _configCalendario(desdeModal) {
         return {
             id: 'calendario',
@@ -137,6 +141,8 @@ export class UIManager {
     }
 
     // El tema no tiene tarjeta ni filas: se ve toda la página y se elige con círculos de color
+    /** @returns {import('./vista-previa.js').ConfigVistaPrevia} */
+    /** @returns {import('./vista-previa.js').ConfigVistaPrevia} */
     _configTema(desdeModal) {
         return {
             id: 'tema',
@@ -293,6 +299,7 @@ export class UIManager {
     }
 
     // ── Toast ─────────────────────────────────────────────────
+    /** @param {string} mensaje @param {string} [tipo] @param {number} [duracion] @param {string | null} [detalle] @param {{ label: string, fn: () => void } | (() => void) | null} [accion] */
     mostrarToast(mensaje, tipo = 'success', duracion = 3000, detalle = null, accion = null) {
         ToastManager.mostrarToast(mensaje, tipo, duracion, detalle, accion);
     }

@@ -2,7 +2,7 @@ import { restaFechas } from '../core/fechas.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
-import { $ } from '../core/dom.js';
+import { $, formulario } from '../core/dom.js';
 
 // ============================================================
 // FACTURA SERVICE — ciclo de vida de facturas
@@ -31,7 +31,7 @@ export class FacturaService {
     validarFecha(fecha) {
         if (!fecha) { this.app.ui.mostrarToast('La fecha es requerida', 'error'); return false; }
         const fechaIngresada = this.app.utils.parseDate(fecha);
-        const diferenciaAnios = (fechaIngresada - new Date()) / (1000 * 60 * 60 * 24 * 365.25);
+        const diferenciaAnios = restaFechas(fechaIngresada, new Date()) / (1000 * 60 * 60 * 24 * 365.25);
         if (diferenciaAnios > 2) {
             this.app.ui.mostrarToast('La fecha no puede ser mayor a 2 años en el futuro', 'error'); return false;
         }
@@ -58,7 +58,7 @@ export class FacturaService {
             if (!porAno[ano]) porAno[ano] = [];
             porAno[ano].push(item);
         });
-        return Object.keys(porAno).sort((a, b) => b - a)
+        return Object.keys(porAno).sort((a, b) => Number(b) - Number(a))
             .map(ano => ({ ano, items: porAno[ano], cantidad: porAno[ano].length }));
     }
 
@@ -149,7 +149,7 @@ export class FacturaService {
             this.app.origenModalFactura = origen;
             
             // Quitamos Math.abs para que muestre el signo -
-            $(ids.monto).value = factura.monto; 
+            $(ids.monto).value = String(factura.monto); 
             $(ids.tipo).value  = factura.tipo || 'mensual';
             $(ids.fecha).value = factura.fecha;
             this.app.utils.setMonedaBtn(ids.moneda, ids.btnMoneda, factura.moneda || 'ars');
@@ -201,7 +201,7 @@ export class FacturaService {
             // Poblar select ANTES de reset para que reset no lo borre
             const selectSvc = $('factura-servicio');
             if (selectSvc) montar(selectSvc, optsHTML);
-            $('form-factura').reset();
+            formulario('form-factura').reset();
             // Restaurar valores que reset borró
             if (selectSvc) montar(selectSvc, optsHTML);
             this.app.utils.setMonedaBtn('factura-moneda', 'btn-factura-moneda', 'ars');
@@ -233,7 +233,7 @@ export class FacturaService {
         const ids   = this.app.utils.idsFormFactura(esEditar);
         const btn   = $(ids.btnCredito);
         const input = $(ids.conCredito);
-        const use   = btn.querySelector('use');
+        const use   = /** @type {SVGUseElement} */ (btn.querySelector('use'));
         const esCredito = input.value === 'true';
         if (esCredito) {
             input.value = 'false'; use.setAttribute('href', '#icon-cash');
@@ -249,7 +249,7 @@ export class FacturaService {
     toggleEstadoPago(btnId = 'btn-toggle-pagada', inputId = 'factura-fecha-pago') {
         const btn        = $(btnId);
         const fpInput    = $(inputId);
-        const use        = btn.querySelector('use');
+        const use        = /** @type {SVGUseElement} */ (btn.querySelector('use'));
         const estaPagada = btn.classList.contains('pagada');
         const esEditar   = btnId === 'btn-editar-toggle-pagada';
         const btnCred    = $(esEditar ? 'btn-editar-toggle-credito'  : 'btn-toggle-credito');
@@ -283,7 +283,7 @@ export class FacturaService {
 
         const valorActual = parseFloat(input.value) || 0;
         if (valorActual !== 0) {
-            input.value = nuevoNegativo ? -Math.abs(valorActual) : Math.abs(valorActual);
+            input.value = String(nuevoNegativo ? -Math.abs(valorActual) : Math.abs(valorActual));
         }
     }
 

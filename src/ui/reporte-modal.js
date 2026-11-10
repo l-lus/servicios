@@ -1,4 +1,4 @@
-import { $ } from '../core/dom.js';
+import { $, delegado, $$ } from '../core/dom.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ReporteHTML, SECCIONES_MENSUAL, SECCIONES_INDIVIDUAL } from '../services/reporte-html.js';
@@ -16,6 +16,7 @@ export class ReporteModal {
     }
 
     /** Qué se va a reportar según la tarjeta de estadísticas (mes seleccionado o servicio con rango). null si falta algo. */
+    /** @returns {any} */
     _contexto() {
         if (this.app.tipoEstadisticaActual === 'individual') {
             const servicioId = $('calculador-servicio')?.value;
@@ -37,7 +38,7 @@ export class ReporteModal {
 
     _render() {
         const esHtml = this.formato === 'html';
-        document.querySelectorAll('#modal-reporte .reporte-formato').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.formato === this.formato)));
+        $$('#modal-reporte .reporte-formato').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.formato === this.formato)));
         // El texto plano siempre incluye todo: las secciones solo aplican al reporte HTML
         $('reporte-secciones').hidden = !esHtml;
         montar($('reporte-secciones-lista'), html`${this._secciones().map(s => html`
@@ -60,8 +61,9 @@ export class ReporteModal {
     generar() {
         const ctx = this._contexto();
         if (!ctx) return;
+        /** @type {Record<string, boolean>} */
         const secciones = {};
-        document.querySelectorAll('#reporte-secciones-lista .reporte-seccion').forEach(b => { secciones[b.dataset.seccion] = b.getAttribute('aria-pressed') === 'true'; });
+        $$('#reporte-secciones-lista .reporte-seccion').forEach(b => { secciones[b.dataset.seccion ?? ''] = b.getAttribute('aria-pressed') === 'true'; });
         const esHtml = this.formato === 'html';
         if (esHtml && !Object.values(secciones).some(Boolean)) { this.app.ui.mostrarToast('Seleccioná al menos una sección', 'error'); return; }
 
@@ -88,11 +90,11 @@ export class ReporteModal {
     }
 
     bindEventos() {
-        document.querySelectorAll('#modal-reporte .reporte-formato').forEach(b => {
-            b.addEventListener('click', () => { this.formato = b.dataset.formato; this._render(); });
+        $$('#modal-reporte .reporte-formato').forEach(b => {
+            b.addEventListener('click', () => { this.formato = b.dataset.formato ?? 'html'; this._render(); });
         });
         $('reporte-secciones-lista').addEventListener('click', (e) => {
-            const boton = e.target.closest('.reporte-seccion');
+            const boton = delegado(e, '.reporte-seccion');
             if (!boton) return;
             const activo = boton.getAttribute('aria-pressed') !== 'true';
             boton.setAttribute('aria-pressed', String(activo));

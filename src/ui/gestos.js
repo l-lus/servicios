@@ -9,7 +9,7 @@ export function registrarSwipe(el, callback, { minX = 50, maxY = 80, ignoreInput
 
     el.addEventListener('touchstart', e => {
         if (e.touches.length !== 1) return;
-        if (ignoreInputs && ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+        if (ignoreInputs && ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName ?? '')) return;
         _x = e.touches[0].clientX;
         _y = e.touches[0].clientY;
         _direccionBloqueada = null;

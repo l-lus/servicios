@@ -1,4 +1,4 @@
-import { $ } from '../core/dom.js';
+import { $, delegado } from '../core/dom.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
@@ -40,10 +40,10 @@ export class CalendarioVista {
         this._mes = null;
         this._selectorAbierto = false;
         this._selectorMesesProtegido = false;
-        this._selectorMesesGuardTimer = null;
-        this._selectorMesesIdleTimer = null;
-        this._hoverTimer = null;
-        this._leaveTimer = null;
+        this._selectorMesesGuardTimer = undefined;
+        this._selectorMesesIdleTimer = undefined;
+        this._hoverTimer = undefined;
+        this._leaveTimer = undefined;
         this._hoverPopup = null;
     }
 
@@ -217,7 +217,7 @@ export class CalendarioVista {
             this._leaveTimer = setTimeout(() => this._cerrarHoverPopup(), 150);
         });
         popup.addEventListener('click', (e) => {
-            const item = e.target.closest('.cal-item');
+            const item = delegado(e, '.cal-item');
             if (!item) return;
             this._cerrarHoverPopup();
             this.app.factura.abrirModalLista(item.dataset.servicio, { resaltar: item.dataset.factura });
@@ -288,7 +288,7 @@ export class CalendarioVista {
             selectorMeses.addEventListener(ev, () => this._reiniciarInactividadSelector(), { passive: true });
         });
         selectorMeses.addEventListener('click', (e) => {
-            const btn = e.target.closest('.btn-mes-calendario');
+            const btn = delegado(e, '.btn-mes-calendario');
             if (!btn) return;
             e.stopPropagation();
             const destino = { anio: Number(btn.dataset.anio), mes: Number(btn.dataset.mes) };
@@ -302,7 +302,7 @@ export class CalendarioVista {
             this.render();
         });
         const abrir = (e) => {
-            const dia = e.target.closest('.calendario-dia[data-n]');
+            const dia = delegado(e, '.calendario-dia[data-n]');
             if (dia) this.abrirDia(dia.dataset.fecha);
         };
         const grilla = $('calendario-grilla');
@@ -317,7 +317,7 @@ export class CalendarioVista {
         grilla.addEventListener('pointerover', (e) => {
             if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
             if (!Preferencias.HOVER_POPUP.get()) return;
-            const dia = e.target.closest('.calendario-dia[data-n]');
+            const dia = delegado(e, '.calendario-dia[data-n]');
             if (!dia) return;
             clearTimeout(this._leaveTimer);
             if (this._hoverPopup?.fecha === dia.dataset.fecha) return;
@@ -325,14 +325,14 @@ export class CalendarioVista {
             this._hoverTimer = setTimeout(() => this._mostrarHoverPopup(dia), 160);
         });
         grilla.addEventListener('pointerout', (e) => {
-            const dia = e.target.closest('.calendario-dia[data-n]');
-            if (!dia || dia.contains(e.relatedTarget)) return;
+            const dia = delegado(e, '.calendario-dia[data-n]');
+            if (!dia || dia.contains(/** @type {Node | null} */ (e.relatedTarget))) return;
             clearTimeout(this._hoverTimer);
             this._leaveTimer = setTimeout(() => this._cerrarHoverPopup(), 150);
         });
         registrarSwipe(grilla.parentNode, dir => this.navegar(dir));
         $('calendario-dia-lista').addEventListener('click', (e) => {
-            const item = e.target.closest('.cal-item');
+            const item = delegado(e, '.cal-item');
             if (item) this.abrirFactura(item.dataset.servicio, item.dataset.factura);
         });
         $('modal-calendario-dia-close').addEventListener('click', () => this.app.ui.cerrarModal('modal-calendario-dia'));

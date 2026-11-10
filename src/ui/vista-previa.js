@@ -12,7 +12,7 @@ import { PosicionHeader } from '../core/posicion-header.js';
 
 /** @typedef {{ etiqueta: string, descripcion?: string, icono?: string, valor: () => string, alTocar: () => void, visible?: () => boolean }} FilaVistaPrevia */
 /** @typedef {{ id: string, etiqueta: string, fondo: string, acento: string }} OpcionCirculo */
-/** @typedef {{ opciones: OpcionCirculo[], actual: () => string, alElegir: (id: string) => void }} CirculosVistaPrevia */
+/** @typedef {{ opciones: readonly OpcionCirculo[], actual: () => string, alElegir: (id: string) => void }} CirculosVistaPrevia */
 /** `idObjetivo` es la tarjeta que se lleva a la vista (sin él no hay tarjeta); `circulos` reemplaza a las filas; `sinVelo` deja la página sin atenuar. */
 /** @typedef {{ id: string, titulo: string, idObjetivo?: string | null, filas: FilaVistaPrevia[], circulos?: CirculosVistaPrevia, sinVelo?: boolean, antes?: () => void, alCerrar?: () => void }} ConfigVistaPrevia */
 

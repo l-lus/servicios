@@ -27,6 +27,8 @@ function setFondoCard(valor) {
 }
 
 function asegurarContenedorFondo(card = $('card-resumen')) {
+    /** @type {HTMLElement | null} */
+    /** @type {HTMLElement | null} */
     let bg = $('resumen-card-bg');
     if (!bg && card) {
         bg = document.createElement('div');

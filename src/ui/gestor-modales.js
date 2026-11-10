@@ -1,5 +1,5 @@
 import { EventosApp } from '../core/eventos.js';
-import { $ } from '../core/dom.js';
+import { $, $$ } from '../core/dom.js';
 // ============================================================
 // MODAL MANAGER & HISTORIAL (Popstate, jerarquía y confirmación)
 // ============================================================
@@ -66,9 +66,10 @@ export const ModalManager = (function () {
     const SELECTOR_TRIGGER = 'button, [role="button"], a, .menu-item, .servicio-item, .factura-info, .categoria-tag, .custom-select-option, .icon-btn, [data-action]';
 
     window.addEventListener('pointerdown', (event) => {
-        if (event.target.classList?.contains('modal')) return;
+        const objetivo = event.target instanceof Element ? event.target : null;
+        if (!objetivo || objetivo.classList.contains('modal')) return;
         _ultimoClickCoords = { x: event.clientX, y: event.clientY };
-        _ultimoTrigger = event.target.closest(SELECTOR_TRIGGER) || event.target;
+        _ultimoTrigger = objetivo.closest(SELECTOR_TRIGGER) || objetivo;
     }, true);
 
     window.addEventListener('keydown', (event) => {
@@ -144,7 +145,7 @@ export const ModalManager = (function () {
 
     window.addEventListener('resize', () => {
         document.querySelectorAll('.modal.show, .modal.active').forEach(modal => {
-            const content = modal.querySelector('.modal-content');
+            const content = /** @type {HTMLElement | null} */ (modal.querySelector('.modal-content'));
             const info = _triggerInfoPorModal[modal.id];
             if (content && info) {
                 const origen = _calcularOrigen(info.trigger, info.coords, content);
@@ -235,6 +236,8 @@ export const ModalManager = (function () {
     }
 
     /** Con `sinHistorial` no agrega entrada al historial (se reutiliza la que dejó `cerrar` con sinHistorial). */
+    /** @param {string} modalId @param {(() => void) | null} [callback] @param {{ sinHistorial?: boolean }} [opciones] */
+    /** @param {string} modalId @param {(() => void) | null} [callback] @param {{ sinHistorial?: boolean }} [opciones] */
     function abrir(modalId, callback = null, { sinHistorial = false } = {}) {
         const modal = $(modalId);
         if (!modal) return;
@@ -262,6 +265,8 @@ export const ModalManager = (function () {
     }
 
     /** Con `sinHistorial` el modal se oculta pero su entrada del historial queda, para reabrirlo enseguida sin empujar otra (Chrome salta las entradas agregadas sin gesto del usuario y Atrás cerraba la app). */
+    /** @param {string} modalId @param {(() => void) | null} [callback] @param {{ sinHistorial?: boolean }} [opciones] */
+    /** @param {string} modalId @param {(() => void) | null} [callback] @param {{ sinHistorial?: boolean }} [opciones] */
     function cerrar(modalId, callback = null, { sinHistorial = false } = {}) {
         const modal = $(modalId);
         if (!modal) return;
@@ -326,7 +331,7 @@ export const ModalManager = (function () {
 
     function cerrarTodos() {
         _cierrePendiente = false;
-        document.querySelectorAll('.custom-select-dropdown.csd-fixed').forEach(dd => {
+        $$('.custom-select-dropdown.csd-fixed').forEach(dd => {
             if (dd._csdInstance) dd._csdInstance.close();
             else if (dd.parentElement === document.body) dd.remove();
         });

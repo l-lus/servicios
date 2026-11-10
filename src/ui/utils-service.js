@@ -1,7 +1,6 @@
 import { parseDate, fechaLocalISO } from '../core/fechas.js';
 import { formatearMoneda, formatearFecha, plural } from '../core/formato.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
-import { Anim } from './animaciones.js';
 import { $ } from '../core/dom.js';
 
 // ============================================================

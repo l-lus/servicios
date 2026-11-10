@@ -8,7 +8,7 @@ import { Anim } from './animaciones.js';
 import { CustomSelect } from './custom-select.js';
 import { TarjetaFondos } from './tarjeta-fondos.js';
 import { VistaPrevia } from './vista-previa.js';
-import { $ } from '../core/dom.js';
+import { $, $$, selectPorId } from '../core/dom.js';
 
 const MAPA_COLOR_FONDO = {
     'borde-vencido': 'red',
@@ -231,7 +231,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
         const lista = $('estadisticas-anual-lista');
         montar(lista, r.facturas === 0 ? html`<span class="text-center-muted d-block sin-facturas-text">Sin facturas en ${anio}</span>` : filas);
         // La CSP no admite style en línea: el ancho de cada barra se asigna por JS (CSSOM)
-        lista.querySelectorAll('.anual-barra').forEach(b => b.style.setProperty('--barra-w', `${b.dataset.pct}%`));
+        $$('.anual-barra', lista).forEach(b => b.style.setProperty('--barra-w', `${b.dataset.pct}%`));
     }
 
     // ── Estadísticas mensuales ────────────────────────────────
@@ -259,11 +259,17 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
             const hayUSDMes = totalMesUSD > 0, hayARSMes = totalMesARS > 0;
             const montoHTML = hayARSMes ? fmt(totalMesARS, 'ars') : hayUSDMes ? fmt(totalMesUSD, 'usd') : fmt(0, 'ars');
             const montoUSDItem = hayUSDMes ? html`<div class="calculador-resultado-item"><span class="estadistica-label">Monto USD</span><span class="estadistica-valor">${fmt(totalMesUSD, 'usd')}</span></div>` : '';
+            /** @type {any} */
+            /** @type {any} */
+            /** @type {any} */
             let ingresosHTML = '';
             if (this.app.ui.ingresosHabilitado()) {
                 const hayIngUSD = totalIngresosUSD > 0, hayIngARS = totalIngresosARS > 0;
                 const ingMontoHTML = hayIngARS ? fmt(totalIngresosARS, 'ars') : hayIngUSD ? fmt(totalIngresosUSD, 'usd') : fmt(0, 'ars');
                 const ingUSDItem = hayIngUSD ? html`<div class="calculador-resultado-item"><span class="estadistica-label">Ingresos USD</span><span class="estadistica-valor">${fmt(totalIngresosUSD, 'usd')}</span></div>` : '';
+                /** @type {any} */
+                /** @type {any} */
+                /** @type {any} */
                 let porcentajeIngresosHTML = '';
                 if (hayIngARS && totalMesARS > 0) {
                     const pct = (totalMesARS / totalIngresosARS) * 100;
@@ -308,7 +314,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
             if (selectActual) {
                 const valorActual = selectActual.value;
                 montar(selectActual, this.generarOpcionesMeses(mesSeleccionado, añoSeleccionado));
-                if (Array.from(selectActual.options).some(opt => opt.value === valorActual)) selectActual.value = valorActual;
+                if (Array.from(selectPorId('select-mes-estadisticas').options).some(opt => opt.value === valorActual)) selectActual.value = valorActual;
                 const csd = $('select-mes-estadisticas-csd');
                 if (csd?._customSelect) csd._customSelect.refresh();
             }
@@ -327,7 +333,7 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
         const activa = this.app._estadisticaCategoriaActiva || null;
         const tagsHTML = catsUsadas.map(c => html`<button class="est-cat-tag${c === activa ? ' est-cat-tag--activa' : ''}" data-cat="${c}">${c}</button>`);
         montar(container, html`<div class="est-cat-tags-row">${tagsHTML}</div>`);
-        container.querySelectorAll('.est-cat-tag').forEach(btn => {
+        $$('.est-cat-tag', container).forEach(btn => {
             btn.addEventListener('click', () => {
                 const cat = btn.dataset.cat;
                 this.app._estadisticaCategoriaActiva = this.app._estadisticaCategoriaActiva === cat ? null : cat;
@@ -474,7 +480,6 @@ ${(hayARS && hayUSD) ? valorMostrar : html`<div class="resumen-valor">${valorMos
                 fechaVenc.setHours(0, 0, 0, 0);
                 const esDelMes = fechaVenc.getMonth() === mesSeleccionado && fechaVenc.getFullYear() === añoSeleccionado;
                 const esServicioIngresos = servicio.id === this.app.SERVICIO_INGRESOS_ID;
-                const moneda = factura.moneda || 'ars';
 
                 let incluir = false;
 

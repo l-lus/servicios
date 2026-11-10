@@ -1,4 +1,4 @@
-import { $ } from '../core/dom.js';
+import { $, delegado, $$ } from '../core/dom.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { EstadoApp } from '../services/estado-app.js';
@@ -21,7 +21,7 @@ export class BienvenidaModal {
         const ingresos = this.app.ui.ingresosHabilitado();
         $('bienvenida-ingresos').setAttribute('aria-pressed', String(ingresos));
         $('bienvenida-ingresos').classList.toggle('on', ingresos);
-        document.querySelectorAll('#modal-bienvenida .bienvenida-vista').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vista === this._vista())));
+        $$('#modal-bienvenida .bienvenida-vista').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vista === this._vista())));
     }
 
     /** Muestra el asistente una sola vez, y solo si todavía no hay servicios cargados. */
@@ -48,11 +48,11 @@ export class BienvenidaModal {
             this.app.ui.setIngresos(!this.app.ui.ingresosHabilitado(), { silencioso: true });
             this._pintar();
         });
-        document.querySelectorAll('#modal-bienvenida .bienvenida-vista').forEach(b => {
+        $$('#modal-bienvenida .bienvenida-vista').forEach(b => {
             b.addEventListener('click', () => { this.app.vista.cambiarVista(b.dataset.vista); this._pintar(); });
         });
         $('bienvenida-temas').addEventListener('click', (e) => {
-            const opcion = e.target.closest('.tema-opcion');
+            const opcion = delegado(e, '.tema-opcion');
             if (opcion) GestorTemas.elegirTema(opcion.dataset.tema);
         });
         $('btn-bienvenida-agregar').addEventListener('click', () => this.cerrar({ agregar: true }));

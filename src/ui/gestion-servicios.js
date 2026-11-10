@@ -15,7 +15,7 @@ import { debounce } from '../core/debounce.js';
 import { EstiloCalendario } from '../core/estilo-calendario.js';
 import { EstiloTarjeta } from '../core/estilo-tarjeta.js';
 import { Motion } from '../core/movimiento.js';
-import { EstadoFacturas, SERVICIO_INGRESOS_ID } from '../services/estado-facturas.js';
+import { SERVICIO_INGRESOS_ID } from '../services/estado-facturas.js';
 import { Anim } from './animaciones.js';
 import { CalculadorService } from './calculador-service.js';
 import { CategoriaService } from './categoria-service.js';
@@ -37,7 +37,7 @@ import { UtilsService } from './utils-service.js';
 import { VistaPrevia } from './vista-previa.js';
 import { HeaderPosicion } from './header-posicion.js';
 import { TransicionLayout } from './transicion-layout.js';
-import { $ } from '../core/dom.js';
+import { $, valorDe } from '../core/dom.js';
 
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
@@ -108,6 +108,9 @@ export class GestionServicios {
         this.enModoBusqueda = false;
         this._ctxServicioId = null;
         this.BUSQUEDA_DEBOUNCE_MS = 200;
+        /** @type {any} */
+        /** @type {any} */
+        /** @type {any} */
         this._busquedaDebounced = null;
 
         // Timer para el toast
@@ -303,7 +306,7 @@ export class GestionServicios {
             this.vista.aplicarOrden();
         });
 
-        $('select-vista').addEventListener('change', (e) => this.vista.cambiarVista(e.target.value));
+        $('select-vista').addEventListener('change', (e) => this.vista.cambiarVista(valorDe(e)));
 
         // Listeners para sincronizar botón toggle de monto con el input
         $('factura-monto').addEventListener('input', (e) => {
@@ -351,7 +354,7 @@ export class GestionServicios {
         this._busquedaDebounced = debounce(aplicarBusqueda, this.BUSQUEDA_DEBOUNCE_MS);
 
         searchInput.addEventListener('input', (e) => {
-            const termino = normalizarBusqueda(e.target.value).trim();
+            const termino = normalizarBusqueda(valorDe(e)).trim();
             searchClear.classList.toggle('d-flex-force', !!termino);
             // Vaciar el campo restaura la lista al instante
             if (!termino) { this._busquedaDebounced.cancel(); aplicarBusqueda(termino); return; }
@@ -545,7 +548,7 @@ export class GestionServicios {
     // ========================================
 
     // ── Delegación a GistService ──────────────────────────────
-    async gistBajar(esAutomatico = false) { await this.gist.bajar(esAutomatico); }
+    async gistBajar() { await this.gist.bajar(); }
     async gistAutoSyncInit() {
         // Debounce de 3s al arrancar: da tiempo a que la UI cargue antes de verificar novedades
         setTimeout(() => this.gist.autoSyncInit(), 3000);

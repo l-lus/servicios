@@ -17,6 +17,7 @@ export const Anim = (function () {
         if (!raw) return 300;
         return raw.endsWith('ms') ? parseFloat(raw) : parseFloat(raw) * 1000;
     }
+    /** @param {string} varName @param {HTMLElement | null} [el] */
     function durSiAnima(varName, el = null) {
         return (Motion.reducido() || (el && !el.offsetParent)) ? 0 : getCSSdur(varName);
     }
@@ -315,6 +316,7 @@ export const Anim = (function () {
         roll.append(saliente, entrante);
         el.replaceChildren(roll);
 
+        /** @type {KeyframeAnimationOptions} */
         const opts = { duration: dur, easing: 'ease-out', fill: 'both' };
         const sgn = dir > 0 ? 1 : -1;
         const anims = [
@@ -336,7 +338,8 @@ export const Anim = (function () {
         document.querySelectorAll('.collapsible-content').forEach(_sincronizarAsentado);
         document.addEventListener('transitionend', e => {
             if (e.propertyName !== 'grid-template-rows') return;
-            if (e.target.classList?.contains('collapsible-content')) _sincronizarAsentado(e.target);
+            const el = e.target instanceof HTMLElement ? e.target : null;
+            if (el?.classList.contains('collapsible-content')) _sincronizarAsentado(el);
         });
     }
 

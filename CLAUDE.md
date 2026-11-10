@@ -8,7 +8,7 @@ La fuente de verdad de la arquitectura es `docs/ARQUITECTURA.md`: si el cambio a
 ## Flujo obligatorio tras cada cambio (código, estilos o HTML)
 1. `npm run release` — sube `APP_VERSION` (`src/core/constantes.js`) y `CACHE_NAME` y regenera `urlsToCache` de `sw.js`.
 2. `npm test` — debe quedar en verde. Si se toca el flujo de la UI, correr también `npm run e2e` (Firefox headless; falla ante errores de consola).
-3. Si se agrega `npm run typecheck` al proyecto (hoy no existe; en *horarios* sí, con `tsc` + JSDoc y también en CI), correrlo igual: el CI de horarios cazó errores de tipos que `npm test` no detecta.
+3. `npm run typecheck` (`tsc` + JSDoc, también en CI) debe quedar sin errores: detecta fallos de tipos que `npm test` no ve. Los tipos van como comentarios JSDoc; el navegador recibe el JS tal cual.
 
 **Regla de commits: un commit local por cada cambio / punto tocado** (nunca agrupar varios cambios o puntos independientes en un solo commit). Cada cambio termina con su propio commit local, con `release` y tests en verde. Nunca `push`: el usuario copia los archivos a mano.
 

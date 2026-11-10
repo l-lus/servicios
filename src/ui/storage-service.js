@@ -104,6 +104,7 @@ export class StorageService {
     }
 
     // ── Exportar ──────────────────────────────────────────────
+    /** @param {{ rango?: { desde?: string, hasta?: string } | null }} [opciones] */
     async exportarDatos({ rango = null } = {}) {
         try {
             let servicios = this.servicios, categorias = this.app.categoria.getCategorias();
@@ -126,7 +127,7 @@ export class StorageService {
         input.accept = 'application/json';
 
         input.addEventListener('change', (e) => {
-            const file = e.target.files[0];
+            const file = /** @type {HTMLInputElement} */ (e.target).files?.[0];
             if (!file) return;
             const maxBytes = SecurityAndUtils.SECURITY_LIMITS.MAX_JSON_SIZE;
             if (file.size > maxBytes) {
@@ -138,7 +139,7 @@ export class StorageService {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const crudo = JSON.parse(event.target.result, SecurityAndUtils.reviverJSONSeguro);
+                    const crudo = JSON.parse(/** @type {string} */ (reader.result), SecurityAndUtils.reviverJSONSeguro);
                     if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) {
                         throw new Error('Formato de archivo inválido');
                     }

@@ -3,7 +3,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { html, montar } from '../core/html.js';
 import { TEMAS, etiquetaTema, normalizarTema } from '../core/temas.js';
-import { $ } from '../core/dom.js';
+import { $, $$ } from '../core/dom.js';
 
 // ============================================================
 // GESTOR DE TEMAS — aplica el tema, sincroniza la barra del sistema y dibuja el selector
@@ -20,7 +20,7 @@ function sincronizarBarraDelSistema() {
     let meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) {
         meta = document.createElement('meta');
-        meta.name = 'theme-color';
+        meta.setAttribute('name', 'theme-color');
         document.head.appendChild(meta);
     }
     meta.setAttribute('content', color);
@@ -35,7 +35,7 @@ function aplicarTema(tema) {
     else raiz.setAttribute('data-theme', _actual);
     const indicador = $('tema-indicator');
     if (indicador) indicador.textContent = etiquetaTema(_actual);
-    document.querySelectorAll('.tema-opcion').forEach(b => {
+    $$('.tema-opcion').forEach(b => {
         b.setAttribute('aria-pressed', String(b.dataset.tema === _actual));
     });
     sincronizarBarraDelSistema();
@@ -68,10 +68,10 @@ function renderSelector(idLista = 'bienvenida-temas') {
             <span class="tema-etiqueta">${t.etiqueta}</span>
         </button>`)}`);
     // La CSP no admite style en línea: los colores de cada muestra se asignan por JS (CSSOM)
-    lista.querySelectorAll('.tema-muestra').forEach(m => {
-        m.style.setProperty('--muestra-fondo', m.dataset.fondo);
-        m.style.setProperty('--muestra-tarjeta', m.dataset.tarjeta);
-        m.style.setProperty('--muestra-texto', m.dataset.texto);
+    $$('.tema-muestra', lista).forEach(m => {
+        m.style.setProperty('--muestra-fondo', m.dataset.fondo ?? '');
+        m.style.setProperty('--muestra-tarjeta', m.dataset.tarjeta ?? '');
+        m.style.setProperty('--muestra-texto', m.dataset.texto ?? '');
     });
 }
 

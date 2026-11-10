@@ -19,5 +19,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
-      # Sin dependencias que instalar: los tests usan solo node:test
+      # Sin scripts de instalación: la única dependencia (typescript) no los necesita
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
       - run: npm test
