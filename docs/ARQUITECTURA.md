@@ -15,7 +15,7 @@ index.html  sw.js  package.json  tsconfig.json  scripts/{release.mjs,servidor.py
 assets/{manifest.json, icons/, fonts/, styles/{tokens,base,vistas,menus-modales,utilidades-responsivo}.css}
 src/main.js
 src/data/   fondos (catálogo de ilustraciones SVG para la tarjeta de resumen)
-src/core/   cifrado (sobre AES-GCM con frase: PBKDF2-SHA-256 y sal propia de cada destino; sin DOM, `crypto` inyectable), dom ($, $$, formulario, selectPorId, delegado, valorDe, alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
+src/core/   secretos (la frase de cifrado: solo en la sesión o, con «recordar», en el navegador), cifrado (sobre AES-GCM con frase: PBKDF2-SHA-256 y sal propia de cada destino; sin DOM, `crypto` inyectable), dom ($, $$, formulario, selectPorId, delegado, valorDe, alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
             busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp),
             seguridad (SecurityAndUtils), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
@@ -27,7 +27,7 @@ src/ui/     calendario-vista, vista-previa, header-posicion (reubicar el encabez
             factura-service, ingreso-service, menu-contextual, categoria-service, estadisticas-service,
             ui-manager, utils-service, perfil-service, calculador-service, gist-service,
             historial-manager, storage-service
-src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-html, orden-cards (todos puros)
+src/services/  respaldo-cifrado (RespaldoCifrado: sellar y abrir el respaldo cifrado; sin lanzar), calendario-vencimientos, resumen-anual, reporte-datos, reporte-html, orden-cards (todos puros)
                estado-facturas (EstadoFacturas: estado, última factura, filtro y orden)
                resumen-mes (ResumenMes: resumen, borde, detalle y estadísticas mensuales)
                importar-exportar (ImportarExportar: validación, respaldo con preferencias CONFIG_RESPALDO, hash, fusión y comparación)
