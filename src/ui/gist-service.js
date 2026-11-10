@@ -163,7 +163,8 @@ export class GistService {
     }
 
     // ── Subida ────────────────────────────────────────────────
-    async _ejecutarSubida(silencioso = false) {
+    /** @param {boolean} [silencioso] subida automática (sin avisos de éxito) @param {{ remotoVerificado?: boolean }} [opciones] con `remotoVerificado` la guarda de la subida automática ya abrió el Gist con la frase: no se vuelve a bajar */
+    async _ejecutarSubida(silencioso = false, { remotoVerificado = false } = {}) {
         const token = this.getToken();
         const perfil = this.getPerfil();
         if (!token) { if (!silencioso) this.app.mostrarToast('Falta el token', 'error'); return; }
@@ -177,7 +178,7 @@ export class GistService {
             const frase = FraseCifrado.actual();
             if (!FraseCifrado.disponible()) { this._avisarFraseFaltante(silencioso); return; }
             // Subir con una frase que no abre el Gist actual lo dejaría ilegible para los otros dispositivos: se pide confirmación (a mano) o se frena (automática)
-            if (existente && !(await this._fraseAbreElRemoto(perfil.gistId, token, silencioso))) return;
+            if (existente && !remotoVerificado && !(await this._fraseAbreElRemoto(perfil.gistId, token, silencioso))) return;
 
             const respaldo = await this.app.storage._construirExportacion();
             const sellado = await RespaldoCifrado.sellar(respaldo, frase, { sal: this._sales[perfil.gistId] ?? null });
@@ -276,15 +277,12 @@ export class GistService {
             // Guard: si hay un gist existente, comparar tamaño antes de subir
             if (this.esIdValido(perfil.gistId)) {
                 try {
-                    const remoto = await this._fetchGist(perfil.gistId, this.getToken());
+                    const remoto = await this._fetchGist(perfil.gistId, this.getToken(), { avisarSinCifrar: false });
                     if (remoto) {
-                        const categorias = this.app.categoria.getCategorias();
-                        const payloadLocal = JSON.stringify({ servicios: this.servicios, categorias });
-                        const payloadRemoto = JSON.stringify(remoto);
-                        const umbral = 0.75;
-                        if (payloadLocal.length < payloadRemoto.length * umbral) {
-                            console.warn(`AutoSync bloqueado: datos locales (${payloadLocal.length}b) son menos del 75% del remoto (${payloadRemoto.length}b)`);
-                            this.app.mostrarToast('⚠️ AutoSync bloqueado: los datos locales son significativamente menores que el backup. Subí manualmente si es intencional.', 'error');
+                        const medida = ImportarExportar.subidaAutomaticaSegura(this.servicios, this.app.categoria.getCategorias(), remoto.servicios, remoto.categorias);
+                        if (!medida.segura) {
+                            console.warn(`AutoSync bloqueado: datos locales (${medida.local}b) son menos del 75% del remoto (${medida.remoto}b)`);
+                            this.app.ui.mostrarToast('Subida automática bloqueada: lo que hay acá es mucho menos que lo que hay en el Gist. Si es a propósito, subí a mano con el botón Subir', 'error', 8000);
                             return;
                         }
                     }
@@ -299,7 +297,7 @@ export class GistService {
                 }
             }
 
-            this._ejecutarSubida(true);
+            this._ejecutarSubida(true, { remotoVerificado: true });
         }, this.DEBOUNCE_MS);
     }
 

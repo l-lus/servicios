@@ -369,6 +369,27 @@ export const ImportarExportar = {
         return { servicios, facturas, ingresos };
     },
 
+    /**
+     * Guarda de la subida automática: lo local se compara con lo que ya hay en el Gist por el tamaño de su contenido (servicios y categorías, normalizados igual
+     * en los dos lados; solo eso, sin hash ni configuración del respaldo). Si lo local pesa menos que `umbral` de lo remoto, una subida automática lo pisaría
+     * con mucho menos datos (p. ej. tras borrar por error o abrir la app vacía): no es `segura`. La subida manual no usa esta guarda.
+     * @param {any[]} locales @param {string[]} categoriasLocales @param {any[]} remotos @param {string[]} categoriasRemotas @param {number} [umbral]
+     * @returns {{ segura: boolean, local: number, remoto: number }}
+     */
+    subidaAutomaticaSegura(locales, categoriasLocales, remotos, categoriasRemotas, umbral = 0.75) {
+        const tamano = (servicios, categorias) => {
+            try {
+                const datos = ImportarExportar.normalizarDatos(servicios, categorias);
+                return JSON.stringify({ servicios: datos.servicios, categorias: datos.categorias }).length;
+            } catch {
+                return JSON.stringify({ servicios, categorias }).length;
+            }
+        };
+        const local = tamano(locales, categoriasLocales);
+        const remoto = tamano(remotos, categoriasRemotas);
+        return { segura: local >= remoto * umbral, local, remoto };
+    },
+
     /** true si el respaldo declara una versión de esquema más nueva que la soportada. */
     esVersionMasNueva(datos) {
         const actual = SecurityAndUtils.SECURITY_LIMITS.SCHEMA_VERSION;

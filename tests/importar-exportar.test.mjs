@@ -178,3 +178,41 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
     assert.equal(cambios.includes('orden de servicios'), true);
 });
 
+
+test('subidaAutomaticaSegura: bloquea cuando lo local es menos del 75% de lo remoto y deja pasar cuando es parecido o mayor', () => {
+    const fac = (i) => ({ id: `f${i}`, monto: 1000 + i, fecha: '2026-11-10', pagada: false, fechaPago: null });
+    const servicio = (id, n) => ({ id, nombre: id, categoria: '', facturas: Array.from({ length: n }, (_, i) => fac(i)) });
+    const remotos = [servicio('luz', 40), servicio('gas', 40)];
+    // lo mismo en los dos lados: segura (y la medida es la misma)
+    const igual = IE.subidaAutomaticaSegura(remotos, ['Casa'], remotos, ['Casa']);
+    assert.equal(igual.segura, true);
+    assert.equal(igual.local, igual.remoto);
+    // un cambio chico (una factura más o menos) no bloquea
+    assert.equal(IE.subidaAutomaticaSegura([servicio('luz', 40), servicio('gas', 39)], ['Casa'], remotos, ['Casa']).segura, true);
+    assert.equal(IE.subidaAutomaticaSegura([servicio('luz', 40), servicio('gas', 41)], ['Casa'], remotos, ['Casa']).segura, true);
+    // lo local es mucho menos (borrar un servicio de dos, o quedar vacío): bloquea
+    assert.equal(IE.subidaAutomaticaSegura([servicio('luz', 40)], ['Casa'], remotos, ['Casa']).segura, false);
+    assert.equal(IE.subidaAutomaticaSegura([], [], remotos, ['Casa']).segura, false);
+    // justo en el borde del 75 %: una cuarta parte de menos todavía pasa, algo más de eso no
+    assert.equal(IE.subidaAutomaticaSegura([servicio('luz', 40), servicio('gas', 22)], ['Casa'], remotos, ['Casa']).segura, true);
+    assert.equal(IE.subidaAutomaticaSegura([servicio('luz', 40), servicio('gas', 10)], ['Casa'], remotos, ['Casa']).segura, false);
+    // remoto vacío: nunca bloquea
+    assert.equal(IE.subidaAutomaticaSegura(remotos, [], [], []).segura, true);
+});
+
+test('subidaAutomaticaSegura: lo remoto se mide por sus servicios y categorías, no por el resto del respaldo (hash, configuración, rango)', async () => {
+    const fac = (i) => ({ id: `f${i}`, monto: 1000 + i, fecha: '2026-11-10', pagada: false, fechaPago: null });
+    const locales = [{ id: 'luz', nombre: 'luz', categoria: '', facturas: Array.from({ length: 30 }, (_, i) => fac(i)) }];
+    // un respaldo completo (con hash y configuración) normalizado: el tamaño es el del contenido, igual que el local
+    const respaldo = await IE.armarRespaldo(locales, ['Casa']);
+    const remotos = IE.normalizarDatos(respaldo.servicios, respaldo.categorias);
+    const medida = IE.subidaAutomaticaSegura(locales, ['Casa'], remotos.servicios, remotos.categorias);
+    assert.equal(medida.segura, true, 'los mismos datos no se bloquean (antes se comparaba contra el respaldo entero y siempre se bloqueaba)');
+    assert.equal(medida.local, medida.remoto);
+});
+
+test('subidaAutomaticaSegura: datos locales inválidos no rompen la guarda (se miden tal cual)', () => {
+    const medida = IE.subidaAutomaticaSegura([{ id: 'a bc' }], [], [], []);
+    assert.equal(typeof medida.local, 'number');
+    assert.equal(medida.segura, true);
+});
