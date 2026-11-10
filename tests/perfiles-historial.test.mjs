@@ -10,7 +10,7 @@ globalThis.localStorage = {
 };
 globalThis.window = globalThis;
 
-const { GestorPerfiles, PERFIL_PRINCIPAL, MAX_PERFILES } = await import('../src/services/gestor-perfiles.js');
+const { GestorPerfiles, PERFIL_PRINCIPAL, MAX_PERFILES, esIdDeGist } = await import('../src/services/gestor-perfiles.js');
 const { PilaHistorial, MAX_HISTORIAL } = await import('../src/services/pila-historial.js');
 const { STORAGE_KEYS } = await import('../src/core/constantes.js');
 
@@ -39,6 +39,52 @@ test('GestorPerfiles: perfil principal por defecto, alta, validación, renombre 
     assert.equal(GestorPerfiles.eliminar(perfiles, p.id), true);
     assert.equal(store.has(STORAGE_KEYS.DATOS_PERFIL(p.id)), false);
     assert.equal(store.has(STORAGE_KEYS.DATOS_RESCATE(p.id)), false, 'la copia de rescate se va con el perfil');
+});
+
+test('GestorPerfiles: los perfiles guardados se validan al cargar (campos conocidos, ids con formato, el principal siempre) y no heredan de Object.prototype', () => {
+    const ahora = new Date('2026-11-10T12:00:00Z');
+    const gist = 'a'.repeat(32);
+    store.clear();
+    store.set(STORAGE_KEYS.PERFILES, JSON.stringify({
+        perfil_1: { id: 'otro', nombre: '  Casa\u0000 ', creado: '2026-01-01T00:00:00.000Z', gistId: gist, gistAuto: true, gistCifrado: true, gistLastSync: '2026-11-01T10:00:00.000Z', intruso: '<b>' },
+        perfil_2: { nombre: 'Negocio', creado: 'ayer', gistId: 'javascript:alert(1)', gistAuto: 'si', gistCifrado: 1, gistLastSync: {} },
+        'id con espacios': { nombre: 'X' },
+        perfil_3: { nombre: '' },
+        perfil_4: 'no es un objeto',
+        perfil_5: null,
+    }));
+    const perfiles = GestorPerfiles.cargar(ahora);
+    assert.equal(Object.getPrototypeOf(perfiles), null);
+    assert.deepEqual(Object.keys(perfiles), [PERFIL_PRINCIPAL, 'perfil_1', 'perfil_2']);
+    assert.deepEqual(perfiles[PERFIL_PRINCIPAL], { id: PERFIL_PRINCIPAL, nombre: 'Principal', creado: ahora.toISOString() }, 'el principal se repone si falta');
+    assert.deepEqual(perfiles.perfil_1, { id: 'perfil_1', nombre: 'Casa', creado: '2026-01-01T00:00:00.000Z', gistId: gist, gistAuto: true, gistCifrado: true, gistLastSync: '2026-11-01T10:00:00.000Z' });
+    assert.deepEqual(perfiles.perfil_2, { id: 'perfil_2', nombre: 'Negocio', creado: ahora.toISOString() }, 'los campos inválidos no se cargan');
+
+    for (const malo of ['"texto"', '[1,2]', '42', '{no es json', 'null']) {
+        store.set(STORAGE_KEYS.PERFILES, malo);
+        assert.deepEqual(Object.keys(GestorPerfiles.cargar(ahora)), [PERFIL_PRINCIPAL], malo);
+    }
+
+    const muchos = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`perfil_${i}`, { nombre: `P${i}` }]));
+    store.set(STORAGE_KEYS.PERFILES, JSON.stringify({ ...muchos, default: { nombre: 'Mío' } }));
+    const topados = GestorPerfiles.cargar(ahora);
+    assert.equal(Object.keys(topados).length, MAX_PERFILES);
+    assert.equal(topados[PERFIL_PRINCIPAL].nombre, 'Mío', 'el principal guardado se conserva aunque venga último');
+});
+
+test('GestorPerfiles.activoValido: el perfil activo guardado solo vale si es uno de los perfiles (nunca una clave heredada como __proto__)', () => {
+    const perfiles = GestorPerfiles.sanear({ perfil_1: { nombre: 'Casa' } });
+    assert.equal(GestorPerfiles.activoValido(perfiles, 'perfil_1'), 'perfil_1');
+    for (const malo of ['__proto__', 'constructor', 'toString', 'perfil_9', '', null, undefined, 5]) {
+        assert.equal(GestorPerfiles.activoValido(perfiles, malo), PERFIL_PRINCIPAL, String(malo));
+    }
+    assert.equal(GestorPerfiles.activoValido({}, 'constructor'), PERFIL_PRINCIPAL, 'tampoco con un objeto común');
+    assert.equal(perfiles.__proto__, undefined);
+});
+
+test('esIdDeGist: solo el formato hexadecimal de un id de Gist', () => {
+    assert.equal(esIdDeGist('0123456789abcdefABCDEF0123456789'), true);
+    for (const malo of ['', 'abc', 'g'.repeat(32), 'a'.repeat(41), '../../x', null, undefined, 123]) assert.equal(esIdDeGist(malo), false, String(malo));
 });
 
 test('GestorPerfiles: máximo de perfiles', () => {

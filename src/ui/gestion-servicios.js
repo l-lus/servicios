@@ -5,6 +5,7 @@ import { ReporteModal } from './reporte-modal.js';
 import { RespaldoModal } from './respaldo-modal.js';
 import { normalizarBusqueda } from '../core/busqueda-texto.js';
 import { EstadoApp } from '../services/estado-app.js';
+import { GestorPerfiles } from '../services/gestor-perfiles.js';
 import { ListenersApp } from './listeners-app.js';
 import { ServicioService } from './servicio-service.js';
 import { VistaServicios } from './vista-servicios.js';
@@ -62,9 +63,10 @@ export class GestionServicios {
 
         // Sistema de perfiles — PerfilService se instancia primero porque
         // cargar() se necesita durante la construcción
-        EstadoApp.perfilActivo = StorageHelper.getItem(STORAGE_KEYS.PERFIL_ACTIVO) || 'default';
+        // (los perfiles y el perfil activo guardados se validan: ver GestorPerfiles.sanear / activoValido)
         this.perfil = new PerfilService(this);
         EstadoApp.perfiles = this.perfil.cargar();
+        EstadoApp.perfilActivo = GestorPerfiles.activoValido(EstadoApp.perfiles, StorageHelper.getItem(STORAGE_KEYS.PERFIL_ACTIVO));
 
         // Datos y estado
         EstadoApp.servicios = [];

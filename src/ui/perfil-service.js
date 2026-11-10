@@ -34,7 +34,7 @@ export class PerfilService {
 
     // ── Cambio de perfil activo ───────────────────────────────
     cambiar(perfilId) {
-        if (perfilId === this.perfilActivo) return;
+        if (perfilId === this.perfilActivo || !Object.hasOwn(this.perfiles, perfilId)) return;
         this.app.storage.guardarDatosPerfilActivo();
         this.perfilActivo = perfilId;
         StorageHelper.setItem(STORAGE_KEYS.PERFIL_ACTIVO, perfilId);
@@ -120,6 +120,7 @@ export class PerfilService {
 
     // ── UI — modal editar ─────────────────────────────────────
     abrirModalEditar(perfilId) {
+        if (!Object.hasOwn(this.perfiles, perfilId)) return;
         this.app.perfilEditando = perfilId;
         const perfil = this.perfiles[perfilId];
         $('perfil-nombre').value = perfil.nombre;

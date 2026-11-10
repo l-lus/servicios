@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '../core/constantes.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { RespaldoCifrado } from '../services/respaldo-cifrado.js';
+import { esIdDeGist } from '../services/gestor-perfiles.js';
 import { FraseCifrado } from './frase-cifrado.js';
 import { CampoFrase } from './campo-frase.js';
 import { ModalManager } from './gestor-modales.js';
@@ -42,7 +43,7 @@ export class GistService {
         this.app.perfil.guardar();
     }
 
-    esIdValido(id) { return /^[a-f0-9]{20,40}$/i.test(id || ''); }
+    esIdValido(id) { return esIdDeGist(id); }
 
     // ── UI ────────────────────────────────────────────────────
     toggleToken() {
