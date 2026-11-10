@@ -56,7 +56,7 @@ reportes HTML · respaldo por rango, preferencias (`CONFIG_RESPALDO`) y resumen 
 tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: [avisos push](PUSH-VENCIMIENTOS.md).
 
 ## Verificación
-- `npm test`: arquitectura (capas, ciclos, precache, CSP/Trusted Types, CSS, IDs del DOM), servidor de desarrollo y dominio sin DOM.
+- `npm test`: arquitectura (capas, ciclos, precache, CSP/Trusted Types, CSS, IDs del DOM), service worker (instalación, limpieza de cachés propias, modo sin conexión; `tests/service-worker.test.mjs` ejecuta `sw.js` en un contexto simulado), servidor de desarrollo y dominio sin DOM.
 - `npm run e2e`: Firefox headless por WebDriver BiDi; recorre menús, modales, altas, búsqueda, orden, calculadora y undo/redo y falla si hay errores en consola. Sirve para comparar contra otra versión (`node scripts/e2e/navegador.mjs <carpeta> scripts/e2e/flujos.mjs` y `diff`).
 
 ## Dónde poner código nuevo
