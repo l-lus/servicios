@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ImportarExportar as IE } from '../src/services/importar-exportar.js';
 import { SERVICIO_INGRESOS_ID } from '../src/services/estado-facturas.js';
+import { SecurityAndUtils } from '../src/core/seguridad.js';
 
 const fac = (id, extra = {}) => ({ id, monto: 100, fecha: '2026-11-10', pagada: false, fechaPago: null, ...extra });
 const srv = (id, facturas = [], extra = {}) => ({ id, nombre: id, categoria: '', facturas, ...extra });
@@ -18,6 +19,15 @@ test('normalizarDatos: nombres y categorías conservan sus símbolos (apóstrofe
     assert.equal(r.servicios[0].categoria, "D'Elía", 'la categoría del servicio queda igual que la de la lista');
     assert.deepEqual(r.categorias, ["D'Elía", 'Metadata: casa']);
     assert.throws(() => IE.normalizarDatos([srv('a', [], { nombre: ' \u0001 ' })]), /nombre inválido/, 'un nombre que queda vacío no vale');
+});
+
+test('normalizarDatos: topes de cantidad de servicios y de facturas por servicio', () => {
+    const L = SecurityAndUtils.SECURITY_LIMITS;
+    const muchos = Array.from({ length: L.MAX_SERVICIOS + 1 }, (_, i) => srv(`s${i}`));
+    assert.throws(() => IE.normalizarDatos(muchos), /Máximo \d+ servicios/);
+    assert.equal(IE.normalizarDatos(muchos.slice(1)).servicios.length, L.MAX_SERVICIOS, 'justo en el tope pasa');
+    // no hace falta que las facturas sean válidas: el tope se mira antes de recorrerlas
+    assert.throws(() => IE.normalizarDatos([srv('a', new Array(L.MAX_FACTURAS_POR_SERVICIO + 1).fill(null))]), /máximo \d+ facturas/);
 });
 
 test('normalizarDatos: rechaza estructuras inválidas con un mensaje legible', () => {

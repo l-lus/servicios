@@ -246,6 +246,7 @@ export const ImportarExportar = {
         };
 
         if (!Array.isArray(servicios)) fallar('Formato inválido: falta "servicios"');
+        if (servicios.length > L.MAX_SERVICIOS) fallar(`Máximo ${L.MAX_SERVICIOS} servicios`);
         if (categorias !== undefined && categorias !== null && !Array.isArray(categorias)) fallar('Formato inválido: "categorias" no es una lista');
 
         const idsServicios = new Set();
@@ -259,6 +260,7 @@ export const ImportarExportar = {
             const nombre = SecurityAndUtils.limpiarTexto(s.nombre, L.MAX_NOMBRE_LENGTH);
             if (!nombre) fallar(`${donde}: nombre inválido`);
             if (!Array.isArray(s.facturas)) fallar(`${donde}: facturas no es una lista`);
+            if (s.facturas.length > L.MAX_FACTURAS_POR_SERVICIO) fallar(`${donde}: máximo ${L.MAX_FACTURAS_POR_SERVICIO} facturas`);
 
             const idsFacturas = new Set();
             const facturas = s.facturas.map((f, j) => {

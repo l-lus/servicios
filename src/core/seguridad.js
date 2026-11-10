@@ -9,6 +9,9 @@ export const SecurityAndUtils = (function () {
         MAX_JSON_SIZE: 4 * 1024 * 1024,
         MAX_NOMBRE_LENGTH: 30,
         MAX_CATEGORIAS: 100,
+        // Topes de cantidad para datos que vienen de afuera: muy por encima de un uso real (y de lo que entra en el almacenamiento), frenan un archivo armado para colgar la app
+        MAX_SERVICIOS: 2000,
+        MAX_FACTURAS_POR_SERVICIO: 20000,
         MAX_MONTO: 99999999,
         // v1 = '1.0' (sin hash); v2 agrega hash SHA-256 de { servicios, categorias }
         SCHEMA_VERSION: 2,
