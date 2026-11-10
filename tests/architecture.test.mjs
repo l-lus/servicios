@@ -355,6 +355,12 @@ test('Popup del calendario: el CSS estiliza la clase que crea el JS y sus estado
     assert.match(css, new RegExp(`\\.${clase}\\.closing \\{`));
 });
 
+test('SVG de fondos: el sanitizador quita los atributos style (la CSP los bloquea) y los catálogos no los usan', async () => {
+    assert.match(fs.readFileSync('src/ui/tarjeta-fondos.js', 'utf8'), /querySelectorAll\('\[style\]'\)\.forEach\(el => el\.removeAttribute\('style'\)\)/);
+    const { FONDOS_SVG } = await import('../src/data/fondos.js');
+    for (const f of FONDOS_SVG) assert.doesNotMatch(f.svg('#123456'), /\sstyle\s*=|<script|\bon\w+\s*=|href\s*=/i, `el fondo ${f.id} usa algo que el sanitizador quita`);
+});
+
 test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
     const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));

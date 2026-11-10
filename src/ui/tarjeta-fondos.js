@@ -89,10 +89,8 @@ function _sanitizarSVG(svgStr) {
         });
     });
 
-    doc.querySelectorAll('[style]').forEach(el => {
-        const safe = (el.getAttribute('style') || '').replace(/@import|url\s*\(/gi, '');
-        el.setAttribute('style', safe);
-    });
+    // los estilos en línea los bloquea la CSP (style-src 'self'): se quitan en vez de limpiarlos
+    doc.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
 
     const svgEl = doc.querySelector('svg');
     return svgEl ? svgEl.outerHTML : '';
