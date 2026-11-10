@@ -84,7 +84,15 @@ body.modal-open {
     gap: 0 var(--space-lg);
 }
 
+/* Posición del encabezado: la fija <html data-header-pos="top|bottom|left|right"> (core/posicion-header.js; en móvil solo arriba o abajo).
+   Arriba va pegado (sticky) y en flujo; abajo y a los costados va fijo y la página le deja su lugar con un relleno en <html>, así que el contenido
+   nunca queda tapado. --header-alto lo mide ui/header-posicion.js */
+:root {
+    --header-lateral-w: 4rem;   /* ancho de la barra cuando va a un costado (PC) */
+}
+
 .header {
+    --header-borde: transparent;
     position: sticky;
     top: 0;
     z-index: var(--z-header);
@@ -96,8 +104,11 @@ body.modal-open {
     background: var(--bg-header);
     padding: var(--space-smd);
     border: 2px solid transparent;
-    border-bottom: 3px solid transparent;
+    /* El borde del lado que da al contenido muestra siempre el estado de las facturas (--header-borde, ver .progress-* más abajo); sin estado queda transparente */
+    border-bottom: 3px solid var(--header-borde);
     box-shadow: var(--shadow);
+    /* Se mantiene presionado para reubicarlo (ver ui/header-posicion.js); pan-y deja pasar el desplazamiento mientras tanto */
+    touch-action: pan-y;
     transition: width var(--transition-ui), top var(--transition-ui),
         padding var(--transition-ui), border-radius var(--transition-ui),
         border-color var(--transition-ui), box-shadow var(--transition-ui),
@@ -105,23 +116,23 @@ body.modal-open {
 }
 
 .header.progress-red {
-    border-bottom-color: var(--c-red);
+    --header-borde: var(--c-red);
 }
 
 .header.progress-gold {
-    border-bottom-color: var(--c-gold);
+    --header-borde: var(--c-gold);
 }
 
 .header.progress-blue {
-    border-bottom-color: var(--c-blue);
+    --header-borde: var(--c-blue);
 }
 
 .header.progress-green {
-    border-bottom-color: var(--c-green);
+    --header-borde: var(--c-green);
 }
 
 @media (min-width: 768px) {
-    .header.scrolled {
+    html[data-header-pos="top"] .header.scrolled {
         top: var(--space-md);
         width: 30%;
         padding: var(--space-xs) var(--space-md);
@@ -132,29 +143,29 @@ body.modal-open {
     }
 
     @media (hover: hover) and (pointer: fine) {
-        .header.scrolled {
+        html[data-header-pos="top"] .header.scrolled {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
     }
 
-    .header.scrolled.progress-red {
+    html[data-header-pos="top"] .header.scrolled.progress-red {
         border-color: var(--c-red);
     }
 
-    .header.scrolled.progress-gold {
+    html[data-header-pos="top"] .header.scrolled.progress-gold {
         border-color: var(--c-gold);
     }
 
-    .header.scrolled.progress-blue {
+    html[data-header-pos="top"] .header.scrolled.progress-blue {
         border-color: var(--c-blue);
     }
 
-    .header.scrolled.progress-green {
+    html[data-header-pos="top"] .header.scrolled.progress-green {
         border-color: var(--c-green);
     }
 
-    .header.scrolled h1 {
+    html[data-header-pos="top"] .header.scrolled h1 {
         margin-left: var(--space-xs);
     }
 }
@@ -169,6 +180,137 @@ body.modal-open {
     font-size: var(--text-lg);
     color: var(--text-main);
     transition: margin-left var(--transition-ui);
+}
+
+/* Abajo: barra fija al pie. El relleno de <html> deja libre ese alto; la zona segura de los celulares con barra de gestos se suma al relleno de la barra */
+html[data-header-pos="bottom"] {
+    padding-bottom: var(--header-alto, 60px);
+}
+
+html[data-header-pos="bottom"] .header {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-bottom: 2px solid transparent;
+    border-top: 3px solid var(--header-borde);
+    padding-bottom: calc(var(--space-smd) + env(safe-area-inset-bottom, 0));
+    box-shadow: var(--shadow-header-abajo);
+}
+
+/* A los costados (solo PC): el mismo encabezado girado, en una barra vertical fija. El texto va de costado con la parte de abajo de las letras hacia el
+   centro de la pantalla (a la izquierda se lee de abajo hacia arriba; a la derecha, de arriba hacia abajo); el título queda abajo y el perfil arriba.
+   Las letras las gira writing-mode; lo que no es texto (los íconos) se gira con `rotate`. Va en los hijos y no en la barra: la barra se desliza al
+   reubicarla con un transform (ui/arrastre.js) que pisaría el giro. */
+@media (min-width: 768px) {
+    html[data-header-pos="left"] {
+        padding-left: var(--header-lateral-w);
+    }
+
+    html[data-header-pos="right"] {
+        padding-right: var(--header-lateral-w);
+    }
+
+    html:is([data-header-pos="left"], [data-header-pos="right"]) .header {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: var(--header-lateral-w);
+        writing-mode: vertical-rl;
+        flex-direction: row-reverse;   /* el título (primero en el HTML) abajo y las acciones arriba */
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-lg);
+        padding: var(--space-lg) var(--space-sm);
+        border-bottom: 0;
+    }
+
+    html[data-header-pos="left"] .header {
+        left: 0;
+        right: auto;
+        border-right: 3px solid var(--header-borde);
+    }
+
+    html[data-header-pos="right"] .header {
+        left: auto;
+        right: 0;
+        border-left: 3px solid var(--header-borde);
+    }
+
+    html:is([data-header-pos="left"], [data-header-pos="right"]) .header h1 {
+        margin: 0;
+        justify-content: center;
+    }
+
+    /* Costado izquierdo: las letras (writing-mode) quedan con la parte de abajo hacia la izquierda; se giran 180° para que miren al centro */
+    html[data-header-pos="left"] .header h1 {
+        rotate: 180deg;
+    }
+
+    /* Acciones: el perfil arriba del botón de instalar (el primero del HTML va abajo) */
+    html:is([data-header-pos="left"], [data-header-pos="right"]) .header-actions {
+        flex-direction: row-reverse;
+    }
+
+    /* El ícono de instalar gira con el texto (a la izquierda al revés que a la derecha) */
+    html[data-header-pos="left"] #btn-install .icon {
+        rotate: -90deg;
+    }
+
+    html[data-header-pos="right"] #btn-install .icon {
+        rotate: 90deg;
+    }
+
+    /* Perfil: solo el ícono. El nombre aparece en horizontal, como una píldora que sale hacia las tarjetas, al pasar el cursor o enfocar el botón */
+    html:is([data-header-pos="left"], [data-header-pos="right"]) .header-profile-btn {
+        position: relative;
+        writing-mode: horizontal-tb;
+        max-width: none;
+        padding: var(--space-sm);
+        gap: 0;
+        justify-content: center;
+    }
+
+    html:is([data-header-pos="left"], [data-header-pos="right"]) .header-profile-btn span {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        max-width: 16rem;
+        padding: var(--space-xs) var(--space-md);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-full);
+        box-shadow: var(--shadow);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--dur-fast);
+    }
+
+    html[data-header-pos="left"] .header-profile-btn span {
+        left: calc(100% + var(--space-sm));
+    }
+
+    html[data-header-pos="right"] .header-profile-btn span {
+        right: calc(100% + var(--space-sm));
+    }
+
+    html:is([data-header-pos="left"], [data-header-pos="right"]) .header-profile-btn:is(:hover, :focus-visible) span {
+        opacity: 1;
+    }
+}
+
+/* Reubicando el encabezado (mantener presionado y arrastrar): queda atenuado mientras se desliza en vivo al borde más cercano, igual que una tarjeta */
+.header.reubicando {
+    opacity: 0.65;
+    user-select: none;
+    cursor: grabbing;
+}
+
+body.header-arrastrando-activa,
+body.header-arrastrando-activa * {
+    user-select: none !important;
+    cursor: grabbing !important;
 }
 
 .header-actions {

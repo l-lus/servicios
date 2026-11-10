@@ -21,6 +21,8 @@ export const STORAGE_KEYS = Object.freeze({
     ESTADISTICAS_COLAPSADAS: 'estadisticas-collapsed',
     CALENDARIO_ABIERTO: 'calendario-abierto',
     ESTILO_CALENDARIO: 'estilo-calendario',
+    POSICION_HEADER: 'posicion-header',            // dónde va el encabezado en PC: arriba, abajo, izquierda o derecha (ver core/posicion-header.js)
+    POSICION_HEADER_MOVIL: 'posicion-header-movil', // ídem en móvil: solo arriba o abajo
     HOVER_POPUP: 'hover-popup-calendario',
     RUEDA_CALENDARIO: 'rueda-calendario',
     ESTILO_TARJETA: 'estilo-tarjeta',
@@ -36,6 +38,9 @@ export const STORAGE_KEYS = Object.freeze({
     DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
     HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,
 });
+
+/** Cortes de ancho que cambian el diseño (los mismos que el CSS): escritorio desde 768px y columnas extra desde 1100px. */
+export const CORTES_LAYOUT = Object.freeze({ ESCRITORIO: '(min-width: 768px)', ANCHO: '(min-width: 1100px)' });
 
 /** Fondo de la tarjeta principal de un perfil nuevo o restablecido. */
 export const FONDO_CARD_POR_DEFECTO = 'golden-gate';

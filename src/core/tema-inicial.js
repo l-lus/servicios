@@ -5,10 +5,11 @@ if (window.top !== window.self) {
     try { /** @type {Window} */ (window.top).location = window.self.location.href; } catch (e) { /* sin acceso al almacenamiento o a window.top: se usan los valores por defecto */ }
 }
 
-// Listas válidas (copias de TEMAS en core/temas.js y de ESTILOS_CALENDARIO en core/estilo-calendario.js: este
+// Listas válidas (copias de TEMAS en core/temas.js, de ESTILOS_CALENDARIO en core/estilo-calendario.js y de POSICIONES_HEADER en core/posicion-header.js: este
 // script clásico no puede importar módulos; tests/architecture.test.mjs verifica que coincidan). Un valor guardado
 // que no esté en la lista se trata como el valor por defecto, igual que hacen esos módulos.
 var TEMAS_VALIDOS = ['light', 'dark', 'medianoche', 'pink', 'green', 'blue', 'lilac', 'crema'];
+var POSICIONES_HEADER_VALIDAS = ['top', 'bottom', 'left', 'right'];
 var ESTILOS_CALENDARIO_VALIDOS = ['legacy', 'relleno-aro', 'cuadrado-aro', 'aro-grueso', 'contorno-brillo', 'subrayado', 'punto'];
 
 (function () {
@@ -34,6 +35,17 @@ var ESTILOS_CALENDARIO_VALIDOS = ['legacy', 'relleno-aro', 'cuadrado-aro', 'aro-
     try {
         var e = localStorage.getItem('estilo-calendario') || 'legacy';
         document.documentElement.setAttribute('data-estilo-calendario', ESTILOS_CALENDARIO_VALIDOS.indexOf(e) === -1 ? 'legacy' : e);
+    } catch (err) { /* sin acceso al almacenamiento: se usan los valores por defecto */ }
+}());
+
+// Posición del encabezado (ver PosicionHeader): el CSS solo mira <html data-header-pos>. PC y móvil guardan la suya (mismo corte que el CSS: 768px);
+// en móvil solo valen arriba y abajo. Sin valor guardado (o inválido para ese modo) queda arriba.
+(function () {
+    try {
+        var escritorio = window.matchMedia('(min-width: 768px)').matches;
+        var p = localStorage.getItem(escritorio ? 'posicion-header' : 'posicion-header-movil') || 'top';
+        if (POSICIONES_HEADER_VALIDAS.indexOf(p) === -1 || (!escritorio && (p === 'left' || p === 'right'))) p = 'top';
+        document.documentElement.setAttribute('data-header-pos', p);
     } catch (err) { /* sin acceso al almacenamiento: se usan los valores por defecto */ }
 }());
 

@@ -1,27 +1,25 @@
 import { StorageHelper } from '../core/almacenamiento.js';
-import { STORAGE_KEYS, CARDS } from '../core/constantes.js';
+import { STORAGE_KEYS, CARDS, CORTES_LAYOUT } from '../core/constantes.js';
 import { EventosApp } from '../core/eventos.js';
 import {
     normalizarOrdenCards, columnasDesdeOrden, prepararColumnas, moverCard, tamanosDeColumnas, MAX_COLUMNAS,
 } from '../services/orden-cards.js';
 import { uiAnimarReubicacion, uiArrastreLargo, REUBICACION_MS } from './arrastre.js';
-import { VistaPrevia } from './vista-previa.js';
+import { VistaPrevia, VENTANA_PERSONALIZAR_MS, AVISO_PERSONALIZAR_MS } from './vista-previa.js';
 
 // ============================================================
 // DISPOSICIÓN DE TARJETAS — visibilidad, columnas orgánicas en PC y orden propio en el celular
 // ============================================================
 const $ = id => document.getElementById(id);
 
-const consultaEscritorio = window.matchMedia('(min-width: 768px)');
-const consultaAncho = window.matchMedia('(min-width: 1100px)');
+const consultaEscritorio = window.matchMedia(CORTES_LAYOUT.ESCRITORIO);
+const consultaAncho = window.matchMedia(CORTES_LAYOUT.ANCHO);
 const esEscritorio = () => consultaEscritorio.matches;
 const maxColumnas = () => (!esEscritorio() ? 1 : consultaAncho.matches ? MAX_COLUMNAS : 2);
 
 const SELECTOR_ENCABEZADOS = '#card-resumen, #card-estadisticas .card-header-collapsible, #card-calendario .card-header-collapsible, #card-servicios .card-header-collapsible';
 const SELECTOR_CARDS = '#card-resumen, #card-estadisticas, #card-calendario, #card-servicios';
 
-const VENTANA_PERSONALIZAR_MS = 1000;
-const AVISO_PERSONALIZAR_MS = 800;
 const PERSONALIZABLES = { 'card-resumen': 'resumen', 'card-calendario': 'calendario' };
 
 const _elCard = (cual) => $('card-' + cual);

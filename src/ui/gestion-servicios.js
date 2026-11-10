@@ -35,6 +35,7 @@ import { TarjetaFondos } from './tarjeta-fondos.js';
 import { UIManager } from './ui-manager.js';
 import { UtilsService } from './utils-service.js';
 import { VistaPrevia } from './vista-previa.js';
+import { HeaderPosicion } from './header-posicion.js';
 
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
@@ -177,6 +178,7 @@ export class GestionServicios {
         InstaladorPWA.bindEventos();
         VistaPrevia.bindEventos();
         this.ui.registrarVistasPrevias();
+        HeaderPosicion.iniciar();
         RecargaGesto.bindEventos();
         this.tarjetas.init();
         this.calendario.init();

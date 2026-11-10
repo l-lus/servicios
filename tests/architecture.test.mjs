@@ -315,12 +315,15 @@ test('HTML seguro: no quedan escapes manuales (escaparHTML / escapeHtml) fuera d
     assert.deepEqual(violaciones, [], 'Usá html`...`: escapa cada interpolación');
 });
 
-test('tema-inicial.js: sus listas coinciden con core/temas.js y core/estilo-calendario.js', async () => {
+test('tema-inicial.js: sus listas coinciden con core/temas.js, core/estilo-calendario.js y core/posicion-header.js', async () => {
     const codigo = fs.readFileSync('src/core/tema-inicial.js', 'utf8');
     const listaTemas = JSON.parse(/var TEMAS_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
     const listaCal = JSON.parse(/var ESTILOS_CALENDARIO_VALIDOS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
     const { TEMAS } = await import('../src/core/temas.js');
     const { ESTILOS_CALENDARIO } = await import('../src/core/estilo-calendario.js');
+    const listaPos = JSON.parse(/var POSICIONES_HEADER_VALIDAS = (\[[^\]]*\]);/.exec(codigo)[1].replace(/'/g, '"'));
+    const { POSICIONES_HEADER } = await import('../src/core/posicion-header.js');
+    assert.deepEqual(listaPos, POSICIONES_HEADER.map(p => p.id));
     assert.deepEqual(listaTemas, TEMAS.map(t => t.id));
     assert.deepEqual(listaCal, ESTILOS_CALENDARIO.map(e => e.id));
 });
@@ -349,7 +352,7 @@ test('Tokens: toda variable CSS usada está definida (en tokens.css o en la prop
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
     const usadas = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(m => m[1]));
     // Las asigna JS con style.setProperty (la CSP no admite style en línea)
-    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i', '--recarga-progreso', '--vp-panel-h', '--columnas', '--giro-plus', '--flash-color', '--muestra-fondo', '--muestra-acento']);
+    const dinamicas = new Set(['--barra-w', '--ctx-x', '--ctx-y', '--cal-n', '--cal-paso', '--i', '--recarga-progreso', '--vp-panel-h', '--columnas', '--giro-plus', '--flash-color', '--muestra-fondo', '--muestra-acento', '--header-alto']);
     const sinDefinir = [...usadas].filter(v => !definidas.has(v) && !dinamicas.has(v)).sort();
     assert.deepEqual(sinDefinir, [], 'Variables usadas sin definir');
 });

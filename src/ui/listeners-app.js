@@ -71,6 +71,7 @@ export class ListenersApp {
         EventosApp.on('tarjeta:personalizar', ({ tarjeta }) => {
             if (tarjeta === 'resumen') this.app.ui.abrirVistaPreviaResumen({});
             else if (tarjeta === 'calendario') this.app.ui.abrirVistaPreviaCalendario({});
+            else if (tarjeta === 'tema') this.app.ui.abrirVistaPreviaTema({});
         });
 
         // Menú agregar

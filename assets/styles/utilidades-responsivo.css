@@ -832,3 +832,22 @@ button:disabled .toggle-switch {
     animation: none;
 }
 
+
+/* Encabezado abajo o a un costado (core/posicion-header.js): el botón de agregar y su menú se corren para no quedar tapados por la barra */
+html[data-header-pos="bottom"] .btn-add {
+    bottom: calc(var(--space-lg) + var(--header-alto, 60px));
+}
+
+html[data-header-pos="bottom"] .menu-agregar {
+    bottom: calc(5rem + var(--header-alto, 60px));
+}
+
+@media (min-width: 768px) {
+    html[data-header-pos="right"] .btn-add {
+        right: calc(var(--header-lateral-w) + var(--space-lg));
+    }
+
+    html[data-header-pos="right"] .menu-agregar {
+        right: calc(var(--header-lateral-w) + var(--space-lg));
+    }
+}

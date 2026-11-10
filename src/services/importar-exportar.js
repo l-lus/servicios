@@ -5,6 +5,7 @@ import { StorageHelper } from '../core/almacenamiento.js';
 import { Preferencias } from '../core/preferencias.js';
 import { Motion } from '../core/movimiento.js';
 import { EstiloCalendario, ESTILOS_CALENDARIO } from '../core/estilo-calendario.js';
+import { PosicionHeader, posicionesPermitidas } from '../core/posicion-header.js';
 import { EstiloTarjeta, ESTILOS_TARJETA } from '../core/estilo-tarjeta.js';
 import { FONDOS_SVG } from '../data/fondos.js';
 import { EventosApp } from '../core/eventos.js';
@@ -77,6 +78,20 @@ export const CONFIG_RESPALDO = [
         esValido: (v) => ESTILOS_CALENDARIO.some(e => e.id === v),
         actual: EstiloCalendario.actual,
         aplicar: (v) => EstiloCalendario.setEstilo(v),
+    },
+    {
+        clave: STORAGE_KEYS.POSICION_HEADER,
+        etiqueta: 'posición del encabezado (PC)',
+        esValido: (v) => posicionesPermitidas(true).includes(v),
+        actual: () => PosicionHeader.guardada(true),
+        aplicar: (v) => PosicionHeader.fijar(true, v),
+    },
+    {
+        clave: STORAGE_KEYS.POSICION_HEADER_MOVIL,
+        etiqueta: 'posición del encabezado (móvil)',
+        esValido: (v) => posicionesPermitidas(false).includes(v),
+        actual: () => PosicionHeader.guardada(false),
+        aplicar: (v) => PosicionHeader.fijar(false, v),
     },
     {
         clave: STORAGE_KEYS.TEMA,

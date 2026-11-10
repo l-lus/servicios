@@ -15,11 +15,11 @@ index.html  sw.js  package.json  tsconfig.json  scripts/{release.mjs,servidor.py
 assets/{manifest.json, icons/, fonts/, styles/{tokens,base,vistas,menus-modales,utilidades-responsivo}.css}
 src/main.js
 src/data/   fondos (catálogo de ilustraciones SVG para la tarjeta de resumen)
-src/core/   dom ($/$$/alClic), temas, estilo-calendario, estilo-tarjeta, preferencias, recarga,
+src/core/   dom ($/$$/alClic), temas, estilo-calendario, estilo-tarjeta, posicion-header (PosicionHeader: arriba/abajo/izquierda/derecha), preferencias, recarga,
             busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp),
             seguridad (SecurityAndUtils), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
-src/ui/     calendario-vista, vista-previa, tarjeta-fondos, popups, iconos-animados, recarga-gesto,
+src/ui/     calendario-vista, vista-previa, header-posicion (reubicar el encabezado arrastrándolo), tarjeta-fondos, popups, iconos-animados, recarga-gesto,
             orden-tarjetas, arrastre, bienvenida-modal, reporte-modal, respaldo-modal,
             resumen-merge, ayuda-buscador, gestor-temas, aviso-actualizacion, animaciones (Anim), gestos,
             toast, gestor-modales (ModalManager/BackNav), custom-select, instalador-pwa,
@@ -50,7 +50,7 @@ src/services/  calendario-vencimientos, resumen-anual, reporte-datos, reporte-ht
 
 ## Funciones tomadas de Horarios
 Aviso de actualización con progreso · ayuda con buscador · búsqueda sin acentos · 8 temas de color · calendario de vencimientos con 7 estilos de días (`data-estilo-calendario`), popup flotante al pasar el mouse y cambio de mes con rueda ·
-vista previa en vivo (`VistaPrevia`, con vistas resumen ⇄ calendario ⇄ tema registradas con `registrarVista`/`definirOrden`; el tema se elige con círculos y sin velo) · fondos ilustrados SVG y estructura de estilo para la tarjeta de resumen · header flotante tipo píldora al hacer scroll en PC · pantalla de carga inicial (`html.cargando`) y gesto de recarga con fundido (`RecargaGesto`) ·
+vista previa en vivo (`VistaPrevia`, con vistas resumen ⇄ calendario ⇄ tema registradas con `registrarVista`/`definirOrden`; el tema se elige con círculos y sin velo) · fondos ilustrados SVG y estructura de estilo para la tarjeta de resumen · header flotante tipo píldora al hacer scroll en PC (solo arriba) · encabezado reubicable (mantener y arrastrar a un borde: arriba, abajo y, en PC, a los costados; mantener y soltar sin mover abre la personalización del tema) · pantalla de carga inicial (`html.cargando`) y gesto de recarga con fundido (`RecargaGesto`) ·
 íconos animados (`IconosAnimados`) y llamado de atención de instalación PWA · modal de perfiles con alta colapsable flotante ·
 reportes HTML · respaldo por rango, preferencias (`CONFIG_RESPALDO`) y resumen previo al merge · estadísticas anuales · bienvenida · disposición orgánica de 2 o 3 columnas en PC y orden independiente en móvil ·
 tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: [avisos push](PUSH-VENCIMIENTOS.md).

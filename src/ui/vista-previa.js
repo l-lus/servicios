@@ -1,6 +1,7 @@
 import { $, setColapsable } from '../core/dom.js';
 import { Movimiento } from '../core/movimiento.js';
 import { Animaciones } from './animaciones.js';
+import { PosicionHeader } from '../core/posicion-header.js';
 
 // ====================================================================
 // VISTA PREVIA EN VIVO (ajustes de apariencia que se prueban sobre la propia tarjeta)
@@ -19,6 +20,10 @@ const NS_SVG = 'http://www.w3.org/2000/svg';
 const DEMORA_APERTURA_MS = 160;
 const DEMORA_CIERRE_MS = 90;
 const MARGEN_PX = 12;
+/** Atajo desde las tarjetas y el encabezado (mantener y soltar sin mover): soltar sin mover el dedo dentro de este tiempo abre la vista previa. */
+export const VENTANA_PERSONALIZAR_MS = 1000;
+/** El aviso dura menos que la ventana para no pisarse con el panel, que aparece en el mismo lugar de la pantalla. */
+export const AVISO_PERSONALIZAR_MS = 800;
 const TOLERANCIA_ALINEAR_PX = 40;
 /** Deslizamiento del contenido del panel al pasar de una vista a otra, y lo que hay que arrastrar (px) para que cuente como deslizar. */
 const DESLIZ_MS = 130;
@@ -210,8 +215,9 @@ function _refrescar(animar = true) {
 
 function _llevarAVista() {
     if (!_activa || !_activa.objetivo) return;
-    const encabezado = document.querySelector('.header');
-    const bordeEncabezado = encabezado ? encabezado.getBoundingClientRect().bottom : 0;
+    // el borde de arriba que deja libre el encabezado: solo cuenta si va arriba
+    const encabezado = /** @type {HTMLElement | null} */ (document.querySelector('.header'));
+    const bordeEncabezado = PosicionHeader.altoSuperior(encabezado ? encabezado.getBoundingClientRect().bottom : 0);
     const libreSup = bordeEncabezado + MARGEN_PX;
     const libreInf = window.innerHeight - _alturaReservada() - MARGEN_PX;
     const r = _activa.objetivo.getBoundingClientRect();

@@ -117,6 +117,8 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
     assert.equal(typeof exportable['gestion_servicios_theme'], 'string');
     assert.equal(typeof exportable['estilo-calendario'], 'string');
     assert.equal(typeof exportable['estilo-tarjeta'], 'string');
+    assert.equal(typeof exportable['posicion-header'], 'string');
+    assert.equal(typeof exportable['posicion-header-movil'], 'string');
     assert.equal(typeof exportable['fondo-card'], 'string');
     assert.equal(typeof exportable['hover-popup-calendario'], 'boolean');
     assert.equal(typeof exportable['rueda-calendario'], 'boolean');
@@ -135,6 +137,8 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
         'gestion_servicios_theme': 'crema',
         'estilo-calendario': 'cuadrado-aro',
         'estilo-tarjeta': 'clasica',
+        'posicion-header': 'left',
+        'posicion-header-movil': 'bottom',
         'fondo-card': 'obelisco',
         'hover-popup-calendario': false,
         'rueda-calendario': true,
@@ -153,6 +157,8 @@ test('config exportable en respaldos: valida, exporta y detecta cambios de prefe
     assert.equal(IE.validarCamposConfigImport({ 'gestion_servicios_theme': 'inexistente' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'estilo-calendario': 'inexistente' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'columnas-tarjetas': [0, 0] }), false);
+    assert.equal(IE.validarCamposConfigImport({ 'posicion-header-movil': 'left' }), false, 'un costado no vale en móvil');
+    assert.equal(IE.validarCamposConfigImport({ 'posicion-header': 'arriba' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'gestion_servicios_orden': 'inexistente' }), false);
     assert.equal(IE.validarCamposConfigImport({ 'servicios-collapse-state': 'inexistente' }), false);
 
