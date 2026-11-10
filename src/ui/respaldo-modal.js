@@ -1,6 +1,8 @@
 import { $, $$ } from '../core/dom.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { EstadoApp } from '../services/estado-app.js';
+import { FraseCifrado } from './frase-cifrado.js';
+import { CampoFrase } from './campo-frase.js';
 
 // ============================================================
 // RESPALDO — modal para exportar todo, un mes o un rango de fechas
@@ -10,6 +12,17 @@ export class RespaldoModal {
     constructor(app) {
         this.app = app;
         this.tipo = 'completo';
+        this.cifrar = false;
+        this.campoFrase = new CampoFrase(
+            { input: 'respaldo-frase', ojo: 'respaldo-frase-eye', generar: 'btn-respaldo-generar-frase', recordar: 'respaldo-recordar-frase-toggle' },
+            (mensaje, tipo, duracion) => this.app.ui.mostrarToast(mensaje, tipo, duracion));
+    }
+
+    /** Activa o desactiva «Cifrar con la frase» y muestra u oculta el campo de la frase. @param {boolean} cifrar */
+    _fijarCifrado(cifrar) {
+        this.cifrar = cifrar;
+        $('respaldo-cifrar-toggle').classList.toggle('on', cifrar);
+        $('respaldo-frase-bloque').hidden = !cifrar;
     }
 
     /** Rango elegido según el tipo ({ desde, hasta } vacíos para el respaldo completo). */
@@ -57,6 +70,9 @@ export class RespaldoModal {
         $('respaldo-desde').value = '';
         $('respaldo-hasta').value = '';
         this.seleccionarTipo('completo');
+        this.campoFrase.cargar();
+        // Si ya hay una frase guardada se cifra por defecto; se puede desmarcar
+        this._fijarCifrado(FraseCifrado.disponible());
         this.app.ui.abrirModal('modal-respaldo');
     }
 
@@ -64,8 +80,12 @@ export class RespaldoModal {
         const rango = this._rango();
         if (this._error(rango)) return;
         const parcial = this.tipo !== 'completo';
+        if (this.cifrar) {
+            if (!this.campoFrase.confirmar()) return;
+            if (!FraseCifrado.disponible()) { this.app.mostrarToast('Escribí una frase de cifrado (o generá una) para cifrar el archivo', 'error'); return; }
+        }
         this.app.ui.cerrarModal('modal-respaldo');
-        await this.app.storage.exportarDatos(parcial ? { rango } : {});
+        await this.app.storage.exportarDatos({ ...(parcial ? { rango } : {}), cifrar: this.cifrar });
     }
 
     bindEventos() {
@@ -76,6 +96,8 @@ export class RespaldoModal {
             $(id).addEventListener('input', () => this.actualizarResumen());
             $(id).addEventListener('change', () => this.actualizarResumen());
         });
+        this.campoFrase.vincular();
+        $('respaldo-cifrar-toggle').addEventListener('click', () => this._fijarCifrado(!this.cifrar));
         $('btn-respaldo-exportar').addEventListener('click', () => this.exportar());
         $('btn-respaldo-cancelar').addEventListener('click', () => this.app.ui.cerrarModal('modal-respaldo'));
     }

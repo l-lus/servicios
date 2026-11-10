@@ -19,7 +19,7 @@ src/core/   secretos (la frase de cifrado: solo en la sesión o, con «recordar�
             busqueda-texto, fechas, formato, html, constantes, eventos (EventosApp),
             seguridad (SecurityAndUtils), almacenamiento (StorageHelper), movimiento (Movimiento),
             debounce, tema-inicial (script clásico anti-parpadeo y pantalla de carga)
-src/ui/     calendario-vista, vista-previa, header-posicion (reubicar el encabezado arrastrándolo), transicion-layout (desliza encabezado y tarjetas al cruzar un corte de ancho), tarjeta-fondos, popups, iconos-animados, recarga-gesto,
+src/ui/     frase-cifrado, campo-frase, frase-modal (la frase de cifrado: guardado, campo común y modal al importar), calendario-vista, vista-previa, header-posicion (reubicar el encabezado arrastrándolo), transicion-layout (desliza encabezado y tarjetas al cruzar un corte de ancho), tarjeta-fondos, popups, iconos-animados, recarga-gesto,
             orden-tarjetas, arrastre, bienvenida-modal, reporte-modal, respaldo-modal,
             resumen-merge, ayuda-buscador, gestor-temas, aviso-actualizacion, animaciones (Anim), gestos,
             toast, gestor-modales (ModalManager/BackNav), custom-select, instalador-pwa,
@@ -74,6 +74,14 @@ tokens de diseño (Inter, escalas de texto/espacio/radios, colores). Pendiente: 
 - DOM, modales, eventos → `src/ui/`.
 - Todo `.js` nuevo: import con extensión `.js` y `npm run release`.
 - **Un commit local por cada cambio / punto tocado**: cada ajuste, funcionalidad o corrección lleva su propio commit individual (sin `git push`) tras correr `npm run release` y `npm test`.
+
+## Cifrado y secretos
+Lo que sale de la app (Gist y archivos exportados) puede llevar montos de facturas e ingresos (recibos de sueldo), así que se cifra:
+- **Gist: cifrado obligatorio.** `GistService` solo sube el texto que devuelve `RespaldoCifrado.sellar` (sobre AES-GCM-256, clave PBKDF2-SHA-256 con 600 000 iteraciones de la frase, sal propia de cada Gist, IV nuevo en cada subida). Sin frase válida no se sube nada. Un Gist viejo en claro se lee igual (con el hash de siempre) y se reescribe cifrado al subir; sus revisiones anteriores siguen en el historial de GitHub (se avisa). Antes de pisar un Gist se comprueba que la frase lo abra: a mano se pide confirmación y la subida automática se frena.
+- **Archivo local: cifrado opcional** («Cifrar con la frase» en Respaldar, activado por defecto si hay una frase guardada). Al importar, `RespaldoCifrado.abrir` distingue sobre y JSON en claro; con la frase guardada o, si falta o no abre, con la que se pide en `FraseModal` (vale solo para ese archivo).
+- **La frase** (`ui/frase-cifrado.js`, `core/secretos.js`) vive en `sessionStorage` y solo se guarda en este navegador si se activa «Recordar». Nunca va en el respaldo, en un log ni en un mensaje (lo vigila un test). `ui/campo-frase.js` da el comportamiento común a los tres campos de frase (Gist, Respaldar, pedir al importar).
+- AES-GCM autentica el sobre: en un archivo o Gist cifrado ya no hace falta el hash. Frase equivocada y contenido alterado dan el mismo error.
+- El token del Gist sigue siendo una credencial (no se puede cifrar): queda en `localStorage`, protegido por la CSP.
 
 ## Contrato de errores
 Los servicios no lanzan excepciones por casos esperados (datos vacíos, fechas repetidas…): devuelven un resultado que la UI interpreta. La única excepción es la validación de datos externos (`ImportarExportar.normalizarDatos`, por medio de `fallar`), que lanza un `Error` con mensaje legible y lo captura quien importa. Lo vigila `tests/architecture.test.mjs`.

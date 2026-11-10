@@ -5,6 +5,9 @@ import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { ImportarExportar } from '../services/importar-exportar.js';
 import { ModalManager } from './gestor-modales.js';
+import { RespaldoCifrado } from '../services/respaldo-cifrado.js';
+import { FraseCifrado } from './frase-cifrado.js';
+import { FraseModal } from './frase-modal.js';
 
 // ============================================================
 // STORAGE SERVICE — persistencia, validación, import/export
@@ -104,16 +107,24 @@ export class StorageService {
     }
 
     // ── Exportar ──────────────────────────────────────────────
-    /** @param {{ rango?: { desde?: string, hasta?: string } | null }} [opciones] */
-    async exportarDatos({ rango = null } = {}) {
+    /** Con `cifrar` el archivo se guarda como un sobre cifrado con la frase (en vez del JSON en claro). @param {{ rango?: { desde?: string, hasta?: string } | null, cifrar?: boolean }} [opciones] */
+    async exportarDatos({ rango = null, cifrar = false } = {}) {
         try {
             let servicios = this.servicios, categorias = this.app.categoria.getCategorias();
             if (rango) ({ servicios, categorias } = ImportarExportar.recortarPorRango(servicios, categorias, rango.desde, rango.hasta));
             const datos = await ImportarExportar.armarRespaldo(servicios, categorias, new Date(), rango);
             const sufijo = !rango ? this.app.utils.obtenerFechaLocal()
                 : (rango.desde && rango.hasta ? `${rango.desde}_${rango.hasta}` : (rango.desde ? `desde_${rango.desde}` : `hasta_${rango.hasta}`));
-            this.app.utils.descargarBlob(JSON.stringify(datos, null, 2), `servicios_${sufijo}.json`, 'application/json');
-            this.app.ui.mostrarToast(rango ? 'Respaldo parcial exportado' : 'Datos exportados correctamente', 'success');
+            let contenido = JSON.stringify(datos, null, 2);
+            let nombre = `servicios_${sufijo}.json`;
+            if (cifrar) {
+                const sellado = await RespaldoCifrado.sellar(datos, FraseCifrado.actual());
+                if ('error' in sellado) { this.app.ui.mostrarToast(`No se pudo cifrar: ${sellado.error}`, 'error'); return; }
+                contenido = sellado.texto;
+                nombre = `servicios_${sufijo}.cifrado.json`;
+            }
+            this.app.utils.descargarBlob(contenido, nombre, 'application/json');
+            this.app.ui.mostrarToast(`${rango ? 'Respaldo parcial exportado' : 'Datos exportados correctamente'}${cifrar ? ' (cifrado)' : ''}`, 'success');
         } catch (error) {
             console.error('Error al exportar:', error);
             this.app.ui.mostrarToast('Error al exportar datos', 'error');
@@ -139,10 +150,8 @@ export class StorageService {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const crudo = JSON.parse(/** @type {string} */ (reader.result), SecurityAndUtils.reviverJSONSeguro);
-                    if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) {
-                        throw new Error('Formato de archivo inválido');
-                    }
+                    const crudo = await this._leerArchivo(/** @type {string} */ (reader.result));
+                    if (!crudo) return;
                     if (!(await this._verificarArchivo(crudo))) return;
                     const datos = ImportarExportar.normalizarDatos(crudo.servicios, crudo.categorias);
 
@@ -163,6 +172,25 @@ export class StorageService {
         });
 
         input.click();
+    }
+
+    /**
+     * Texto de un archivo importado → respaldo. Un archivo cifrado se abre con la frase guardada; si falta o no lo abre, se pide la frase de ese archivo.
+     * Devuelve null si la persona cancela; los errores de formato salen como Error con mensaje legible.
+     * @param {string} texto
+     */
+    async _leerArchivo(texto) {
+        let abierto = await RespaldoCifrado.abrir(texto, FraseCifrado.actual());
+        while ('error' in abierto && ['sin-frase', 'frase', 'descifrado'].includes(abierto.codigo)) {
+            const motivo = abierto.codigo === 'sin-frase'
+                ? 'El archivo está cifrado. Ingresá la frase con que se exportó.'
+                : 'La frase no abre este archivo (es otra, o el archivo fue alterado). Probá con la frase correcta.';
+            const frase = await FraseModal.pedir(motivo);
+            if (!frase) return null;
+            abierto = await RespaldoCifrado.abrir(texto, frase);
+        }
+        if ('error' in abierto) throw new Error(abierto.error);
+        return abierto.datos;
     }
 
     // ── Merge helpers ─────────────────────────────────────────

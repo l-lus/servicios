@@ -30,6 +30,7 @@ export const ModalManager = (function () {
         'modal-calendario-dia': () => $('modal-calendario-dia-close')?.click(),
         'modal-reporte': () => $('btn-reporte-cancelar')?.click(),
         'modal-respaldo': () => $('btn-respaldo-cancelar')?.click(),
+        'modal-frase': () => $('btn-frase-cancelar')?.click(),
         'modal-debug-estadisticas': () => $('btn-cerrar-modal-debug')?.click(),
         // 'menu-agregar' lo registra la app con registrarAccionVolver
     };

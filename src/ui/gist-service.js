@@ -7,6 +7,7 @@ import { ImportarExportar } from '../services/importar-exportar.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
 import { RespaldoCifrado } from '../services/respaldo-cifrado.js';
 import { FraseCifrado } from './frase-cifrado.js';
+import { CampoFrase } from './campo-frase.js';
 import { ModalManager } from './gestor-modales.js';
 import { IconosAnimados } from './iconos-animados.js';
 import { $, valorDe } from '../core/dom.js';
@@ -23,6 +24,9 @@ export class GistService {
         /** La sal del último sobre visto de cada Gist: al volver a subir se reutiliza y no hay que derivar la clave de nuevo. @type {Record<string, string>} */
         this._sales = {};
         this._avisoFraseMostrado = false;
+        this.campoFrase = new CampoFrase(
+            { input: 'gist-frase', ojo: 'gist-frase-eye', generar: 'btn-gist-generar-frase', recordar: 'gist-recordar-frase-toggle' },
+            (mensaje, tipo, duracion) => this.app.ui.mostrarToast(mensaje, tipo, duracion));
     }
 
     get servicios() { return EstadoApp.servicios; }
@@ -52,44 +56,6 @@ export class GistService {
         if (toggle) toggle.classList.toggle('on');
     }
 
-    toggleFrase() {
-        const inp = $('gist-frase');
-        if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
-    }
-
-    toggleRecordarFrase() {
-        $('gist-recordar-frase-toggle')?.classList.toggle('on');
-    }
-
-    /** Pone en el campo una frase nueva al azar, a la vista para poder anotarla. */
-    generarFrase() {
-        const inp = $('gist-frase');
-        if (!inp) return;
-        inp.value = FraseCifrado.generar();
-        inp.type = 'text';
-        this.app.ui.mostrarToast('Frase generada: anotala en un lugar seguro. Sin ella no se puede recuperar el Gist', 'info', 7000);
-    }
-
-    /**
-     * Lee la frase del modal y la guarda (en la sesión o, con «Recordar», en este navegador). Vacía la olvida. Con `avisar` muestra por qué no sirve una frase corta.
-     * Devuelve false solo si la frase escrita no es válida.
-     */
-    _guardarFraseDesdeModal(avisar = true) {
-        const campo = $('gist-frase');
-        if (!campo) return true;
-        const frase = campo.value;
-        const recordar = !!$('gist-recordar-frase-toggle')?.classList.contains('on');
-        if (!frase.trim()) { FraseCifrado.olvidar(); return true; }
-        const evaluada = FraseCifrado.evaluar(frase);
-        if (!evaluada.ok) {
-            if (avisar) this.app.mostrarToast(evaluada.motivo, 'error');
-            return false;
-        }
-        if (!FraseCifrado.guardar(frase, recordar) && avisar) this.app.mostrarToast('No se pudo guardar la frase en este navegador', 'warning');
-        if (evaluada.debil && avisar) this.app.ui.mostrarToast(evaluada.motivo, 'warning', 5000);
-        return true;
-    }
-
     /** Falta la frase: avisa una sola vez por sesión (la sincronización automática no debe insistir). */
     _avisarFraseFaltante(silencioso) {
         if (silencioso) {
@@ -109,9 +75,7 @@ export class GistService {
         const toggle = $('gist-autosync-toggle');
         if (toggle) toggle.classList.toggle('on', !!perfil.gistAuto);
 
-        $('gist-frase').value = FraseCifrado.actual();
-        $('gist-frase').type = 'password';
-        $('gist-recordar-frase-toggle')?.classList.toggle('on', FraseCifrado.recordada());
+        this.campoFrase.cargar();
 
         const elSync = $('gist-sync-status');
         if (perfil.gistLastSync) {
@@ -142,7 +106,7 @@ export class GistService {
             this.app.mostrarToast('El Gist ID tiene un formato inválido', 'error');
             return;
         }
-        if (!this._guardarFraseDesdeModal()) return;
+        if (!this.campoFrase.confirmar()) return;
 
         if (token) StorageHelper.setItem(STORAGE_KEYS.GIST_TOKEN, token);
         else StorageHelper.removeItem(STORAGE_KEYS.GIST_TOKEN);
@@ -269,7 +233,7 @@ export class GistService {
         if (token) StorageHelper.setItem(STORAGE_KEYS.GIST_TOKEN, token);
         else if (tokenInput) StorageHelper.removeItem(STORAGE_KEYS.GIST_TOKEN);
 
-        this._guardarFraseDesdeModal(false);
+        this.campoFrase.confirmar({ avisar: false });
         this.setPerfil({ gistId, gistAuto: auto });
         this.actualizarBotones();
     }

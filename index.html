@@ -933,6 +933,33 @@
                         <input type="date" id="respaldo-hasta" class="calculador-input">
                     </div>
                 </div>
+                <label class="gist-autosync-row" id="respaldo-cifrar-label">
+                    <span class="gist-autosync-text">
+                        <span class="gist-autosync-title">Cifrar con la frase</span>
+                        <span class="gist-privacy-note d-block mt-1">El archivo no muestra montos ni nombres. Para importarlo hace falta la frase.</span>
+                    </span>
+                    <div class="toggle-switch" id="respaldo-cifrar-toggle"></div>
+                </label>
+                <div class="form-group" id="respaldo-frase-bloque" hidden>
+                    <label for="respaldo-frase">Frase de cifrado</label>
+                    <div class="gist-input-row">
+                        <input type="password" id="respaldo-frase" placeholder="Mínimo 20 caracteres" autocomplete="off" spellcheck="false">
+                        <button class="icon-btn" id="respaldo-frase-eye" title="Mostrar/ocultar" type="button">
+                            <svg class="icon"><use href="#icon-eye" /></svg>
+                        </button>
+                        <button class="icon-btn" id="btn-respaldo-generar-frase" title="Generar una frase" type="button">
+                            <svg class="icon"><use href="#icon-sparkle" /></svg>
+                        </button>
+                    </div>
+                    <span class="text-muted small d-block mt-1 px-1">Es la misma frase del Gist. Si la perdés, el archivo no se puede abrir.</span>
+                    <label class="gist-autosync-row mt-2">
+                        <span class="gist-autosync-text">
+                            <span class="gist-autosync-title">Recordar en este navegador</span>
+                            <span class="gist-privacy-note d-block mt-1">Sin marcar, vale hasta cerrar la pestaña.</span>
+                        </span>
+                        <div class="toggle-switch" id="respaldo-recordar-frase-toggle"></div>
+                    </label>
+                </div>
                 <p class="text-muted" id="respaldo-contenido" role="status" aria-live="polite"></p>
             </div>
             <div class="form-actions">
@@ -940,6 +967,36 @@
                     <svg class="icon"><use href="#icon-bandeja" /><use class="icon-flecha" href="#icon-flecha-bandeja-bajar" /></svg> Exportar
                 </button>
                 <button type="button" class="btn-secondary" id="btn-respaldo-cancelar">
+                    <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: pedir la frase de un archivo cifrado al importar (ver ui/frase-modal.js) -->
+    <div class="modal" id="modal-frase" role="dialog" aria-modal="true" aria-labelledby="modal-frase-titulo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-frase-titulo"><svg class="icon"><use href="#icon-lock" /></svg> Archivo cifrado</h3>
+            </div>
+            <div class="modal-body d-flex flex-column gap-3">
+                <p class="text-muted" id="modal-frase-motivo"></p>
+                <div class="form-group">
+                    <label for="frase-importar">Frase de cifrado</label>
+                    <div class="gist-input-row">
+                        <input type="password" id="frase-importar" autocomplete="off" spellcheck="false">
+                        <button class="icon-btn" id="frase-importar-eye" title="Mostrar/ocultar" type="button">
+                            <svg class="icon"><use href="#icon-eye" /></svg>
+                        </button>
+                    </div>
+                    <span class="text-muted small d-block mt-1 px-1">Vale solo para este archivo: no se guarda.</span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="btn-frase-aceptar">
+                    <svg class="icon"><use href="#icon-lock-open" /></svg> Abrir
+                </button>
+                <button type="button" class="btn-secondary" id="btn-frase-cancelar">
                     <svg class="icon"><use href="#icon-cancel" /></svg> Cancelar
                 </button>
             </div>
@@ -1840,7 +1897,7 @@
                         </section>
                         <section class="ayuda-seccion" id="ayuda-sec-respaldo">
                             <h4>Respaldo y sincronización</h4>
-                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad: de <strong>todo</strong>, de <strong>un mes</strong> o de un <strong>rango de fechas</strong> (un respaldo parcial solo incluye las facturas de ese período). <strong>Restaurar</strong> muestra primero un <strong>resumen</strong> de lo que haría <strong>Combinar</strong> (agrega lo nuevo y actualiza las facturas que cambiaron) y de lo que haría <strong>Reemplazar</strong>, con aviso de lo que se perdería. Lo mismo ocurre al bajar del Gist.</p>
+                            <p><strong>Respaldar</strong> descarga un archivo con hash de integridad: de <strong>todo</strong>, de <strong>un mes</strong> o de un <strong>rango de fechas</strong> (un respaldo parcial solo incluye las facturas de ese período). Con <strong>Cifrar con la frase</strong> el archivo (<code>.cifrado.json</code>) no muestra montos ni nombres y se abre con la misma frase del Gist: al restaurarlo la app usa la frase guardada o te la pide (no se guarda). <strong>Restaurar</strong> muestra primero un <strong>resumen</strong> de lo que haría <strong>Combinar</strong> (agrega lo nuevo y actualiza las facturas que cambiaron) y de lo que haría <strong>Reemplazar</strong>, con aviso de lo que se perdería. Lo mismo ocurre al bajar del Gist.</p>
 <p><strong>Sincronización</strong> guarda el respaldo en un Gist de GitHub, siempre <strong>cifrado</strong> con tu <strong>frase de cifrado</strong> (mínimo 20 caracteres; el botón de la chispa genera una): GitHub no ve montos ni ingresos. La frase vale hasta cerrar la pestaña, salvo que marques <em>Recordar en este navegador</em>. Si la perdés, el Gist no se puede recuperar (tus datos locales siguen). Un Gist de antes de cifrar se lee igual y se cifra la próxima vez que subas; sus versiones viejas quedan en el historial de GitHub, así que conviene crear un Gist nuevo y borrar el anterior. Con la sincronización automática la app avisa si hay novedades al abrirla.</p>
 <p>Deshacer y rehacer (botones de la barra) guardan hasta 20 cambios durante 24 horas.</p>
                         </section>

@@ -1,5 +1,6 @@
 import { ResumenMerge } from './resumen-merge.js';
 import { VistaPrevia } from './vista-previa.js';
+import { FraseModal } from './frase-modal.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -336,9 +337,8 @@ export class ListenersApp {
         $('btn-gist-ir')?.addEventListener('click', () => this.app.gist.irAlGist());
         $('gist-token-eye')?.addEventListener('click', () => this.app.gist.toggleToken());
         $('gist-autosync-toggle')?.addEventListener('click', () => this.app.gist.toggleAuto());
-        $('gist-frase-eye')?.addEventListener('click', () => this.app.gist.toggleFrase());
-        $('btn-gist-generar-frase')?.addEventListener('click', () => this.app.gist.generarFrase());
-        $('gist-recordar-frase-toggle')?.addEventListener('click', () => this.app.gist.toggleRecordarFrase());
+        this.app.gist.campoFrase.vincular();
+        FraseModal.bindEventos();
         btnGistSubir?.addEventListener('click', () => this.app.gist.subir());
         btnGistBajar?.addEventListener('click', () => this.app.gist.bajar());
         $('btn-gist-guardar')?.addEventListener('click', () => this.app.gist.guardarConfig());
