@@ -40,6 +40,8 @@ export const STORAGE_KEYS = Object.freeze({
 
     DATOS_PERFIL: (perfilId) => `gestion_servicios_datos_${perfilId}`,
     HISTORIAL: (perfilId) => `gestion_servicios_historial_${perfilId}`,
+    // copia sin tocar de los datos de un perfil cuando al cargarlos hubo que descartar algo inválido (para no perderlo al próximo guardado)
+    DATOS_RESCATE: (perfilId) => `gestion_servicios_rescate_${perfilId}`,
 });
 
 /** Cortes de ancho que cambian el diseño (los mismos que el CSS): escritorio desde 768px y columnas extra desde 1100px. */

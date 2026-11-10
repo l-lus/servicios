@@ -21,6 +21,27 @@ test('normalizarDatos: nombres y categorías conservan sus símbolos (apóstrofe
     assert.throws(() => IE.normalizarDatos([srv('a', [], { nombre: ' \u0001 ' })]), /nombre inválido/, 'un nombre que queda vacío no vale');
 });
 
+test('sanearGuardados: lo guardado en el navegador se valida al cargar; se conserva lo válido y se cuenta lo descartado, sin lanzar', () => {
+    assert.deepEqual(IE.sanearGuardados(null), { servicios: [], descartados: 0 }, 'sin datos guardados');
+    assert.deepEqual(IE.sanearGuardados({ length: 3 }), { servicios: [], descartados: 1 }, 'no es una lista');
+    assert.deepEqual(IE.sanearGuardados('[]'), { servicios: [], descartados: 1 });
+
+    const sanos = [srv('luz', [fac('f1')]), srv(SERVICIO_INGRESOS_ID, [fac('i1', { pagada: true })], { activo: false })];
+    assert.deepEqual(IE.sanearGuardados(sanos), { servicios: sanos, descartados: 0 });
+
+    const r = IE.sanearGuardados([
+        { ...srv('luz', [{ ...fac('f1'), onclick: 'x' }]), __html: '<img src=x onerror=alert(1)>' },   // propiedades de más: se quitan, no cuentan
+        srv('gas', [fac('g1'), fac('g2', { monto: '100' }), fac('g1'), null, fac('g3', { fecha: '2026-99-99' }), fac('g4')]),
+        srv('luz', [fac('z1')]),                                 // id de servicio repetido
+        srv('agua', [], { nombre: { toString: () => 'x' } }),    // nombre que no es texto
+        srv('<script>'),                                         // id fuera del formato
+        null, 'texto', 42,
+        { id: 'tel', nombre: 'Tel', facturas: 'no es lista' },
+    ]);
+    assert.deepEqual(r.servicios, [srv('luz', [fac('f1')]), srv('gas', [fac('g1'), fac('g4')])]);
+    assert.equal(r.descartados, 4 + 7, '4 facturas de gas y 7 servicios');
+});
+
 test('normalizarDatos: topes de cantidad de servicios y de facturas por servicio', () => {
     const L = SecurityAndUtils.SECURITY_LIMITS;
     const muchos = Array.from({ length: L.MAX_SERVICIOS + 1 }, (_, i) => srv(`s${i}`));

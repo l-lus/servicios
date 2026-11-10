@@ -24,16 +24,34 @@ export class StorageService {
     get INGRESOS_ID() { return this.app.SERVICIO_INGRESOS_ID; }
 
     // ── Carga / guardado por perfil ───────────────────────────
+    // Lo guardado se valida como cualquier dato de afuera (ImportarExportar.sanearGuardados). Si hubo que descartar algo, el texto original
+    // queda en una clave de rescate (el próximo guardado pisa los datos) y se ofrece descargarlo.
     cargarDatosPerfilActivo() {
         try {
             const key = STORAGE_KEYS.DATOS_PERFIL(this.perfilActivo);
-            this.servicios = StorageHelper.getObject(key, []);
+            const texto = StorageHelper.getItem(key);
+            const crudo = StorageHelper.getObject(key, null);
+            const { servicios, descartados } = ImportarExportar.sanearGuardados(crudo);
+            this.servicios = servicios;
+            const ilegible = !!texto && crudo === null;
+            if (descartados > 0 || ilegible) this._avisarDatosDescartados(texto, ilegible ? 0 : descartados);
             this.app.historial_mgr.inicializarHistorial();
         } catch (error) {
             console.error('Error al cargar datos del perfil:', error);
             this.servicios = [];
             this.app.historial_mgr.inicializarHistorial();
         }
+    }
+
+    /** @param {string} texto lo guardado, tal cual estaba @param {number} descartados 0 = no se pudo leer nada */
+    _avisarDatosDescartados(texto, descartados) {
+        const perfil = this.perfilActivo;
+        StorageHelper.setItem(STORAGE_KEYS.DATOS_RESCATE(perfil), texto, false, { silencioso: true });
+        const que = descartados > 0
+            ? `${this.app.utils.plural(descartados, 'elemento guardado no era válido y no se cargó', 'elementos guardados no eran válidos y no se cargaron')}`
+            : 'Los datos guardados no se pudieron leer';
+        this.app.ui.mostrarToast(`${que}. Se conservó una copia sin tocar`, 'warning', 15000, null,
+            { label: 'Descargar copia', fn: () => this.app.utils.descargarBlob(texto, `servicios_rescate_${perfil}.json`, 'application/json') });
     }
 
     guardarDatosPerfilActivo() {

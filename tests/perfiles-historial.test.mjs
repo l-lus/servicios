@@ -32,9 +32,13 @@ test('GestorPerfiles: perfil principal por defecto, alta, validación, renombre 
     GestorPerfiles.renombrar(perfiles, p.id, 'Casa 2');
     assert.equal(GestorPerfiles.cargar()[p.id].nombre, 'Casa 2');
 
+    store.set(STORAGE_KEYS.DATOS_RESCATE(p.id), '[]');
+    store.set(STORAGE_KEYS.DATOS_PERFIL(p.id), '{"no":"es una lista"}');
+    assert.equal(GestorPerfiles.cantidadServicios(p.id), 0, 'datos guardados que no son una lista cuentan como cero');
     assert.equal(GestorPerfiles.eliminar(perfiles, PERFIL_PRINCIPAL), false);
     assert.equal(GestorPerfiles.eliminar(perfiles, p.id), true);
     assert.equal(store.has(STORAGE_KEYS.DATOS_PERFIL(p.id)), false);
+    assert.equal(store.has(STORAGE_KEYS.DATOS_RESCATE(p.id)), false, 'la copia de rescate se va con el perfil');
 });
 
 test('GestorPerfiles: máximo de perfiles', () => {
@@ -44,7 +48,7 @@ test('GestorPerfiles: máximo de perfiles', () => {
     assert.equal(GestorPerfiles.puedeCrear(perfiles), false);
 });
 
-const estado = n => ({ servicios: [{ id: String(n) }], categorias: [] });
+const estado = n => ({ servicios: [{ id: String(n), nombre: `S${n}`, categoria: '', facturas: [] }], categorias: [] });
 const nueva = (t = { v: 1000 }) => new PilaHistorial({ clave: () => 'hist_test', ahora: () => t.v });
 
 test('PilaHistorial: deshacer, rehacer y descarte de lo rehacible al guardar', () => {
@@ -87,6 +91,39 @@ test('PilaHistorial: tope de estados y restauración persistida (con TTL)', () =
     const vencida = nueva(t);
     vencida.iniciar(estado(1));
     assert.equal(vencida.tamano, 1, 'pasadas 24 h la pila guardada se descarta');
+});
+
+test('PilaHistorial: el historial guardado se valida al cargar; con una entrada inválida (o de más) se descarta entero y lo válido se normaliza', () => {
+    const guardar = (history, currentIndex = history.length - 1) =>
+        store.set('hist_test', JSON.stringify({ history, currentIndex, timestamp: 1000 }));
+    const entrada = (n, extra = {}) => ({ estado: estado(n), descripcion: `paso ${n}`, ...extra });
+    const cargar = () => { const h = nueva(); h.iniciar(estado(2)); return h; };
+
+    guardar([entrada(1), entrada(2)]);
+    assert.equal(cargar().tamano, 2, 'un historial válido se recupera');
+
+    const conExtra = entrada(1);
+    conExtra.estado.servicios[0].intruso = '<img src=x>';
+    conExtra.descripcion = { no: 'es texto' };
+    guardar([conExtra, entrada(2)]);
+    const h = cargar();
+    const paso = h.deshacer();
+    assert.deepEqual(paso.estado, estado(1), 'las propiedades desconocidas no se cargan');
+    assert.equal(paso.descripcion, 'paso 2');
+
+    for (const mala of [
+        { estado: { servicios: [{ id: 'sin nombre', facturas: [] }], categorias: [] } },
+        { estado: { servicios: 'x', categorias: [] } },
+        { estado: null },
+        null,
+    ]) {
+        guardar([entrada(1), mala, entrada(2)]);
+        assert.equal(cargar().tamano, 1, 'con una entrada inválida queda solo el estado actual');
+    }
+    guardar(Array.from({ length: MAX_HISTORIAL + 1 }, (_, i) => entrada(i)).concat(entrada(2)));
+    assert.equal(cargar().tamano, 1, 'más entradas de las que guarda la app: no lo escribió la app');
+    guardar([entrada(1), entrada(2)], 7);
+    assert.equal(cargar().tamano, 1, 'índice fuera de rango');
 });
 
 test('PilaHistorial.eliminarDePerfil borra la clave del perfil', () => {

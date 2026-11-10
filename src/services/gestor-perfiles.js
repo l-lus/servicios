@@ -61,6 +61,7 @@ export const GestorPerfiles = {
     eliminar(perfiles, id) {
         if (id === PERFIL_PRINCIPAL || !perfiles[id]) return false;
         StorageHelper.removeItem(STORAGE_KEYS.DATOS_PERFIL(id));
+        StorageHelper.removeItem(STORAGE_KEYS.DATOS_RESCATE(id));
         delete perfiles[id];
         GestorPerfiles.guardar(perfiles);
         return true;
@@ -68,8 +69,7 @@ export const GestorPerfiles = {
 
     /** Cantidad de servicios guardados de un perfil. */
     cantidadServicios(id) {
-        try {
-            return StorageHelper.getObject(STORAGE_KEYS.DATOS_PERFIL(id), []).length;
-        } catch { return 0; }
+        const guardados = StorageHelper.getObject(STORAGE_KEYS.DATOS_PERFIL(id), []);
+        return Array.isArray(guardados) ? guardados.length : 0;
     },
 };

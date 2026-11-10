@@ -83,6 +83,11 @@ Lo que sale de la app (Gist y archivos exportados) puede llevar montos de factur
 - AES-GCM autentica el sobre: en un archivo o Gist cifrado ya no hace falta el hash. Frase equivocada y contenido alterado dan el mismo error.
 - El token del Gist sigue siendo una credencial (no se puede cifrar): queda en `localStorage`, protegido por la CSP.
 
+## Datos guardados en el navegador
+`localStorage` es un dato de afuera más: en GitHub Pages el origen (`usuario.github.io`) se comparte con las otras apps de la cuenta, que pueden leer y escribir las mismas claves. Por eso lo guardado se valida al cargar, igual que un respaldo:
+- **Servicios y facturas:** `ImportarExportar.sanearGuardados` (usa `normalizarDatos`, pero conserva lo válido y cuenta lo descartado en vez de rechazar todo). Si descarta algo, `StorageService` deja el texto original en `STORAGE_KEYS.DATOS_RESCATE(perfil)` y ofrece descargarlo, porque el próximo guardado pisa los datos.
+- **Historial de deshacer:** `PilaHistorial` valida cada entrada con `normalizarDatos`; con una inválida se descarta entero (es prescindible).
+
 ## Contrato de errores
 Los servicios no lanzan excepciones por casos esperados (datos vacíos, fechas repetidas…): devuelven un resultado que la UI interpreta. La única excepción es la validación de datos externos (`ImportarExportar.normalizarDatos`, por medio de `fallar`), que lanza un `Error` con mensaje legible y lo captura quien importa. Lo vigila `tests/architecture.test.mjs`.
 

@@ -1,6 +1,7 @@
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
 import { SecurityAndUtils } from '../core/seguridad.js';
+import { ImportarExportar } from './importar-exportar.js';
 
 // ====================================================================
 // PILA DE HISTORIAL — deshacer/rehacer con persistencia por perfil (sin DOM)
@@ -14,8 +15,19 @@ export function clonar(obj) {
     catch { return JSON.parse(JSON.stringify(obj), SecurityAndUtils.reviverJSONSeguro); }
 }
 
-const esEntradaValida = e => !!(e && typeof e === 'object' && e.estado &&
-    Array.isArray(e.estado.servicios) && Array.isArray(e.estado.categorias));
+/**
+ * Entrada guardada → entrada validada como cualquier dato de afuera (ImportarExportar.normalizarDatos), o null si no es válida.
+ * @param {any} e
+ */
+function entradaSaneada(e) {
+    if (!e || typeof e !== 'object' || !e.estado || typeof e.estado !== 'object' || !Array.isArray(e.estado.categorias)) return null;
+    try {
+        const estado = ImportarExportar.normalizarDatos(e.estado.servicios, e.estado.categorias);
+        return { estado, descripcion: typeof e.descripcion === 'string' ? SecurityAndUtils.limpiarTexto(e.descripcion) : null };
+    } catch {
+        return null;
+    }
+}
 
 export class PilaHistorial {
     /** @param {{ clave: () => string, ahora?: () => number }} opciones `clave`: clave de storage del perfil activo. */
@@ -52,9 +64,11 @@ export class PilaHistorial {
         const data = StorageHelper.getObject(this._clave(), null);
         if (!data) return false;
         const vencido = this._ahora() - (data.timestamp || 0) > TTL_HISTORIAL_MS;
-        const stack = Array.isArray(data.history) ? data.history : [];
+        // El historial es prescindible: con una sola entrada inválida (o más de las que la app guarda) se descarta entero
+        const guardado = !vencido && Array.isArray(data.history) && data.history.length <= MAX_HISTORIAL ? data.history : [];
+        const stack = guardado.map(entradaSaneada);
         const index = Number.isInteger(data.currentIndex) ? data.currentIndex : -1;
-        if (vencido || stack.length === 0 || index < 0 || index >= stack.length || !stack.every(esEntradaValida)) {
+        if (stack.length === 0 || index < 0 || index >= stack.length || stack.includes(null)) {
             StorageHelper.removeItem(this._clave());
             return false;
         }

@@ -300,6 +300,40 @@ export const ImportarExportar = {
         return { servicios: serviciosOk, categorias: categoriasOk };
     },
 
+    /**
+     * Lo guardado en este navegador se valida igual que un respaldo (otra página del mismo origen o una versión vieja pudieron dejarlo mal), pero sin
+     * rechazar todo por un elemento malo: se cargan los servicios y facturas válidos y se cuenta lo que quedó afuera. No lanza.
+     * @param {unknown} crudo lo leído del almacenamiento (null si no había nada)
+     * @returns {{ servicios: any[], descartados: number }}
+     */
+    sanearGuardados(crudo) {
+        if (crudo === null || crudo === undefined) return { servicios: [], descartados: 0 };
+        if (!Array.isArray(crudo)) return { servicios: [], descartados: 1 };
+        try { return { servicios: ImportarExportar.normalizarDatos(crudo).servicios, descartados: 0 }; } catch { /* hay algo inválido: se revisa de a uno */ }
+        const uno = (s) => { try { return ImportarExportar.normalizarDatos([s]).servicios[0]; } catch { return null; } };
+        const ids = new Set();
+        const servicios = [];
+        let descartados = 0;
+        crudo.forEach(s => {
+            let limpio = uno(s);
+            if (!limpio && s && typeof s === 'object' && Array.isArray(s.facturas)) {
+                // el servicio no pasa entero: se rescatan sus facturas válidas (sin repetir id)
+                const vistas = new Set();
+                const buenas = s.facturas.filter(f => {
+                    if (!uno({ ...s, facturas: [f] }) || vistas.has(f.id)) return false;
+                    vistas.add(f.id);
+                    return true;
+                });
+                limpio = uno({ ...s, facturas: buenas });
+                if (limpio) descartados += s.facturas.length - buenas.length;
+            }
+            if (!limpio || ids.has(limpio.id)) { descartados++; return; }
+            ids.add(limpio.id);
+            servicios.push(limpio);
+        });
+        return { servicios, descartados };
+    },
+
     // Categorías: solo strings, limpias (ver limpiarTexto), sin vacías ni duplicadas
     // (sin distinguir mayúsculas).
     normalizarCategorias(categorias) {
