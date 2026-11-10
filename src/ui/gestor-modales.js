@@ -233,7 +233,8 @@ export const ModalManager = (function () {
         }
     }
 
-    function abrir(modalId, callback = null) {
+    /** Con `sinHistorial` no agrega entrada al historial (se reutiliza la que dejó `cerrar` con sinHistorial). */
+    function abrir(modalId, callback = null, { sinHistorial = false } = {}) {
         const modal = document.getElementById(modalId);
         if (!modal) return;
 
@@ -241,7 +242,7 @@ export const ModalManager = (function () {
         modal.classList.add('show', 'active');
         document.body.classList.add('modal-open');
 
-        if (!_navegandoHaciaAtras && !_enAlternanciaHaciaAtras) {
+        if (!_navegandoHaciaAtras && !_enAlternanciaHaciaAtras && !sinHistorial) {
             if (_cierrePendiente) {
                 _cierrePendiente = false;
                 history.replaceState({ modalId: modalId }, "");
@@ -259,7 +260,8 @@ export const ModalManager = (function () {
         if (callback) callback();
     }
 
-    function cerrar(modalId, callback = null) {
+    /** Con `sinHistorial` el modal se oculta pero su entrada del historial queda, para reabrirlo enseguida sin empujar otra (Chrome salta las entradas agregadas sin gesto del usuario y Atrás cerraba la app). */
+    function cerrar(modalId, callback = null, { sinHistorial = false } = {}) {
         const modal = document.getElementById(modalId);
         if (!modal) return;
 
@@ -278,7 +280,7 @@ export const ModalManager = (function () {
 
         EventosApp.emit('modal:cerrado', { modalId });
 
-        if (estabaAbierto && !_navegandoHaciaAtras && !_enAlternanciaHaciaAdelante) {
+        if (estabaAbierto && !_navegandoHaciaAtras && !_enAlternanciaHaciaAdelante && !sinHistorial) {
             _cierrePendiente = true;
             _programarCommit();
         }

@@ -81,22 +81,23 @@ export class UIManager {
         set('calendario-estilo-indicator', EstiloCalendario.etiqueta());
     }
 
-    /** Cómo se vuelve de la vista previa: con `desdeAjustes` se cierra Ajustes al abrir y se reabre al cerrar. */
-    _ciclo(desdeAjustes) {
+    /** Cómo se vuelve de la vista previa: con `desdeModal` ese modal (Ajustes, Perfiles) se oculta al abrir, conservando su entrada del historial, y se reabre al cerrar. */
+    _ciclo(desdeModal) {
         return {
-            antes: desdeAjustes ? () => ModalManager.cerrar('modal-config') : undefined,
-            alCerrar: desdeAjustes
-                ? () => { this.actualizarIndicadoresConfig(); ModalManager.abrir('modal-config'); }
-                : () => this.actualizarIndicadoresConfig()
+            antes: desdeModal ? () => ModalManager.cerrar(desdeModal, null, { sinHistorial: true }) : undefined,
+            alCerrar: () => {
+                this.actualizarIndicadoresConfig();
+                if (desdeModal) ModalManager.abrir(desdeModal, null, { sinHistorial: true });
+            }
         };
     }
 
-    _configResumen(desdeAjustes) {
+    _configResumen(desdeModal) {
         return {
             id: 'resumen',
             titulo: 'Tarjeta de resumen',
             idObjetivo: 'card-resumen',
-            ...this._ciclo(desdeAjustes),
+            ...this._ciclo(desdeModal),
             filas: [
                 {
                     etiqueta: 'Fondo ilustrado',
@@ -116,12 +117,12 @@ export class UIManager {
         };
     }
 
-    _configCalendario(desdeAjustes) {
+    _configCalendario(desdeModal) {
         return {
             id: 'calendario',
             titulo: 'Calendario',
             idObjetivo: 'card-calendario',
-            ...this._ciclo(desdeAjustes),
+            ...this._ciclo(desdeModal),
             filas: [
                 {
                     etiqueta: 'Estilo de los días',
@@ -135,12 +136,12 @@ export class UIManager {
     }
 
     // El tema no tiene tarjeta ni filas: se ve toda la página y se elige con círculos de color
-    _configTema(desdeAjustes) {
+    _configTema(desdeModal) {
         return {
             id: 'tema',
             titulo: 'Tema de color',
             sinVelo: true,
-            ...this._ciclo(desdeAjustes),
+            ...this._ciclo(desdeModal),
             filas: [],
             circulos: {
                 opciones: TEMAS,
@@ -152,15 +153,15 @@ export class UIManager {
 
     /** Las tres vistas previas están integradas: desde el panel se pasa de una a otra (ver VistaPrevia.cambiar). */
     registrarVistasPrevias() {
-        VistaPrevia.registrarVista('resumen', () => this._configResumen(false));
-        VistaPrevia.registrarVista('calendario', () => this._configCalendario(false));
-        VistaPrevia.registrarVista('tema', () => this._configTema(false));
+        VistaPrevia.registrarVista('resumen', () => this._configResumen(null));
+        VistaPrevia.registrarVista('calendario', () => this._configCalendario(null));
+        VistaPrevia.registrarVista('tema', () => this._configTema(null));
         VistaPrevia.definirOrden(['resumen', 'calendario', 'tema']);
     }
 
-    abrirVistaPreviaResumen({ desdeAjustes = false } = {}) { VistaPrevia.abrir(this._configResumen(desdeAjustes)); }
-    abrirVistaPreviaCalendario({ desdeAjustes = false } = {}) { VistaPrevia.abrir(this._configCalendario(desdeAjustes)); }
-    abrirVistaPreviaTema({ desdeAjustes = false } = {}) { VistaPrevia.abrir(this._configTema(desdeAjustes)); }
+    abrirVistaPreviaResumen({ desdeModal = null } = {}) { VistaPrevia.abrir(this._configResumen(desdeModal)); }
+    abrirVistaPreviaCalendario({ desdeModal = null } = {}) { VistaPrevia.abrir(this._configCalendario(desdeModal)); }
+    abrirVistaPreviaTema({ desdeModal = null } = {}) { VistaPrevia.abrir(this._configTema(desdeModal)); }
 
     // ── Ingresos ──────────────────────────────────────────────
     ingresosHabilitado() {

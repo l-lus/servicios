@@ -1,5 +1,6 @@
 import { ResumenMerge } from './resumen-merge.js';
 import { GestorTemas } from './gestor-temas.js';
+import { VistaPrevia } from './vista-previa.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
 import { STORAGE_KEYS } from '../core/constantes.js';
@@ -30,8 +31,11 @@ export class ListenersApp {
         document.getElementById('btn-cerrar-config').addEventListener('click', () => this.app.ui.cerrarModal('modal-config'));
         document.getElementById('btn-ayuda-perfiles').addEventListener('click', () => this.app.ui.abrirAyuda());
         document.getElementById('btn-ayuda-config').addEventListener('click', () => this.app.ui.abrirAyuda());
-        ['theme-toggle-perfiles', 'theme-toggle-config'].forEach(id =>
-            document.getElementById(id).addEventListener('click', () => GestorTemas.alternarClaroOscuro()));
+        // en Perfiles el botón abre la personalización del tema; el de Ajustes (solo visible en la bienvenida) sigue alternando claro/oscuro
+        document.getElementById('theme-toggle-perfiles').addEventListener('click', () => {
+            if (!VistaPrevia.activa()) this.app.ui.abrirVistaPreviaTema({ desdeModal: 'modal-selector-perfiles' });
+        });
+        document.getElementById('theme-toggle-config').addEventListener('click', () => GestorTemas.alternarClaroOscuro());
         document.getElementById('btn-cerrar-borrar').addEventListener('click', () => this.app.ui.cerrarModal('modal-borrar'));
 
         // Undo/Redo
@@ -40,7 +44,7 @@ export class ListenersApp {
 
         // Menú ajustes
         document.getElementById('menu-tema').addEventListener('click', () => {
-            this.app.ui.abrirVistaPreviaTema({ desdeAjustes: true });
+            this.app.ui.abrirVistaPreviaTema({ desdeModal: 'modal-config' });
         });
         const btnExportar = document.getElementById('menu-exportar');
         const btnImportar = document.getElementById('menu-importar');
@@ -60,13 +64,13 @@ export class ListenersApp {
         document.getElementById('menu-toggle-ingresos').addEventListener('click', () => this.app.ui.toggleIngresos());
         document.getElementById('menu-toggle-blur').addEventListener('click', () => this.app.ui.toggleBlur());
         document.getElementById('menu-toggle-animaciones').addEventListener('click', () => this.app.ui.toggleAnimaciones());
-        document.getElementById('menu-personalizar-resumen')?.addEventListener('click', () => this.app.ui.abrirVistaPreviaResumen({ desdeAjustes: true }));
-        document.getElementById('menu-personalizar-calendario')?.addEventListener('click', () => this.app.ui.abrirVistaPreviaCalendario({ desdeAjustes: true }));
+        document.getElementById('menu-personalizar-resumen')?.addEventListener('click', () => this.app.ui.abrirVistaPreviaResumen({ desdeModal: 'modal-config' }));
+        document.getElementById('menu-personalizar-calendario')?.addEventListener('click', () => this.app.ui.abrirVistaPreviaCalendario({ desdeModal: 'modal-config' }));
         document.getElementById('menu-toggle-hover-popup')?.addEventListener('click', () => this.app.ui.toggleHoverPopup());
         document.getElementById('menu-toggle-rueda-calendario')?.addEventListener('click', () => this.app.ui.toggleRuedaCalendario());
         EventosApp.on('tarjeta:personalizar', ({ tarjeta }) => {
-            if (tarjeta === 'resumen') this.app.ui.abrirVistaPreviaResumen({ desdeAjustes: false });
-            else if (tarjeta === 'calendario') this.app.ui.abrirVistaPreviaCalendario({ desdeAjustes: false });
+            if (tarjeta === 'resumen') this.app.ui.abrirVistaPreviaResumen({});
+            else if (tarjeta === 'calendario') this.app.ui.abrirVistaPreviaCalendario({});
         });
 
         // Menú agregar

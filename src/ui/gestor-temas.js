@@ -34,7 +34,7 @@ function aplicarTema(tema) {
     else raiz.setAttribute('data-theme', _actual);
     const indicador = document.getElementById('tema-indicator');
     if (indicador) indicador.textContent = etiquetaTema(_actual);
-    ['theme-toggle-perfiles', 'theme-toggle-config'].forEach(id => {
+    ['theme-toggle-config'].forEach(id => {
         document.querySelector(`#${id} use`)?.setAttribute('href', _actual === 'light' ? '#icon-moon' : '#icon-sun');
     });
     document.querySelectorAll('.tema-opcion').forEach(b => {
