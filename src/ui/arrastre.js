@@ -21,6 +21,18 @@ export function uiAnimarReubicacion(obtener, clave, cambiar, { encima = null } =
     const antes = new Map();
     for (const el of obtener()) antes.set(clave(el), el.getBoundingClientRect());
     cambiar();
+    return uiAnimarDesdePosiciones(obtener, clave, antes, { encima });
+}
+
+/**
+ * La segunda mitad de FLIP, para cuando el cambio ya ocurrió y las posiciones de antes se guardaron antes de él (por ejemplo un cambio de diseño por un corte de
+ * ancho de la ventana, que no se puede medir "antes" en el momento): anima cada elemento desde su posición en `antes` (clave -> rectángulo) hasta donde está ahora.
+ * @param {any} obtener
+ * @param {any} clave
+ * @param {Map<string, {left: number, top: number}>} antes
+ * @param {{ encima?: Element|null }} [opciones]
+ */
+export function uiAnimarDesdePosiciones(obtener, clave, antes, { encima = null } = {}) {
     if (antes.size === 0 || Motion.reducido()) return [];
     const animables = [];
     for (const el of obtener()) {

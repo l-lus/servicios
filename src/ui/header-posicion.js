@@ -1,8 +1,9 @@
-import { CARDS, CORTES_LAYOUT } from '../core/constantes.js';
+import { CORTES_LAYOUT } from '../core/constantes.js';
 import { PosicionHeader, posicionesPermitidas } from '../core/posicion-header.js';
 import { EventosApp } from '../core/eventos.js';
 import { ToastManager } from './toast.js';
 import { uiAnimarReubicacion, uiArrastreLargo } from './arrastre.js';
+import { elementosDelLayout, claveDelLayout } from './transicion-layout.js';
 import { VistaPrevia, VENTANA_PERSONALIZAR_MS, AVISO_PERSONALIZAR_MS } from './vista-previa.js';
 
 // ====================================================================
@@ -21,15 +22,6 @@ const _SELECTOR_CONTROLES = 'button, a, input, select, textarea';
 
 /** Lo que más cerca del borde nuevo tiene que estar el puntero, respecto del actual, para que el encabezado cambie de lugar (evita saltos en las diagonales). */
 const HISTERESIS_PX = 24;
-
-const _SELECTOR_TARJETAS = CARDS.map(c => `#card-${c}:not(.card-oculta)`).join(', ');
-
-/** Lo que cambia de lugar cuando se mueve el encabezado: él mismo y las tarjetas visibles. */
-export const elementosDelLayout = () => /** @type {HTMLElement[]} */ ([
-    document.querySelector('.header'),
-    ...document.querySelectorAll(_SELECTOR_TARJETAS),
-].filter(Boolean));
-export const claveDelLayout = (/** @type {HTMLElement} */ el) => el.id || 'header';
 
 /** De los lugares permitidos, el del borde de la ventana más cercano al puntero; el actual solo se deja si otro gana por más que la histéresis. */
 function _posicionMasCercana(x, y, permitidas, actual) {

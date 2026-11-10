@@ -36,6 +36,7 @@ import { UIManager } from './ui-manager.js';
 import { UtilsService } from './utils-service.js';
 import { VistaPrevia } from './vista-previa.js';
 import { HeaderPosicion } from './header-posicion.js';
+import { TransicionLayout } from './transicion-layout.js';
 
 // ============================================
 // APLICACIÓN DE GESTIÓN DE SERVICIOS
@@ -181,6 +182,7 @@ export class GestionServicios {
         HeaderPosicion.iniciar();
         RecargaGesto.bindEventos();
         this.tarjetas.init();
+        TransicionLayout.iniciar();
         this.calendario.init();
         Anim.initColapsables();
         this.ui.cargarTema();
