@@ -6,6 +6,7 @@ import { Calculadora } from './calculadora.js';
 // DATOS DE REPORTES — arman lo que cuentan los reportes (texto y HTML) sin dar formato (sin DOM)
 // ====================================================================
 const moneda = f => ((f.moneda || 'ars') === 'usd' ? 'usd' : 'ars');
+/** @param {any[]} lista @param {(f: any) => boolean} [filtro] */
 const sumar = (lista, filtro = () => true) => lista.reduce((acc, f) => {
     if (filtro(f)) acc[moneda(f)] += f.monto;
     return acc;
@@ -15,6 +16,7 @@ const sumar = (lista, filtro = () => true) => lista.reduce((acc, f) => {
 export function estadoFactura(factura, hoy, formatoPago = 'mes') {
     if (factura.conCredito) return 'Con crédito';
     if (factura.pagada) {
+        /** @type {Intl.DateTimeFormatOptions} */
         const opciones = formatoPago === 'mes-anio' ? { month: 'long', year: 'numeric' } : { month: 'long' };
         const mp = factura.fechaPago ? parseDate(factura.fechaPago).toLocaleDateString('es-AR', opciones) : '';
         if (formatoPago === 'mes-anio') return `Pagada${mp ? ` (${mp})` : ''}`;
@@ -25,6 +27,7 @@ export function estadoFactura(factura, hoy, formatoPago = 'mes') {
 
 export const ReporteDatos = {
     /** Un mes (mes 0–11 y año), con filtro opcional por categoría. */
+    /** @param {{ servicios: any[], mes: number, anio: number, categoria?: string | null, hoy?: Date }} p */
     mensual({ servicios, mes, anio, categoria = null, hoy = new Date() }) {
         const activa = categoria || null;
         const nombreMes = new Date(anio, mes, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });

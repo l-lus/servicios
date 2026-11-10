@@ -310,6 +310,7 @@ export const ImportarExportar = {
 
     // ── Respaldo ──────────────────────────────────────────────
     /** Archivo de exportación: versión de esquema + hash de integridad + configuración actual. */
+    /** @param {any} servicios @param {any} categorias @param {Date} [ahora] @param {{ desde?: string, hasta?: string } | null} [rango] */
     async armarRespaldo(servicios, categorias, ahora = new Date(), rango = null) {
         const contenido = { servicios, categorias };
         return {

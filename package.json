@@ -8,5 +8,8 @@
     "typecheck": "tsc -p .",
     "release": "node scripts/release.mjs",
     "e2e": "node scripts/e2e/navegador.mjs . scripts/e2e/flujos.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

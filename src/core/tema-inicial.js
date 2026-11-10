@@ -17,7 +17,7 @@ var ESTILOS_CALENDARIO_VALIDOS = ['legacy', 'relleno-aro', 'cuadrado-aro', 'aro-
     // Suprimir transiciones ANTES del primer paint
     html.classList.add('no-transition');
     try {
-        var tema = localStorage.getItem('gestion_servicios_theme');
+        var tema = localStorage.getItem('gestion_servicios_theme') || '';
         if (TEMAS_VALIDOS.indexOf(tema) === -1) tema = 'dark';
         if (tema === 'dark') html.classList.add('dark-mode');
         else if (tema !== 'light') html.setAttribute('data-theme', tema);

@@ -1,4 +1,4 @@
-import { parseDate } from '../core/fechas.js';
+import { parseDate, restaFechas } from '../core/fechas.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
 
 // ====================================================================
@@ -66,7 +66,7 @@ export const Calculadora = {
         let lista = [...servicio.facturas];
         if (desde) { const fd = parseDate(desde); lista = lista.filter(f => parseDate(f.fecha) >= fd); }
         if (hasta) { const fh = parseDate(hasta); lista = lista.filter(f => parseDate(f.fecha) <= fh); }
-        return lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        return lista.sort((a, b) => restaFechas(a.fecha, b.fecha));
     },
 
     /** Totales, cantidades y variación de un servicio en el período. */
@@ -83,6 +83,7 @@ export const Calculadora = {
         const varUSDLista = paraVariacion.filter(f => (f.moneda || 'ars') === 'usd');
         const varARS = Calculadora.variacion(varARSLista);
         const varUSD = Calculadora.variacion(varUSDLista);
+        /** @type {string | null} */
         let variacionTexto = '0%';
         if (varARS !== null) variacionTexto = varARS;
         else if (varARSLista.length === 0 && varUSDLista.length > 0) variacionTexto = null;

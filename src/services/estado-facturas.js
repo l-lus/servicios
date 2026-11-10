@@ -1,4 +1,4 @@
-import { parseDate, inicioDeDia } from '../core/fechas.js';
+import { parseDate, inicioDeDia, diasHasta, restaFechas } from '../core/fechas.js';
 import { formatearMoneda, formatearFecha } from '../core/formato.js';
 import { normalizarBusqueda } from '../core/busqueda-texto.js';
 
@@ -8,7 +8,6 @@ import { normalizarBusqueda } from '../core/busqueda-texto.js';
 // ====================================================================
 export const SERVICIO_INGRESOS_ID = 'servicio-ingresos-especial';
 
-const MS_DIA = 1000 * 60 * 60 * 24;
 const porNombre = (a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
 
 /** Factura anual pagada cuyo vencimiento cae en el año de `hoy` (o null). */
@@ -32,7 +31,7 @@ export const EstadoFacturas = {
     claseVencimiento(factura, hoy = new Date()) {
         if (factura.monto < 0) return 'favor';
         if (factura.pagada) return 'pagado';
-        const dias = Math.ceil((inicioDeDia(parseDate(factura.fecha)) - inicioDeDia(hoy)) / MS_DIA);
+        const dias = diasHasta(factura.fecha, hoy);
         if (dias < 0) return 'vencido';
         if (dias <= 2) return 'urgente';
         if (dias <= 5) return 'proximo';
@@ -58,9 +57,9 @@ export const EstadoFacturas = {
 
         const noPagadas = enRango.filter(f => !f.pagada);
         if (noPagadas.length === 0) {
-            return enRango.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0];
+            return enRango.sort((a, b) => restaFechas(b.fecha, a.fecha))[0];
         }
-        return noPagadas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
+        return noPagadas.sort((a, b) => restaFechas(a.fecha, b.fecha))[0];
     },
 
     /** Texto y clase del estado de un servicio para su fila en la lista. */
@@ -87,7 +86,7 @@ export const EstadoFacturas = {
                 estado = `Pagado ${ultima.fechaPago ? formatearFecha(ultima.fechaPago) : 'Sin fecha'}`;
                 claseEstado = 'pagado';
             } else {
-                const dias = Math.ceil((inicioDeDia(parseDate(ultima.fecha)) - inicioDeDia(hoy)) / MS_DIA);
+                const dias = diasHasta(ultima.fecha, hoy);
                 if (dias < 0) { estado = 'Vencido'; claseEstado = 'vencido'; }
                 else if (dias === 0) { estado = 'Vence hoy'; claseEstado = 'urgente'; }
                 else if (dias === 1) { estado = 'Vence mañana'; claseEstado = 'urgente'; }
@@ -142,8 +141,8 @@ export const EstadoFacturas = {
                     const fechaA = facturaA ? inicioDeDia(parseDate(facturaA.fecha)) : null;
                     const fechaB = facturaB ? inicioDeDia(parseDate(facturaB.fecha)) : null;
 
-                    const vencidaA = facturaA && !facturaA.pagada && fechaA < base;
-                    const vencidaB = facturaB && !facturaB.pagada && fechaB < base;
+                    const vencidaA = facturaA && !facturaA.pagada && fechaA && fechaA < base;
+                    const vencidaB = facturaB && !facturaB.pagada && fechaB && fechaB < base;
                     const pendienteA = facturaA && !facturaA.pagada && !vencidaA;
                     const pendienteB = facturaB && !facturaB.pagada && !vencidaB;
                     const pagadaA = facturaA && facturaA.pagada;
@@ -156,12 +155,12 @@ export const EstadoFacturas = {
                     // 2: vencidas primero
                     if (vencidaA && !vencidaB) return -1;
                     if (!vencidaA && vencidaB) return 1;
-                    if (vencidaA && vencidaB) return fechaA - fechaB;
+                    if (vencidaA && vencidaB) return restaFechas(fechaA, fechaB);
 
                     // 3: pendientes
                     if (pendienteA && !pendienteB) return -1;
                     if (!pendienteA && pendienteB) return 1;
-                    if (pendienteA && pendienteB) return fechaA - fechaB;
+                    if (pendienteA && pendienteB) return restaFechas(fechaA, fechaB);
 
                     // 4: sin facturas este mes (las anuales vigentes van con las pagadas)
                     const sinMesRealA = sinMesA && !anualA;
@@ -169,15 +168,15 @@ export const EstadoFacturas = {
                     if (sinMesRealA && !sinMesRealB) return -1;
                     if (!sinMesRealA && sinMesRealB) return 1;
                     if (sinMesRealA && sinMesRealB) {
-                        const ultA = [...a.facturas].sort((x, y) => new Date(y.fecha) - new Date(x.fecha))[0];
-                        const ultB = [...b.facturas].sort((x, y) => new Date(y.fecha) - new Date(x.fecha))[0];
-                        return new Date(ultB.fecha) - new Date(ultA.fecha);
+                        const ultA = [...a.facturas].sort((x, y) => restaFechas(y.fecha, x.fecha))[0];
+                        const ultB = [...b.facturas].sort((x, y) => restaFechas(y.fecha, x.fecha))[0];
+                        return restaFechas(ultB.fecha, ultA.fecha);
                     }
 
                     // 5: pagadas normales; 6: pagadas anuales vigentes al final
                     if (pagadaA && !anualA && (anualB || !pagadaB)) return -1;
                     if (pagadaB && !anualB && (anualA || !pagadaA)) return 1;
-                    if (pagadaA && pagadaB && fechaA && fechaB) return fechaA - fechaB;
+                    if (pagadaA && pagadaB && fechaA && fechaB) return restaFechas(fechaA, fechaB);
                     return 0;
                 }
 

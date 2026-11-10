@@ -7,6 +7,7 @@ import { SecurityAndUtils } from './seguridad.js';
 export const StorageHelper = (function () {
     'use strict';
 
+    /** @type {{ mostrarToast: (mensaje: string, tipo?: string) => void }} */
     let notify = { mostrarToast: () => { } };
     function configurarNotificaciones(handlers) { notify = { ...notify, ...handlers }; }
 
@@ -36,6 +37,7 @@ export const StorageHelper = (function () {
         }
     }
 
+    /** @param {string} key @param {any} [defaultValue] @param {boolean} [useProfile] @returns {any} */
     function getItem(key, defaultValue = null, useProfile = false) {
         try {
             const value = localStorage.getItem(_getKey(key, useProfile));
@@ -45,12 +47,14 @@ export const StorageHelper = (function () {
         }
     }
 
+    /** @param {string} key @param {boolean} [defaultValue] @param {boolean} [useProfile] */
     function getBoolean(key, defaultValue = false, useProfile = false) {
         const val = getItem(key, null, useProfile);
         if (val === null) return defaultValue;
         return val === 'true';
     }
 
+    /** @param {string} key @param {number} [defaultValue] @param {boolean} [useProfile] */
     function getNumber(key, defaultValue = 0, useProfile = false) {
         const val = getItem(key, null, useProfile);
         if (val === null) return defaultValue;
@@ -58,6 +62,7 @@ export const StorageHelper = (function () {
         return isNaN(parsed) ? defaultValue : parsed;
     }
 
+    /** @param {string} key @param {any} [defaultValue] @param {boolean} [useProfile] @returns {any} */
     function getObject(key, defaultValue = null, useProfile = false) {
         const val = getItem(key, null, useProfile);
         if (!val) return defaultValue;

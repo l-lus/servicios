@@ -1,3 +1,4 @@
+import { restaFechas } from '../core/fechas.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 // ============================================================
@@ -22,7 +23,7 @@ export class IngresoService {
         if (servicio.facturas.length === 0) {
             montar(lista, html`<div class="empty-state"><p>No hay ingresos registrados</p></div>`);
         } else {
-            const ordenados = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            const ordenados = [...servicio.facturas].sort((a, b) => restaFechas(b.fecha, a.fecha));
             const grupos = this.app.factura.agruparPorAno(ordenados);
             montar(lista, html`${grupos.map((grupo, index) => {
                 const itemsHTML = grupo.items.map(ingreso => {

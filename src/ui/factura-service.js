@@ -1,3 +1,4 @@
+import { restaFechas } from '../core/fechas.js';
 import { html, montar } from '../core/html.js';
 import { EstadoApp } from '../services/estado-app.js';
 import { ModalManager } from './gestor-modales.js';
@@ -91,7 +92,7 @@ export class FacturaService {
         if (servicio.facturas.length === 0) {
             montar(lista, html`<div class="empty-state"><p>No hay facturas registradas</p></div>`);
         } else {
-            const ordenadas = [...servicio.facturas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            const ordenadas = [...servicio.facturas].sort((a, b) => restaFechas(b.fecha, a.fecha));
             const grupos = this.agruparPorAno(ordenadas);
             montar(lista, html`${grupos.map((grupo, index) => {
                 const itemsHTML = grupo.items.map(f => this.app.vista.generarHTMLFactura(f, 'editar-factura'));

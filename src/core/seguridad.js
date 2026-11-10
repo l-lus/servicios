@@ -49,7 +49,7 @@ export const SecurityAndUtils = (function () {
     }
 
     function generarIDSeguro() {
-        if (window.crypto && window.crypto.getRandomValues) {
+        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
             const array = new Uint32Array(4);
             crypto.getRandomValues(array);
             return Array.from(array, num => num.toString(36)).join('');

@@ -1,11 +1,10 @@
-import { parseDate, inicioDeDia } from '../core/fechas.js';
+import { parseDate, inicioDeDia, diasHasta } from '../core/fechas.js';
 import { SERVICIO_INGRESOS_ID } from './estado-facturas.js';
 
 // ====================================================================
 // RESUMEN DEL MES Y ESTADÍSTICAS MENSUALES — cálculo puro (sin DOM)
 // Reciben `servicios` y `hoy`; devuelven datos para que la UI los dibuje.
 // ====================================================================
-const MS_DIA = 86400000;
 const enMes = (fecha, mes, anio) => fecha.getMonth() === mes && fecha.getFullYear() === anio;
 
 export const ResumenMes = {
@@ -71,7 +70,7 @@ export const ResumenMes = {
             servicio.facturas.forEach(factura => {
                 if (!enMes(parseDate(factura.fecha), mesActual, anioActual)) return;
                 if (!factura.pagada) {
-                    const dias = Math.ceil((inicioDeDia(parseDate(factura.fecha)) - base) / MS_DIA);
+                    const dias = diasHasta(factura.fecha, hoy);
                     if (dias < 0 && prioridad > 1) { prioridad = 1; colorBorde = 'borde-vencido'; }
                     else if (dias <= 2 && prioridad > 1) { prioridad = 1; colorBorde = 'borde-urgente'; }
                     else if (dias <= 5 && prioridad > 2) { prioridad = 2; colorBorde = 'borde-proximo'; }

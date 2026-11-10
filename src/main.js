@@ -27,21 +27,21 @@ InstaladorPWA.registrarServiceWorker();
 
         // Aplicar estado de estadísticas
         if (!estadisticasColapsadas) {
-            estadisticasContent.classList.remove('collapsed');
+            estadisticasContent?.classList.remove('collapsed');
         } else {
-            estadisticasContent.classList.add('collapsed');
-            estadisticasChevron.classList.add('collapsed');
+            estadisticasContent?.classList.add('collapsed');
+            estadisticasChevron?.classList.add('collapsed');
         }
 
         // Aplicar estado de servicios
         if (serviciosState === 'expanded') {
-            serviciosContent.classList.remove('collapsed', 'semi-collapsed');
+            serviciosContent?.classList.remove('collapsed', 'semi-collapsed');
         } else if (serviciosState === 'collapsed') {
-            serviciosContent.classList.add('collapsed');
-            serviciosChevron.classList.add('collapsed');
+            serviciosContent?.classList.add('collapsed');
+            serviciosChevron?.classList.add('collapsed');
         } else if (serviciosState === 'semi-collapsed') {
-            serviciosContent.classList.add('semi-collapsed');
-            serviciosChevron.classList.add('semi-collapsed');
+            serviciosContent?.classList.add('semi-collapsed');
+            serviciosChevron?.classList.add('semi-collapsed');
         }
     });
 })();
