@@ -1,5 +1,4 @@
 import { ResumenMerge } from './resumen-merge.js';
-import { GestorTemas } from './gestor-temas.js';
 import { VistaPrevia } from './vista-previa.js';
 import { AyudaBuscador } from './ayuda-buscador.js';
 import { StorageHelper } from '../core/almacenamiento.js';
@@ -31,11 +30,10 @@ export class ListenersApp {
         document.getElementById('btn-cerrar-config').addEventListener('click', () => this.app.ui.cerrarModal('modal-config'));
         document.getElementById('btn-ayuda-perfiles').addEventListener('click', () => this.app.ui.abrirAyuda());
         document.getElementById('btn-ayuda-config').addEventListener('click', () => this.app.ui.abrirAyuda());
-        // en Perfiles el botón abre la personalización del tema; el de Ajustes (solo visible en la bienvenida) sigue alternando claro/oscuro
+        // en Perfiles el botón abre la personalización del tema
         document.getElementById('theme-toggle-perfiles').addEventListener('click', () => {
             if (!VistaPrevia.activa()) this.app.ui.abrirVistaPreviaTema({ desdeModal: 'modal-selector-perfiles' });
         });
-        document.getElementById('theme-toggle-config').addEventListener('click', () => GestorTemas.alternarClaroOscuro());
         document.getElementById('btn-cerrar-borrar').addEventListener('click', () => this.app.ui.cerrarModal('modal-borrar'));
 
         // Undo/Redo

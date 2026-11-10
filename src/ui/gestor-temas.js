@@ -34,19 +34,11 @@ function aplicarTema(tema) {
     else raiz.setAttribute('data-theme', _actual);
     const indicador = document.getElementById('tema-indicator');
     if (indicador) indicador.textContent = etiquetaTema(_actual);
-    ['theme-toggle-config'].forEach(id => {
-        document.querySelector(`#${id} use`)?.setAttribute('href', _actual === 'light' ? '#icon-moon' : '#icon-sun');
-    });
     document.querySelectorAll('.tema-opcion').forEach(b => {
         b.setAttribute('aria-pressed', String(b.dataset.tema === _actual));
     });
     sincronizarBarraDelSistema();
     EventosApp.emit('tema:cambio', _actual);
-}
-
-/** Alterna entre claro y oscuro (cualquier otro tema pasa a claro). */
-function alternarClaroOscuro() {
-    elegirTema(_actual === 'light' ? 'dark' : 'light');
 }
 
 /** Aplica y guarda el tema elegido. */
@@ -89,7 +81,6 @@ export const GestorTemas = {
     aplicarTema,
     elegirTema,
     siguienteTema,
-    alternarClaroOscuro,
     renderSelector,
     actual: () => _actual,
     etiqueta: () => etiquetaTema(_actual),
