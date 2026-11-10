@@ -1444,8 +1444,9 @@
     white-space: nowrap;
 }
 
-/* Popup flotante de detalle al pasar el mouse sobre un día del calendario (PC) */
-.cal-popup {
+/* Popup flotante de detalle al pasar el mouse sobre un día del calendario (PC). Lo crea ui/calendario-vista.js con _crearPopupFlotante (ui/popups.js),
+   que lo posiciona y le agrega .show al aparecer y .closing al irse */
+.calendario-hover-popup {
     position: fixed;
     z-index: var(--z-popup);
     min-width: 220px;
@@ -1458,24 +1459,23 @@
     box-shadow: var(--shadow-float);
     opacity: 0;
     transform: translateY(4px) scale(0.96);
-    transform-origin: top center;
     transition: var(--transition-pop-in);
     pointer-events: auto;
 }
 
-.cal-popup.visible {
+.calendario-hover-popup.show {
     opacity: 1;
     transform: none;
 }
 
-.cal-popup.saliendo {
+.calendario-hover-popup.closing {
     opacity: 0;
     transform: translateY(4px) scale(0.96);
     transition: var(--transition-pop-out);
     pointer-events: none;
 }
 
-.cal-popup-fecha {
+.cal-popup-header {
     margin-bottom: var(--space-xs);
     padding-bottom: var(--space-xs);
     border-bottom: 1px solid var(--border);
@@ -1490,33 +1490,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
-}
-
-.cal-popup-fila {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    font-size: var(--text-sm);
-}
-
-.cal-popup-nombre {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: var(--fw-medium);
-}
-
-.cal-popup-monto {
-    font-weight: var(--fw-semibold);
-    white-space: nowrap;
-}
-
-.cal-popup-estado {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    white-space: nowrap;
 }
 
 /* ============================================================

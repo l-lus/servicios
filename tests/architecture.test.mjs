@@ -347,6 +347,14 @@ test('Temas: el acento de la muestra coincide con --c-active del tema en tokens.
     }
 });
 
+test('Popup del calendario: el CSS estiliza la clase que crea el JS y sus estados show/closing de ui/popups.js', () => {
+    const css = fs.readFileSync('assets/styles/vistas.css', 'utf8');
+    const clase = /className: '([\w-]+)'/.exec(fs.readFileSync('src/ui/calendario-vista.js', 'utf8'))[1];
+    assert.match(css, new RegExp(`\\.${clase} \\{[^}]*position: fixed`), 'la clase del popup debe ser position: fixed');
+    assert.match(css, new RegExp(`\\.${clase}\\.show \\{`));
+    assert.match(css, new RegExp(`\\.${clase}\\.closing \\{`));
+});
+
 test('Tokens: toda variable CSS usada está definida (en tokens.css o en la propia regla)', () => {
     const css = fs.readdirSync('assets/styles').filter(f => f.endsWith('.css')).map(f => fs.readFileSync(`assets/styles/${f}`, 'utf8')).join('\n');
     const definidas = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
