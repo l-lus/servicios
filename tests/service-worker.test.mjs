@@ -10,6 +10,9 @@ const codigoSw = fs.readFileSync('sw.js', 'utf8');
 function crearEntorno({ fallaEn = null, sinRed = false, enCache = [], cachesExistentes = [] } = {}) {
     /** @type {Record<string, Function>} */
     const manejadores = {};
+    const red = { fallaEn };
+    /** @type {Function[]} */
+    const agendados = [];
     const mensajes = [];
     const guardados = [];
     const borradas = [];
@@ -24,6 +27,7 @@ function crearEntorno({ fallaEn = null, sinRed = false, enCache = [], cachesExis
     const contexto = vm.createContext({
         self,
         console: { error() { }, log() { } },
+        setTimeout: fn => { agendados.push(fn); },
         URL,
         location: { origin: 'http://localhost' },
         Request: class { constructor(url, opciones) { this.url = url; this.cache = opciones?.cache; } },
@@ -31,7 +35,7 @@ function crearEntorno({ fallaEn = null, sinRed = false, enCache = [], cachesExis
         fetch: async (pedido) => {
             estado.pedidosARed++;
             if (sinRed) throw new TypeError('Failed to fetch');
-            return { ok: pedido.url !== fallaEn, status: pedido.url === fallaEn ? 500 : 200, clone() { return this; } };
+            return { ok: pedido.url !== red.fallaEn, status: pedido.url === red.fallaEn ? 500 : 200, clone() { return this; } };
         },
         caches: {
             open: async () => ({ put: async (url) => { guardados.push(url); } }),
@@ -42,22 +46,31 @@ function crearEntorno({ fallaEn = null, sinRed = false, enCache = [], cachesExis
     });
     vm.runInContext(codigoSw, contexto);
     return {
-        manejadores, mensajes, guardados, borradas, estado,
+        manejadores, mensajes, guardados, borradas, estado, red, agendados,
         urls: /** @type {string[]} */ (vm.runInContext('urlsToCache', contexto)),
         nombre: /** @type {string} */ (vm.runInContext('CACHE_NAME', contexto)),
         prefijo: /** @type {string} */ (vm.runInContext('CACHE_PREFIX', contexto)),
     };
 }
 
-async function instalar(entorno) {
+// La descarga no corre dentro del install (Chromium la limita a 3 pedidos simultáneos ahí): el install termina enseguida
+// y agenda la descarga; la página además la pide con 'sw-descargar'.
+async function pedirDescarga(entorno, dato = { tipo: 'sw-descargar' }) {
     let promesa;
-    entorno.manejadores.install({ waitUntil: p => { promesa = p; } });
+    entorno.manejadores.message({ data: dato, waitUntil: p => { promesa = p; } });
     await promesa;
 }
 
-test('Service Worker: la instalación guarda todos los archivos, informa el avance de 0 a 100 y toma el control', async () => {
+test('Service Worker: el install no espera la descarga (la agenda para después del evento) y esta guarda todo, informa el avance de 0 a 100 y toma el control', async () => {
     const entorno = crearEntorno();
-    await instalar(entorno);
+    let esperado = null;
+    entorno.manejadores.install({ waitUntil: p => { esperado = p; } });
+    assert.equal(esperado, null, 'el install no retiene el evento con la descarga');
+    assert.equal(entorno.guardados.length, 0, 'durante el install no se descarga nada');
+    assert.equal(entorno.agendados.length, 1, 'la descarga queda agendada para cuando termina el install');
+    entorno.agendados[0]();
+    // el pedido de la página se suma a la descarga en curso, no la duplica
+    await pedirDescarga(entorno);
 
     assert.deepEqual([...entorno.guardados].sort(), [...entorno.urls].sort());
     const avances = entorno.mensajes.filter(m => m.tipo === 'sw-progreso').map(m => m.progreso);
@@ -68,13 +81,28 @@ test('Service Worker: la instalación guarda todos los archivos, informa el avan
     assert.equal(entorno.mensajes.some(m => m.tipo === 'sw-error'), false);
 });
 
-test('Service Worker: si falla un archivo, la instalación falla, avisa el error y no toma el control', async () => {
+test('Service Worker: si falla un archivo, avisa el error, no toma el control y un pedido posterior reintenta la descarga', async () => {
     const entorno = crearEntorno({ fallaEn: './src/main.js' });
-    await assert.rejects(() => instalar(entorno));
+    await pedirDescarga(entorno);
 
     assert.equal(entorno.estado.saltoLaEspera, false, 'se conserva la versión anterior');
     assert.ok(entorno.mensajes.some(m => m.tipo === 'sw-error'));
     assert.equal(entorno.mensajes.some(m => m.progreso === 100), false);
+
+    entorno.red.fallaEn = null;
+    await pedirDescarga(entorno);
+    assert.equal(entorno.estado.saltoLaEspera, true, 'el reintento completa la descarga y toma el control');
+});
+
+test('Service Worker: el mensaje SKIP_WAITING no toma el control con la caché incompleta: pasa por la descarga completa', async () => {
+    const entorno = crearEntorno();
+    await pedirDescarga(entorno, { type: 'SKIP_WAITING' });
+    assert.deepEqual([...entorno.guardados].sort(), [...entorno.urls].sort());
+    assert.equal(entorno.estado.saltoLaEspera, true);
+
+    const conFalla = crearEntorno({ fallaEn: './src/main.js' });
+    await pedirDescarga(conFalla, { type: 'SKIP_WAITING' });
+    assert.equal(conFalla.estado.saltoLaEspera, false);
 });
 
 test('Service Worker: al activarse borra solo las cachés viejas propias y nunca las de otras apps del mismo origen', async () => {

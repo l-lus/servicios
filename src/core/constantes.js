@@ -1,5 +1,5 @@
 export const APP_NOMBRE = 'SERVICIOS';
-export const APP_VERSION = 'v261110';
+export const APP_VERSION = 'v261112';
 
 // ============================================================
 // STORAGE KEYS — única fuente de verdad de las claves de localStorage
